@@ -1,0 +1,85 @@
+services:
+  redis:
+    image: redis:7-alpine
+    container_name: tars-redis
+    restart: unless-stopped
+    command: redis-server --maxmemory 2gb --maxmemory-policy allkeys-lru --appendonly yes
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis-data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 5s
+    deploy:
+      resources:
+        limits:
+          memory: 2G
+    networks:
+      - tars-net
+
+  chromadb:
+    image: chromadb/chroma:0.5.23
+    container_name: tars-chromadb
+    restart: unless-stopped
+    ports:
+      - "8200:8000"
+    volumes:
+      - chroma-data:/chroma/chroma
+    environment:
+      ANONYMIZED_TELEMETRY: "false"
+      CHROMA_SERVER_AUTHN_PROVIDER: chromadb.auth.token_authn.TokenAuthenticationServerProvider
+      CHROMA_SERVER_AUTHN_CREDENTIALS: ${CHROMA_AUTH_TOKEN}
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/api/v1/heartbeat"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 15s
+    deploy:
+      resources:
+        limits:
+          memory: 2G
+    networks:
+      - tars-net
+
+  tars-worker:
+    image: ghcr.io/tasin/tars-worker:latest
+    container_name: tars-worker
+    restart: unless-stopped
+    environment:
+      REDIS_URL: redis://redis:6379/0
+      CHROMADB_URL: http://chromadb:8000
+      CHROMA_AUTH_TOKEN: ${CHROMA_AUTH_TOKEN}
+      NODE_ROLE: muscle
+      LOG_LEVEL: ${LOG_LEVEL:-INFO}
+    volumes:
+      - worker-data:/data
+      - /var/run/docker.sock:/var/run/docker.sock
+    depends_on:
+      redis:
+        condition: service_healthy
+      chromadb:
+        condition: service_healthy
+    deploy:
+      resources:
+        limits:
+          memory: 4G
+          cpus: "4"
+    networks:
+      - tars-net
+
+volumes:
+  redis-data:
+    driver: local
+  chroma-data:
+    driver: local
+  worker-data:
+    driver: local
+
+networks:
+  tars-net:
+    driver: bridge

@@ -59,7 +59,7 @@ NODE 2 — "MUSCLE" (10.0.1.2)
 - **APScheduler 4.0+** for cron jobs
 - **python-telegram-bot 21.x**
 - **httpx 0.27+** for async HTTP
-- **google-generativeai 0.8+** (Gemini SDK)
+- **google-genai 1.0+** (unified Google Gen AI SDK — replaces deprecated google-generativeai)
 - **Claude Code CLI** (headless subprocess spawning, MCP-enhanced)
 - **MCP Servers** (`@modelcontextprotocol/*`): GitHub, PostgreSQL, Brave Search, Filesystem — give Claude Code direct tool access
 - **apprise 1.9+** (unified notification fan-out: Telegram, email, future channels)
@@ -186,7 +186,7 @@ tars/
 - All I/O operations must be async (`async def`, `await`). The orchestrator runs on `asyncio` + `uvloop`.
 - Use `asyncio.gather()` for parallel fetches (e.g., morning briefing data collection).
 - Claude Code spawned via `asyncio.create_subprocess_exec()` with timeout.
-- Gemini calls use the async SDK (`generate_content_async()`).
+- Gemini calls use the async SDK (`client.aio.models.generate_content()`).
 
 ### Error Handling
 - All agent execution wrapped in try/except. Failed agents log the error and return gracefully — never crash the orchestrator.
@@ -451,8 +451,10 @@ Claude Code uses system-level auth (Max 5x plan) — no API key needed. MCP serv
 ## Testing Conventions
 
 ```bash
-cd backend && python -m pytest tests/ -v
+cd backend && .venv/bin/python -m pytest tests/ -v
 ```
+
+**Python path**: `pyproject.toml` sets `pythonpath = ["src", ".."]` so pytest resolves both `backend/src/` imports (e.g., `orchestrator.*`) and repo-root imports (e.g., `shared.*`) automatically. Always use the project venv (`.venv/bin/python`), not the system Python.
 
 - Tests live in `backend/tests/` and `worker/tests/`.
 - Use `pytest` + `pytest-asyncio` for async tests.

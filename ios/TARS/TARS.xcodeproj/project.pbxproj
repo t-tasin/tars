@@ -1,0 +1,601 @@
+// !$*UTF8*$!
+{
+	archiveVersion = 1;
+	classes = {
+	};
+	objectVersion = 77;
+	objects = {
+
+/* Begin PBXBuildFile section */
+		0FE3CD093D5A856C24EDD6AD /* JobListing.swift in Sources */ = {isa = PBXBuildFile; fileRef = 836C904B5018AB14645402B3 /* JobListing.swift */; };
+		16B8BF66D9CE802F09DC53C2 /* TARSApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1637DB69CD388CD48395E3EE /* TARSApp.swift */; };
+		1EC0C5E202ED088CBB94CDEB /* TARSWidget.swift in Sources */ = {isa = PBXBuildFile; fileRef = FDF2C8CD43C9B53F0511B22B /* TARSWidget.swift */; };
+		1F1869563CCFF517E4A0C168 /* SettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 47D97CB0A728A4F2696818C3 /* SettingsView.swift */; };
+		239D60090D6272686F950B4F /* Approval.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1A076673047EA6192D1DA8F5 /* Approval.swift */; };
+		55EB520BE20CFD88EC44FBF9 /* TARSWatchApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 08A82D165307842134590672 /* TARSWatchApp.swift */; };
+		668259EEBCDEB821BD49B976 /* Briefing.swift in Sources */ = {isa = PBXBuildFile; fileRef = B5F6EE3FBD2C553F75A1B18F /* Briefing.swift */; };
+		66E4759920B2D14A931F7E6C /* KeychainService.swift in Sources */ = {isa = PBXBuildFile; fileRef = C0F03C2DFCF0FCD00EF22653 /* KeychainService.swift */; };
+		78BE6375C2FAAD1D7E3916B8 /* MainTabView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1F0655D84489F08303BB7C54 /* MainTabView.swift */; };
+		90BBFCDB13819C64D54EFF5F /* JobsListView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A3D6F0F50F66E237662313AB /* JobsListView.swift */; };
+		A4551D24407DCF8577F1BB25 /* ErrorResponse.swift in Sources */ = {isa = PBXBuildFile; fileRef = 72D6595861C68E0A3A029459 /* ErrorResponse.swift */; };
+		B9089C9A761B6E4352C16B90 /* BriefingView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 37979349D3F955E5908ECF52 /* BriefingView.swift */; };
+		BAB5F774ED78D0D42408714F /* ScheduleView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 592258D6A93308FCE69194F6 /* ScheduleView.swift */; };
+		CA6B2B7D438702921E094419 /* AnyCodable.swift in Sources */ = {isa = PBXBuildFile; fileRef = E8150366C05D4A05ECBE8349 /* AnyCodable.swift */; };
+		ECB5BDEDE11E2EC5ADF1A62D /* ChatView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 130887104B5F48D39C362133 /* ChatView.swift */; };
+		F3155862AB70AEB9F9074359 /* Message.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6EDEADE7D34896695A509D62 /* Message.swift */; };
+		D4A1E8B3F72C9D0E18A53F01 /* TARSIntents.swift in Sources */ = {isa = PBXBuildFile; fileRef = D4A1E8B3F72C9D0E18A53F02 /* TARSIntents.swift */; };
+/* End PBXBuildFile section */
+
+/* Begin PBXContainerItemProxy section */
+		2EB7E1767EE832D9425D3AF3 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 46E987A61B35CFA1CAA18C6E /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 50E0CDF3E1501CECAAB497E6;
+			remoteInfo = TARS;
+		};
+		B5A1D728F0C915E2F9D24E5F /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 46E987A61B35CFA1CAA18C6E /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 50E0CDF3E1501CECAAB497E6;
+			remoteInfo = TARS;
+		};
+/* End PBXContainerItemProxy section */
+
+/* Begin PBXFileReference section */
+		08A82D165307842134590672 /* TARSWatchApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TARSWatchApp.swift; sourceTree = "<group>"; };
+		130887104B5F48D39C362133 /* ChatView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChatView.swift; sourceTree = "<group>"; };
+		1637DB69CD388CD48395E3EE /* TARSApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TARSApp.swift; sourceTree = "<group>"; };
+		1A076673047EA6192D1DA8F5 /* Approval.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Approval.swift; sourceTree = "<group>"; };
+		1ACACC1E76478D326BCB4C1B /* TARS.app */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.application; path = TARS.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		1F0655D84489F08303BB7C54 /* MainTabView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MainTabView.swift; sourceTree = "<group>"; };
+		37979349D3F955E5908ECF52 /* BriefingView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BriefingView.swift; sourceTree = "<group>"; };
+		447C75DDC0C835E8521C316F /* TARSWidgetExtension.appex */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = "wrapper.app-extension"; path = TARSWidgetExtension.appex; sourceTree = BUILT_PRODUCTS_DIR; };
+		47D97CB0A728A4F2696818C3 /* SettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsView.swift; sourceTree = "<group>"; };
+		5222B778D953E33FE8D7273F /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
+		592258D6A93308FCE69194F6 /* ScheduleView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScheduleView.swift; sourceTree = "<group>"; };
+		6EDEADE7D34896695A509D62 /* Message.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Message.swift; sourceTree = "<group>"; };
+		72D6595861C68E0A3A029459 /* ErrorResponse.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ErrorResponse.swift; sourceTree = "<group>"; };
+		76FA63F423EB4140C910401B /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
+		836C904B5018AB14645402B3 /* JobListing.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = JobListing.swift; sourceTree = "<group>"; };
+		A3D6F0F50F66E237662313AB /* JobsListView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = JobsListView.swift; sourceTree = "<group>"; };
+		ABD61F99353B50B0FC4EF4BD /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
+		B5F6EE3FBD2C553F75A1B18F /* Briefing.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Briefing.swift; sourceTree = "<group>"; };
+		C0F03C2DFCF0FCD00EF22653 /* KeychainService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KeychainService.swift; sourceTree = "<group>"; };
+		E7433E1B2043E02478F721E7 /* TARS.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = TARS.entitlements; sourceTree = "<group>"; };
+		E8150366C05D4A05ECBE8349 /* AnyCodable.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AnyCodable.swift; sourceTree = "<group>"; };
+		F65231B90A0E8E3195E6F818 /* TARSWatch.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = TARSWatch.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		FDF2C8CD43C9B53F0511B22B /* TARSWidget.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TARSWidget.swift; sourceTree = "<group>"; };
+		D4A1E8B3F72C9D0E18A53F02 /* TARSIntents.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TARSIntents.swift; sourceTree = "<group>"; };
+/* End PBXFileReference section */
+
+/* Begin PBXGroup section */
+		0108C5CD09AAB66897B770C5 /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				1ACACC1E76478D326BCB4C1B /* TARS.app */,
+				F65231B90A0E8E3195E6F818 /* TARSWatch.app */,
+				447C75DDC0C835E8521C316F /* TARSWidgetExtension.appex */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
+		1687D4DCE8A3CCF222ECE731 /* TARS */ = {
+			isa = PBXGroup;
+			children = (
+				7C16D968672F8D4A98C246EF /* Models */,
+				24E0738F0720FF4204DB70E6 /* Resources */,
+				3177532E71F01F92404EA123 /* Services */,
+				D4A1E8B3F72C9D0E18A53F03 /* SiriIntents */,
+				99BCB5F158AD8FBB471ECA3A /* Views */,
+				1637DB69CD388CD48395E3EE /* TARSApp.swift */,
+			);
+			path = TARS;
+			sourceTree = "<group>";
+		};
+		D4A1E8B3F72C9D0E18A53F03 /* SiriIntents */ = {
+			isa = PBXGroup;
+			children = (
+				D4A1E8B3F72C9D0E18A53F02 /* TARSIntents.swift */,
+			);
+			path = SiriIntents;
+			sourceTree = "<group>";
+		};
+		24E0738F0720FF4204DB70E6 /* Resources */ = {
+			isa = PBXGroup;
+			children = (
+				5222B778D953E33FE8D7273F /* Info.plist */,
+				E7433E1B2043E02478F721E7 /* TARS.entitlements */,
+			);
+			path = Resources;
+			sourceTree = "<group>";
+		};
+		3177532E71F01F92404EA123 /* Services */ = {
+			isa = PBXGroup;
+			children = (
+				C0F03C2DFCF0FCD00EF22653 /* KeychainService.swift */,
+			);
+			path = Services;
+			sourceTree = "<group>";
+		};
+		7C16D968672F8D4A98C246EF /* Models */ = {
+			isa = PBXGroup;
+			children = (
+				E8150366C05D4A05ECBE8349 /* AnyCodable.swift */,
+				1A076673047EA6192D1DA8F5 /* Approval.swift */,
+				B5F6EE3FBD2C553F75A1B18F /* Briefing.swift */,
+				72D6595861C68E0A3A029459 /* ErrorResponse.swift */,
+				836C904B5018AB14645402B3 /* JobListing.swift */,
+				6EDEADE7D34896695A509D62 /* Message.swift */,
+			);
+			path = Models;
+			sourceTree = "<group>";
+		};
+		99BCB5F158AD8FBB471ECA3A /* Views */ = {
+			isa = PBXGroup;
+			children = (
+				37979349D3F955E5908ECF52 /* BriefingView.swift */,
+				130887104B5F48D39C362133 /* ChatView.swift */,
+				A3D6F0F50F66E237662313AB /* JobsListView.swift */,
+				1F0655D84489F08303BB7C54 /* MainTabView.swift */,
+				592258D6A93308FCE69194F6 /* ScheduleView.swift */,
+				47D97CB0A728A4F2696818C3 /* SettingsView.swift */,
+			);
+			path = Views;
+			sourceTree = "<group>";
+		};
+		99FE387757DD0460B1DCD1D9 /* TARSWidgetExtension */ = {
+			isa = PBXGroup;
+			children = (
+				76FA63F423EB4140C910401B /* Info.plist */,
+				FDF2C8CD43C9B53F0511B22B /* TARSWidget.swift */,
+			);
+			path = TARSWidgetExtension;
+			sourceTree = "<group>";
+		};
+		A3A813D1FC0E924388418647 /* TARSWatch */ = {
+			isa = PBXGroup;
+			children = (
+				ABD61F99353B50B0FC4EF4BD /* Info.plist */,
+				08A82D165307842134590672 /* TARSWatchApp.swift */,
+			);
+			path = TARSWatch;
+			sourceTree = "<group>";
+		};
+		EBAAFE2141C197F44501E00A = {
+			isa = PBXGroup;
+			children = (
+				1687D4DCE8A3CCF222ECE731 /* TARS */,
+				A3A813D1FC0E924388418647 /* TARSWatch */,
+				99FE387757DD0460B1DCD1D9 /* TARSWidgetExtension */,
+				0108C5CD09AAB66897B770C5 /* Products */,
+			);
+			sourceTree = "<group>";
+		};
+/* End PBXGroup section */
+
+/* Begin PBXNativeTarget section */
+		50E0CDF3E1501CECAAB497E6 /* TARS */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 0C441F148F76A8CA4D8E54A0 /* Build configuration list for PBXNativeTarget "TARS" */;
+			buildPhases = (
+				FA8CC3C9BDA91103881F96F8 /* Sources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = TARS;
+			packageProductDependencies = (
+			);
+			productName = TARS;
+			productReference = 1ACACC1E76478D326BCB4C1B /* TARS.app */;
+			productType = "com.apple.product-type.application";
+		};
+		C9B56589D4201968941B7DBA /* TARSWatch */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 3A044EF50A14066D006423D4 /* Build configuration list for PBXNativeTarget "TARSWatch" */;
+			buildPhases = (
+				F281E599464420F6B0AA4313 /* Sources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				CB2054F0664137C0E6FFA50A /* PBXTargetDependency */,
+			);
+			name = TARSWatch;
+			packageProductDependencies = (
+			);
+			productName = TARSWatch;
+			productReference = F65231B90A0E8E3195E6F818 /* TARSWatch.app */;
+			productType = "com.apple.product-type.application";
+		};
+		F97F9746BC00B43C92AF02FD /* TARSWidgetExtension */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = B2644912AE047BE5451215BB /* Build configuration list for PBXNativeTarget "TARSWidgetExtension" */;
+			buildPhases = (
+				4963ED9B6A6A6E01251C7A8A /* Sources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				BC599E590B8716485C94E761 /* PBXTargetDependency */,
+			);
+			name = TARSWidgetExtension;
+			packageProductDependencies = (
+			);
+			productName = TARSWidgetExtension;
+			productReference = 447C75DDC0C835E8521C316F /* TARSWidgetExtension.appex */;
+			productType = "com.apple.product-type.app-extension";
+		};
+/* End PBXNativeTarget section */
+
+/* Begin PBXProject section */
+		46E987A61B35CFA1CAA18C6E /* Project object */ = {
+			isa = PBXProject;
+			attributes = {
+				BuildIndependentTargetsInParallel = YES;
+				LastUpgradeCheck = 1600;
+				TargetAttributes = {
+					50E0CDF3E1501CECAAB497E6 = {
+						DevelopmentTeam = "";
+					};
+					C9B56589D4201968941B7DBA = {
+						DevelopmentTeam = "";
+					};
+					F97F9746BC00B43C92AF02FD = {
+						DevelopmentTeam = "";
+					};
+				};
+			};
+			buildConfigurationList = BEC985308BDD6169D52D8D8A /* Build configuration list for PBXProject "TARS" */;
+			developmentRegion = en;
+			hasScannedForEncodings = 0;
+			knownRegions = (
+				Base,
+				en,
+			);
+			mainGroup = EBAAFE2141C197F44501E00A;
+			minimizedProjectReferenceProxies = 1;
+			preferredProjectObjectVersion = 77;
+			productRefGroup = 0108C5CD09AAB66897B770C5 /* Products */;
+			projectDirPath = "";
+			projectRoot = "";
+			targets = (
+				50E0CDF3E1501CECAAB497E6 /* TARS */,
+				C9B56589D4201968941B7DBA /* TARSWatch */,
+				F97F9746BC00B43C92AF02FD /* TARSWidgetExtension */,
+			);
+		};
+/* End PBXProject section */
+
+/* Begin PBXSourcesBuildPhase section */
+		4963ED9B6A6A6E01251C7A8A /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				1EC0C5E202ED088CBB94CDEB /* TARSWidget.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		F281E599464420F6B0AA4313 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				55EB520BE20CFD88EC44FBF9 /* TARSWatchApp.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		FA8CC3C9BDA91103881F96F8 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				CA6B2B7D438702921E094419 /* AnyCodable.swift in Sources */,
+				239D60090D6272686F950B4F /* Approval.swift in Sources */,
+				668259EEBCDEB821BD49B976 /* Briefing.swift in Sources */,
+				B9089C9A761B6E4352C16B90 /* BriefingView.swift in Sources */,
+				ECB5BDEDE11E2EC5ADF1A62D /* ChatView.swift in Sources */,
+				A4551D24407DCF8577F1BB25 /* ErrorResponse.swift in Sources */,
+				0FE3CD093D5A856C24EDD6AD /* JobListing.swift in Sources */,
+				90BBFCDB13819C64D54EFF5F /* JobsListView.swift in Sources */,
+				66E4759920B2D14A931F7E6C /* KeychainService.swift in Sources */,
+				78BE6375C2FAAD1D7E3916B8 /* MainTabView.swift in Sources */,
+				F3155862AB70AEB9F9074359 /* Message.swift in Sources */,
+				BAB5F774ED78D0D42408714F /* ScheduleView.swift in Sources */,
+				1F1869563CCFF517E4A0C168 /* SettingsView.swift in Sources */,
+				16B8BF66D9CE802F09DC53C2 /* TARSApp.swift in Sources */,
+				D4A1E8B3F72C9D0E18A53F01 /* TARSIntents.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXSourcesBuildPhase section */
+
+/* Begin PBXTargetDependency section */
+		BC599E590B8716485C94E761 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 50E0CDF3E1501CECAAB497E6 /* TARS */;
+			targetProxy = 2EB7E1767EE832D9425D3AF3 /* PBXContainerItemProxy */;
+		};
+		CB2054F0664137C0E6FFA50A /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 50E0CDF3E1501CECAAB497E6 /* TARS */;
+			targetProxy = B5A1D728F0C915E2F9D24E5F /* PBXContainerItemProxy */;
+		};
+/* End PBXTargetDependency section */
+
+/* Begin XCBuildConfiguration section */
+		0490E31C113C1549A0374155 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++14";
+				CLANG_CXX_LIBRARY = "libc++";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = dwarf;
+				DEVELOPMENT_TEAM = "";
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_TESTABILITY = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu11;
+				GCC_DYNAMIC_NO_PIC = NO;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					"$(inherited)",
+					"DEBUG=1",
+				);
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
+				MTL_FAST_MATH = YES;
+				ONLY_ACTIVE_ARCH = YES;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = DEBUG;
+				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
+				SWIFT_VERSION = 5.10;
+				WATCHOS_DEPLOYMENT_TARGET = 10.0;
+			};
+			name = Debug;
+		};
+		3C05D612BFCC2F0138FFFED4 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CURRENT_PROJECT_VERSION = 1;
+				INFOPLIST_FILE = TARSWatch/Info.plist;
+				MARKETING_VERSION = 1.0.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.tasin.tars.watchapp;
+				SDKROOT = watchos;
+				SKIP_INSTALL = YES;
+				SUPPORTS_MACCATALYST = NO;
+				TARGETED_DEVICE_FAMILY = 4;
+				WATCHOS_DEPLOYMENT_TARGET = 10.0;
+			};
+			name = Release;
+		};
+		44367BABFCBFC83B5806FC3D /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CODE_SIGN_ENTITLEMENTS = TARS/Resources/TARS.entitlements;
+				CODE_SIGN_IDENTITY = "iPhone Developer";
+				CURRENT_PROJECT_VERSION = 1;
+				INFOPLIST_FILE = TARS/Resources/Info.plist;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				MARKETING_VERSION = 1.0.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.tasin.tars;
+				SDKROOT = iphoneos;
+				SUPPORTS_MACCATALYST = NO;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Debug;
+		};
+		4549C37C3A5951DE8DBE64AC /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CURRENT_PROJECT_VERSION = 1;
+				INFOPLIST_FILE = TARSWidgetExtension/Info.plist;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path/../../Frameworks",
+				);
+				MARKETING_VERSION = 1.0.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.tasin.tars.widget;
+				SDKROOT = iphoneos;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Release;
+		};
+		69CE464835474AAD5078D19F /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++14";
+				CLANG_CXX_LIBRARY = "libc++";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				DEVELOPMENT_TEAM = "";
+				ENABLE_NS_ASSERTIONS = NO;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu11;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				MTL_ENABLE_DEBUG_INFO = NO;
+				MTL_FAST_MATH = YES;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_COMPILATION_MODE = wholemodule;
+				SWIFT_OPTIMIZATION_LEVEL = "-O";
+				SWIFT_VERSION = 5.10;
+				WATCHOS_DEPLOYMENT_TARGET = 10.0;
+			};
+			name = Release;
+		};
+		6E8C5A2CC2325A7FD28AC0B8 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CURRENT_PROJECT_VERSION = 1;
+				INFOPLIST_FILE = TARSWatch/Info.plist;
+				MARKETING_VERSION = 1.0.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.tasin.tars.watchapp;
+				SDKROOT = watchos;
+				SKIP_INSTALL = YES;
+				SUPPORTS_MACCATALYST = NO;
+				TARGETED_DEVICE_FAMILY = 4;
+				WATCHOS_DEPLOYMENT_TARGET = 10.0;
+			};
+			name = Debug;
+		};
+		A0C2CD93B7001A4F94D42038 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CURRENT_PROJECT_VERSION = 1;
+				INFOPLIST_FILE = TARSWidgetExtension/Info.plist;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path/../../Frameworks",
+				);
+				MARKETING_VERSION = 1.0.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.tasin.tars.widget;
+				SDKROOT = iphoneos;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Debug;
+		};
+		C692BE762B21FEEDA3887607 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CODE_SIGN_ENTITLEMENTS = TARS/Resources/TARS.entitlements;
+				CODE_SIGN_IDENTITY = "iPhone Developer";
+				CURRENT_PROJECT_VERSION = 1;
+				INFOPLIST_FILE = TARS/Resources/Info.plist;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				MARKETING_VERSION = 1.0.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.tasin.tars;
+				SDKROOT = iphoneos;
+				SUPPORTS_MACCATALYST = NO;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Release;
+		};
+/* End XCBuildConfiguration section */
+
+/* Begin XCConfigurationList section */
+		0C441F148F76A8CA4D8E54A0 /* Build configuration list for PBXNativeTarget "TARS" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				44367BABFCBFC83B5806FC3D /* Debug */,
+				C692BE762B21FEEDA3887607 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+		3A044EF50A14066D006423D4 /* Build configuration list for PBXNativeTarget "TARSWatch" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				6E8C5A2CC2325A7FD28AC0B8 /* Debug */,
+				3C05D612BFCC2F0138FFFED4 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+		B2644912AE047BE5451215BB /* Build configuration list for PBXNativeTarget "TARSWidgetExtension" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				A0C2CD93B7001A4F94D42038 /* Debug */,
+				4549C37C3A5951DE8DBE64AC /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+		BEC985308BDD6169D52D8D8A /* Build configuration list for PBXProject "TARS" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				0490E31C113C1549A0374155 /* Debug */,
+				69CE464835474AAD5078D19F /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+/* End XCConfigurationList section */
+	};
+	rootObject = 46E987A61B35CFA1CAA18C6E /* Project object */;
+}

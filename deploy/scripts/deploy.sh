@@ -1,7 +1,20 @@
-#!/usr/bin/env bash
-# deploy.sh — Deploy T.A.R.S. to production nodes
-# Usage: ./deploy.sh [node1|node2|all]
+#!/bin/bash
+# deploy.sh — Deploy T.A.R.S. services via Docker Compose
+# Usage: ./deploy.sh [node-directory]
+# Example: ./deploy.sh /opt/tars/deploy/node1
 set -euo pipefail
 
-echo "T.A.R.S. deployment script — placeholder"
-echo "TODO: Implement deployment logic"
+NODE_DIR="${1:-.}"
+
+echo "[T.A.R.S.] Deploying from $NODE_DIR..."
+cd "$NODE_DIR"
+
+docker compose pull
+docker compose up -d --remove-orphans
+
+echo "[T.A.R.S.] Waiting for health checks..."
+sleep 10
+
+docker compose ps
+
+echo "[T.A.R.S.] Deploy complete."

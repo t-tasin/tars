@@ -50,3 +50,4 @@ ios/TARS/DerivedData/
 *.key
 credentials.json
 token.json
+backend/.coverage
