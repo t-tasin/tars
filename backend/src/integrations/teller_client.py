@@ -198,7 +198,7 @@ class TellerClient:
                 "is_recurring": txn.get("is_recurring", False),
                 "transaction_date": txn["transaction_date"],
                 "pending": txn.get("pending", False),
-                "metadata_": txn.get("metadata", {}),
+                "metadata": txn.get("metadata", {}),
             }
             for txn in transactions
         ]

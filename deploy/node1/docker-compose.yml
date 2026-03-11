@@ -42,6 +42,7 @@ services:
       # APNs
       APNS_KEY_ID: ${APNS_KEY_ID}
       APNS_TEAM_ID: ${APNS_TEAM_ID}
+      APNS_BUNDLE_ID: ${APNS_BUNDLE_ID}
       APNS_KEY_PATH: /secrets/apns-key.p8
       # Grafana / Loki
       GRAFANA_URL: ${GRAFANA_URL}
