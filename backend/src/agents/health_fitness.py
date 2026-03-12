@@ -220,6 +220,21 @@ class HealthFitnessAgent(BaseAgent):
 
     async def _get_calendar_context(self, context: AgentContext) -> dict[str, Any]:
         """Check today's and tomorrow's calendar for gym-friendly time slots."""
+        # Suppress gym suggestions when workout tracker has an active split
+        try:
+            from db.models import WorkoutSplit
+            from db.session import get_db_session
+            from sqlalchemy import select as sa_select
+
+            async with get_db_session() as session:
+                result = await session.execute(
+                    sa_select(WorkoutSplit).where(WorkoutSplit.active == True).limit(1)  # noqa: E712
+                )
+                if result.scalar_one_or_none() is not None:
+                    return {"suppressed_by_workout_tracker": True}
+        except Exception:
+            pass  # If check fails, fall through to normal behavior
+
         try:
             from config import get_settings
             from integrations.caldav_client import CalDAVClient

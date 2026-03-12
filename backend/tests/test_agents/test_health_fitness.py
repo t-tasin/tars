@@ -253,3 +253,56 @@ class TestHealthFitnessExecute:
 
         assert result.success is True
         assert "Great job" in result.text
+
+
+# ---------------------------------------------------------------------------
+# Gym suggestion suppression when workout tracker is active
+# ---------------------------------------------------------------------------
+
+
+class TestGymSuggestionSuppression:
+    async def test_suppresses_when_active_split_exists(self):
+        """When an active workout split exists, gym calendar suggestions are suppressed."""
+        agent = HealthFitnessAgent.__new__(HealthFitnessAgent)
+
+        mock_split = MagicMock(active=True)
+        mock_result = MagicMock()
+        mock_result.scalar_one_or_none.return_value = mock_split
+        mock_session = AsyncMock()
+        mock_session.execute = AsyncMock(return_value=mock_result)
+
+        with patch("db.session.get_db_session") as mock_db:
+            mock_db.return_value.__aenter__ = AsyncMock(return_value=mock_session)
+            mock_db.return_value.__aexit__ = AsyncMock(return_value=False)
+
+            result = await agent._get_calendar_context(_make_context())
+
+        assert result.get("suppressed_by_workout_tracker") is True
+
+    async def test_falls_through_when_no_active_split(self):
+        """When no active split exists, calendar lookup proceeds normally."""
+        agent = HealthFitnessAgent.__new__(HealthFitnessAgent)
+
+        mock_result = MagicMock()
+        mock_result.scalar_one_or_none.return_value = None
+        mock_session = AsyncMock()
+        mock_session.execute = AsyncMock(return_value=mock_result)
+
+        with patch("db.session.get_db_session") as mock_db:
+            mock_db.return_value.__aenter__ = AsyncMock(return_value=mock_session)
+            mock_db.return_value.__aexit__ = AsyncMock(return_value=False)
+
+            with patch("config.get_settings") as mock_settings:
+                mock_settings.return_value = MagicMock(
+                    icloud_caldav_user="test",
+                    icloud_caldav_password="test",
+                )
+                with patch("integrations.caldav_client.CalDAVClient") as mock_caldav_cls:
+                    mock_caldav = MagicMock()
+                    mock_caldav.get_events = AsyncMock(return_value=[])
+                    mock_caldav_cls.return_value = mock_caldav
+
+                    result = await agent._get_calendar_context(_make_context())
+
+        # Should NOT be suppressed
+        assert result.get("suppressed_by_workout_tracker") is not True
