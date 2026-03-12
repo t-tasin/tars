@@ -20,6 +20,7 @@ class IntentType(StrEnum):
     CONFIG = "config"
     SYSTEM = "system"
     GENERAL = "general"
+    WORKOUT_TRACKER = "workout_tracker"
 
 
 class ModelName(StrEnum):
@@ -87,6 +88,13 @@ class HealthStatus(StrEnum):
     UNKNOWN = "unknown"
 
 
+class WorkoutSessionStatus(StrEnum):
+    PENDING = "pending"
+    ACTIVE = "active"
+    COMPLETED = "completed"
+    SKIPPED = "skipped"
+
+
 class MessageSource(StrEnum):
     IOS = "ios"
     TELEGRAM = "telegram"
@@ -137,4 +145,5 @@ AGENT_MODEL_MAP: dict[IntentType, ModelName] = {
     IntentType.CONFIG: ModelName.LOCAL,
     IntentType.SYSTEM: ModelName.LOCAL,
     IntentType.GENERAL: ModelName.GEMINI_FLASH,
+    IntentType.WORKOUT_TRACKER: ModelName.GEMINI_FLASH,
 }
