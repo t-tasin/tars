@@ -103,6 +103,39 @@ async def seed_default_config(session: AsyncSession) -> None:
         await session.commit()
         log.info("config_seeded", inserted=inserted)
 
+    await seed_default_budgets(session)
+
+
+# Default budget categories — seeded on first run.
+# After 30 days, the monthly_budget_audit job suggests new ones via AI.
+DEFAULT_BUDGETS: dict[str, float] = {
+    "dining": 200.0,
+    "groceries": 300.0,
+    "shopping": 250.0,
+    "transport": 150.0,
+    "subscriptions": 100.0,
+    "entertainment": 100.0,
+}
+
+
+async def seed_default_budgets(session: AsyncSession) -> None:
+    """Create default budget categories if none exist yet."""
+    from src.db.repositories.budgets import BudgetRepository
+
+    repo = BudgetRepository(session)
+    existing = await repo.get_active()
+
+    if existing:
+        return  # User already has budgets — don't override
+
+    from decimal import Decimal
+
+    for category, limit in DEFAULT_BUDGETS.items():
+        await repo.create(category, Decimal(str(limit)))
+
+    await session.commit()
+    log.info("default_budgets_seeded", count=len(DEFAULT_BUDGETS))
+
 
 # ---------------------------------------------------------------------------
 # Endpoints

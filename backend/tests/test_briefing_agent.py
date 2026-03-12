@@ -245,7 +245,23 @@ class TestFetchFinanceData:
         ]
         mock_mtd_result = MagicMock()
         mock_mtd_result.scalar_one.return_value = Decimal("450.00")
-        _install_mock_session([mock_txn_result, mock_mtd_result])
+        # Third call: budget query (returns no active budgets)
+        mock_budget_result = MagicMock()
+        mock_budget_scalars = MagicMock()
+        mock_budget_scalars.all.return_value = []
+        mock_budget_result.scalars.return_value = mock_budget_scalars
+        # Fourth call: anomaly_detector.scan_recent → scalars().all() = []
+        mock_anomaly_result = MagicMock()
+        mock_anomaly_scalars = MagicMock()
+        mock_anomaly_scalars.all.return_value = []
+        mock_anomaly_result.scalars.return_value = mock_anomaly_scalars
+        # Fifth call: recurring subscription query → .all() = []
+        mock_recurring_result = MagicMock()
+        mock_recurring_result.all.return_value = []
+        _install_mock_session([
+            mock_txn_result, mock_mtd_result, mock_budget_result,
+            mock_anomaly_result, mock_recurring_result,
+        ])
 
         result = await agent._fetch_finance_data()
 
@@ -263,7 +279,23 @@ class TestFetchFinanceData:
         ]
         mock_mtd_result = MagicMock()
         mock_mtd_result.scalar_one.return_value = Decimal("10.00")
-        _install_mock_session([mock_txn_result, mock_mtd_result])
+        # Third call: budget query (returns no active budgets)
+        mock_budget_result = MagicMock()
+        mock_budget_scalars = MagicMock()
+        mock_budget_scalars.all.return_value = []
+        mock_budget_result.scalars.return_value = mock_budget_scalars
+        # Fourth call: anomaly_detector.scan_recent → scalars().all() = []
+        mock_anomaly_result = MagicMock()
+        mock_anomaly_scalars = MagicMock()
+        mock_anomaly_scalars.all.return_value = []
+        mock_anomaly_result.scalars.return_value = mock_anomaly_scalars
+        # Fifth call: recurring subscription query → .all() = []
+        mock_recurring_result = MagicMock()
+        mock_recurring_result.all.return_value = []
+        _install_mock_session([
+            mock_txn_result, mock_mtd_result, mock_budget_result,
+            mock_anomaly_result, mock_recurring_result,
+        ])
 
         result = await agent._fetch_finance_data()
 

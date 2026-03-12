@@ -138,6 +138,15 @@ def create_scheduler(orchestrator: Orchestrator) -> AsyncIOScheduler:
         kwargs={"orchestrator": orchestrator},
     )
 
+    # Monthly budget audit: 1st of each month at 6:00 AM
+    scheduler.add_job(
+        monthly_budget_audit,
+        CronTrigger(day=1, hour=6, minute=0),
+        id="monthly_budget_audit",
+        name="Monthly Budget Category Audit",
+        kwargs={"orchestrator": orchestrator},
+    )
+
     log.info(
         "scheduler_jobs_registered",
         jobs=[
@@ -152,6 +161,7 @@ def create_scheduler(orchestrator: Orchestrator) -> AsyncIOScheduler:
             "daily_backup@03:00",
             "create_daily_workout@05:30",
             "workout_reminder_poll@every_5m",
+            "monthly_budget_audit@1st_06:00",
         ],
     )
 
@@ -634,6 +644,153 @@ async def workout_reminder_poll(orchestrator: Orchestrator) -> None:
             duration_ms=duration_ms,
             pending_sessions=len(pending),
         )
+
+    except Exception:
+        duration_ms = int((time.monotonic() - start) * 1000)
+        log.exception("scheduled_job_failed", job=job_name, duration_ms=duration_ms)
+
+
+async def monthly_budget_audit(orchestrator: Orchestrator) -> None:
+    """Analyze last month's transactions and suggest new budget categories.
+
+    Runs on the 1st of each month.  Uses Gemini Flash to review uncategorised
+    spending (transactions whose category doesn't match an existing budget) and
+    proposes new budget categories.  Suggestions are sent as an info
+    notification — never auto-created (user decides).
+    """
+    job_name = "monthly_budget_audit"
+    log.info("scheduled_job_started", job=job_name)
+    start = time.monotonic()
+
+    try:
+        import json as _json
+        from datetime import date, timedelta
+
+        from config import get_settings
+        from db.repositories.budgets import BudgetRepository
+        from db.session import get_db_session
+        from integrations.notification_service import get_notification_service
+        from models.gemini_client import GeminiClient
+
+        settings = get_settings()
+
+        today = date.today()
+        # Last month's range
+        last_month_end = today.replace(day=1) - timedelta(days=1)
+        last_month_start = last_month_end.replace(day=1)
+
+        async with get_db_session() as session:
+            repo = BudgetRepository(session)
+            active_budgets = await repo.get_active()
+            tracked_categories = {b.category.lower() for b in active_budgets}
+
+            # Query last month's spending grouped by category
+            from db.models import Transaction
+            from sqlalchemy import func, select
+
+            result = await session.execute(
+                select(
+                    func.coalesce(func.lower(Transaction.category), "uncategorized"),
+                    func.sum(Transaction.amount),
+                    func.count(Transaction.id),
+                )
+                .where(
+                    Transaction.transaction_date >= last_month_start,
+                    Transaction.transaction_date <= last_month_end,
+                    Transaction.pending == False,  # noqa: E712
+                    Transaction.amount > 0,
+                )
+                .group_by(func.coalesce(func.lower(Transaction.category), "uncategorized"))
+                .order_by(func.sum(Transaction.amount).desc())
+            )
+            all_spending = [
+                {"category": row[0], "total": float(row[1]), "count": int(row[2])}
+                for row in result.all()
+            ]
+
+        if not all_spending:
+            log.info("monthly_budget_audit_skipped", reason="no_transactions")
+            return
+
+        # Split into tracked vs untracked
+        untracked = [s for s in all_spending if s["category"] not in tracked_categories]
+        tracked = [s for s in all_spending if s["category"] in tracked_categories]
+
+        if not untracked:
+            duration_ms = int((time.monotonic() - start) * 1000)
+            log.info(
+                "monthly_budget_audit_complete",
+                job=job_name,
+                duration_ms=duration_ms,
+                result="all_categories_tracked",
+            )
+            return
+
+        # Ask Gemini to analyze untracked spending and suggest budgets
+        gemini = GeminiClient(api_key=settings.gemini_api_key)
+        prompt = f"""You are a personal finance assistant for a single user. Analyze their spending data and suggest new budget categories.
+
+CURRENTLY TRACKED BUDGET CATEGORIES:
+{_json.dumps([{"category": s["category"], "spent_last_month": s["total"]} for s in tracked], indent=2)}
+
+UNTRACKED SPENDING (no budget set):
+{_json.dumps(untracked, indent=2)}
+
+Rules:
+- Only suggest categories where last month's spending was $30+ (meaningful enough to track)
+- Suggest a reasonable monthly_limit (round to nearest $25, give ~20% buffer over last month)
+- Keep category names simple, lowercase, one or two words (e.g. "utilities", "health", "education")
+- If multiple small untracked categories could merge into one, suggest the merged name
+- Maximum 3 suggestions
+
+Respond in JSON format:
+{{"suggestions": [{{"category": "name", "monthly_limit": 150, "reason": "You spent $X on Y last month"}}], "summary": "one line summary"}}"""
+
+        response = await gemini.generate(
+            prompt=prompt,
+            model="gemini-2.0-flash",
+            system_instruction="You are T.A.R.S., a personal finance assistant. Be concise and practical.",
+            temperature=0.3,
+            max_output_tokens=512,
+            response_format="json",
+        )
+
+        try:
+            audit_result = _json.loads(response.text)
+        except _json.JSONDecodeError:
+            log.warning("monthly_budget_audit_parse_failed", raw=response.text[:200])
+            audit_result = {"suggestions": [], "summary": "Could not parse AI response"}
+
+        suggestions = audit_result.get("suggestions", [])
+        summary = audit_result.get("summary", "")
+
+        duration_ms = int((time.monotonic() - start) * 1000)
+        log.info(
+            "monthly_budget_audit_complete",
+            job=job_name,
+            duration_ms=duration_ms,
+            suggestions_count=len(suggestions),
+            untracked_categories=len(untracked),
+            summary=summary,
+        )
+
+        # Notify user with suggestions (never auto-create)
+        if suggestions:
+            lines = [f"Monthly Budget Audit — {last_month_start.strftime('%B %Y')}\n"]
+            lines.append(summary)
+            lines.append("")
+            for s in suggestions:
+                lines.append(
+                    f"• {s['category'].title()}: suggest ${s['monthly_limit']}/mo — {s['reason']}"
+                )
+            lines.append("\nTo add: tell me 'set budget [category] to $[amount]'")
+
+            notifier = get_notification_service()
+            await notifier.notify(
+                title="Budget Suggestions Available",
+                body="\n".join(lines),
+                priority="info",
+            )
 
     except Exception:
         duration_ms = int((time.monotonic() - start) * 1000)

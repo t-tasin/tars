@@ -8,10 +8,10 @@ services:
     environment:
       # Database
       DATABASE_URL: postgresql+asyncpg://tars:${POSTGRES_PASSWORD}@tars-db:5432/tars
-      # Redis (Node 2)
-      REDIS_URL: redis://100.119.114.125:6379/0
-      # ChromaDB (Node 2)
-      CHROMADB_URL: http://100.119.114.125:8200
+      # Redis (Node 2 via Tailscale)
+      REDIS_URL: ${REDIS_URL:-redis://100.119.114.125:6379/0}
+      # ChromaDB (Node 2 via Tailscale)
+      CHROMADB_URL: ${CHROMADB_URL:-http://100.119.114.125:8200}
       CHROMA_AUTH_TOKEN: ${CHROMA_AUTH_TOKEN}
       # TARS API
       TARS_API_KEY: ${TARS_API_KEY}
@@ -20,6 +20,7 @@ services:
       GEMINI_API_KEY: ${GEMINI_API_KEY}
       # Telegram
       TELEGRAM_BOT_TOKEN: ${TELEGRAM_BOT_TOKEN}
+      TELEGRAM_CHAT_ID: ${TELEGRAM_CHAT_ID}
       # Gmail (base64-encoded OAuth JSON)
       GMAIL_PERSONAL_CREDENTIALS: ${GMAIL_PERSONAL_CREDENTIALS}
       GMAIL_PROFESSIONAL_CREDENTIALS: ${GMAIL_PROFESSIONAL_CREDENTIALS}
@@ -58,6 +59,7 @@ services:
       DEBUG: "false"
     volumes:
       - ./secrets:/secrets:ro
+      - ./teller:/etc/tars/teller:ro
       - tars-data:/data
     devices:
       - /dev/snd:/dev/snd

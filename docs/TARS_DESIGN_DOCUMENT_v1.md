@@ -77,7 +77,7 @@
 │  │                     │  │ Local   │ │  ┌──────────────────────────┐  │    │
 │  │                     │  │ Handler │ │  │   Integration Layer      │  │    │
 │  │                     │  └─────────┘ │  │   CalDAV, Gmail, GitHub  │  │    │
-│  │                     └──────────────┘  │   Notion, Weather, Plaid │  │    │
+│  │                     └──────────────┘  │   Notion, Weather, Teller│  │    │
 │  │                                       │   Grafana/Loki           │  │    │
 │  └───────────────────────────────────────┴──────────────────────────┘  │    │
 │                                                                             │
@@ -141,7 +141,7 @@
 │  │  CalDAV    │ │  (2 accts) │ │  API       │ │  API       │              │
 │  └────────────┘ └────────────┘ └────────────┘ └────────────┘              │
 │  ┌────────────┐ ┌────────────┐ ┌────────────┐ ┌────────────┐              │
-│  │  Gemini    │ │  OpenWeath │ │  Plaid     │ │  Grafana/  │              │
+│  │  Gemini    │ │  OpenWeath │ │  Teller    │ │  Grafana/  │              │
 │  │  API       │ │  erMap API │ │  API       │ │  Loki API  │              │
 │  └────────────┘ └────────────┘ └────────────┘ └────────────┘              │
 │  ┌────────────┐ ┌────────────┐ ┌────────────┐ ┌────────────┐              │
@@ -218,7 +218,7 @@ iOS App                    Node 1 (Brain)                          Node 2 (Muscl
   │  │  ├─ Grafana (health)    │              │  │ data payload       │      │  speaks briefing
   │  │  ├─ Notion (tasks)      │              │  └────────┬───────────┘      │         │
   │  │  ├─ GitHub (notifs)     │              │           │                  │         ▼
-  │  │  ├─ Plaid (txns)        │              │  Store in briefings table    │  AirPlay → HomePod
+  │  │  ├─ Teller (txns)        │              │  Store in briefings table    │  AirPlay → HomePod
   │  │  ├─ HealthKit cache     │              │  Push notification to iOS    │  Mini plays audio
   │  │  └─ Job matches cache   │              │  "Briefing ready"            │
   │  └─────────────────────────┘              │                              │
@@ -339,7 +339,7 @@ Agent                 Node 1                  iOS App / Telegram       Apple Wat
 | **MCP Servers** | @modelcontextprotocol/* | latest | Claude Code tool access (GitHub, PostgreSQL, Brave Search, filesystem) |
 | **Notifications** | apprise | 1.9+ | Unified alert fan-out (Telegram, email, future channels) |
 | **Notion** | notion-client | 2.x | Notion API integration |
-| **Plaid** | plaid-python | 26.x | Financial transaction access |
+| **Teller** | teller-python (httpx + mTLS) | latest | Read-only financial transaction access |
 | **Weather** | (httpx direct) | — | OpenWeatherMap REST API |
 | **Containerization** | Docker + Docker Compose | 27.x / 2.x | Service deployment |
 | **Tunnel** | cloudflared | latest | Cloudflare Tunnel daemon |
@@ -390,7 +390,7 @@ Agent                 Node 1                  iOS App / Telegram       Apple Wat
 | GitHub API | Personal Access Token | PAT with repo+notifications scope |
 | Gemini API | API Key | Google AI Studio key |
 | Notion API | Integration Token | Internal integration |
-| Plaid API | Client ID + Secret | Plaid Link access token |
+| Teller API | mTLS Certificate + Key | Teller application enrollment |
 | OpenWeatherMap | API Key | Free tier key |
 | Picovoice | Access Key | Porcupine license key |
 | Telegram Bot | Bot Token | BotFather token |
@@ -497,7 +497,7 @@ tars/
 │   │   │   ├── github_client.py      # GitHub REST/GraphQL
 │   │   │   ├── notion_client.py      # Notion API
 │   │   │   ├── weather_client.py     # OpenWeatherMap
-│   │   │   ├── plaid_client.py       # Plaid transactions
+│   │   │   ├── teller_client.py      # Teller transactions (read-only, mTLS)
 │   │   │   ├── grafana_client.py     # Grafana/Loki queries
 │   │   │   ├── telegram_bot.py       # Telegram bot handler
 │   │   │   ├── apns_client.py        # Apple Push Notifications (rich interactive)
@@ -1051,18 +1051,19 @@ CREATE INDEX idx_usage_daily ON model_usage(created_at::date, model);
 
 -- ============================================================
 -- TRANSACTIONS (Financial)
--- Plaid transaction data
+-- Teller.io transaction data (read-only, mTLS)
 -- ============================================================
 CREATE TABLE transactions (
     id              UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    plaid_transaction_id VARCHAR(255) UNIQUE NOT NULL,
-    plaid_account_id VARCHAR(255) NOT NULL,
+    teller_transaction_id VARCHAR(255) UNIQUE NOT NULL,
+    teller_account_id VARCHAR(255) NOT NULL,
     account_name    VARCHAR(100),                  -- e.g., "Chase Checking", "Amex Card"
     merchant_name   VARCHAR(255),
+    counterparty_name VARCHAR(255),                -- Teller counterparty field
     amount          NUMERIC(12, 2) NOT NULL,       -- positive = debit/spend, negative = credit/income
     currency        VARCHAR(3) NOT NULL DEFAULT 'USD',
-    category        VARCHAR(100),                  -- Plaid primary category
-    subcategory     VARCHAR(100),                  -- Plaid detailed category
+    category        VARCHAR(100),                  -- Teller primary category
+    subcategory     VARCHAR(100),                  -- Teller detailed category
     custom_category VARCHAR(100),                  -- T.A.R.S. AI-assigned category override
     is_recurring    BOOLEAN DEFAULT false,
     transaction_date DATE NOT NULL,
@@ -3062,28 +3063,27 @@ class GitHubClient(BaseIntegration):
         ...
 ```
 
-### 11.5 Plaid API
+### 11.5 Teller.io API
 
 ```python
-class PlaidClient(BaseIntegration):
-    # Auth: Plaid Link OAuth flow (user authenticates with bank directly)
-    # T.A.R.S. stores: Plaid access_token (encrypted)
+class TellerClient(BaseIntegration):
+    # Auth: mTLS with client certificate + private key (no OAuth needed)
+    # T.A.R.S. stores: Teller enrollment_id, cert path, key path (encrypted env vars)
     # Access: READ-ONLY — transactions, balances, account metadata
     # Sync: Daily transaction pull at 5:00 AM + on-demand
-    
-    async def get_transactions(self, start_date: date, end_date: date) -> list[Transaction]:
-        request = TransactionsGetRequest(
-            access_token=self.config.plaid_access_token,
-            start_date=start_date,
-            end_date=end_date,
+    # Sandbox mode: no mTLS required (set TELLER_ENV=sandbox)
+
+    async def get_transactions(self, account_id: str) -> list[Transaction]:
+        response = await self._client.get(
+            f"{self.base_url}/accounts/{account_id}/transactions",
         )
-        response = self.plaid_client.transactions_get(request)
-        return [self._map_transaction(t) for t in response.transactions]
-    
+        return [self._normalize(t) for t in response.json()]
+
     # Error handling:
-    # - ITEM_LOGIN_REQUIRED → notify user to re-authenticate via Plaid Link
-    # - RATE_LIMIT → exponential backoff
-    # - TRANSACTIONS_SYNC_MUTATION_DURING_PAGINATION → retry
+    # - 401 → certificate expired or enrollment revoked, notify user
+    # - 429 → exponential backoff (circuit breaker handles)
+    # - Pagination: 40-page safety cap with cursor-based iteration
+    # - Amount sign: Teller returns positive for debits; negated for codebase convention
 ```
 
 ### 11.6 Gemini API (see Section 6.5)
@@ -3527,11 +3527,11 @@ GITHUB_PAT=<personal-access-token>
 # ── Notion ──
 NOTION_TOKEN=<internal-integration-token>
 
-# ── Plaid ──
-PLAID_CLIENT_ID=<plaid-client-id>
-PLAID_SECRET=<plaid-secret>
-PLAID_ACCESS_TOKEN=<plaid-access-token-after-link>
-PLAID_ENV=sandbox  # sandbox | development | production
+# ── Teller.io ──
+TELLER_APP_ID=<teller-application-id>
+TELLER_CERT_PATH=/secrets/teller-cert.pem
+TELLER_KEY_PATH=/secrets/teller-key.pem
+TELLER_ENV=sandbox  # sandbox | production
 
 # ── Weather ──
 OPENWEATHERMAP_API_KEY=<api-key>
@@ -3592,7 +3592,7 @@ via a custom iOS app, Telegram bot, Apple Watch, and "Hey TARS" wake word.
 - HC-01: No outbound communication without explicit user approval
 - HC-02: No code pushed to production without approval
 - HC-03: No data deletion without confirmation
-- HC-04: No financial transactions — read-only Plaid access only
+- HC-04: No financial transactions — read-only Teller.io access only
 - HC-05: No plaintext credentials
 - HC-08: All actions logged and auditable
 

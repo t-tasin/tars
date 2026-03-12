@@ -94,13 +94,13 @@ class TestBuildEnv:
         assert env.get("PATH") == "/usr/bin"
 
     @patch.dict("os.environ", {"GITHUB_PAT": "ghp_secret", "DATABASE_URL": "pg://...", "BRAVE_API_KEY": "brv_key"})
-    def test_research_profile_removes_github_and_db(self, spawner: ClaudeCodeSpawner) -> None:
+    def test_research_profile_removes_github(self, spawner: ClaudeCodeSpawner) -> None:
         env = spawner._build_env("research")
         assert env is not None
-        # research only has brave-search
+        # research has brave-search + postgres
         assert env.get("BRAVE_API_KEY") == "brv_key"
+        assert env.get("DATABASE_URL") == "pg://..."
         assert "GITHUB_PAT" not in env
-        assert "DATABASE_URL" not in env
 
     @patch.dict("os.environ", {"GITHUB_PAT": "ghp_secret"})
     def test_unknown_profile_returns_env_with_all_mcp_keys_removed(self, spawner: ClaudeCodeSpawner) -> None:

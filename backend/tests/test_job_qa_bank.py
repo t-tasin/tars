@@ -87,7 +87,8 @@ class TestSeedDefaultConfig:
         mock_repo_instance.get_all = AsyncMock(return_value={})
         mock_repo_instance.set = AsyncMock()
 
-        with patch("api.config_api.ConfigRepository", return_value=mock_repo_instance):
+        with patch("api.config_api.ConfigRepository", return_value=mock_repo_instance), \
+             patch("api.config_api.seed_default_budgets", new_callable=AsyncMock):
             await seed_default_config(mock_session)
 
         # Every key in DEFAULT_CONFIG should have been set
@@ -109,7 +110,8 @@ class TestSeedDefaultConfig:
         mock_repo_instance.get_all = AsyncMock(return_value=existing_config)
         mock_repo_instance.set = AsyncMock()
 
-        with patch("api.config_api.ConfigRepository", return_value=mock_repo_instance):
+        with patch("api.config_api.ConfigRepository", return_value=mock_repo_instance), \
+             patch("api.config_api.seed_default_budgets", new_callable=AsyncMock):
             await seed_default_config(mock_session)
 
         # Two keys should be skipped
@@ -130,7 +132,8 @@ class TestSeedDefaultConfig:
         mock_repo_instance.get_all = AsyncMock(return_value=existing_config)
         mock_repo_instance.set = AsyncMock()
 
-        with patch("api.config_api.ConfigRepository", return_value=mock_repo_instance):
+        with patch("api.config_api.ConfigRepository", return_value=mock_repo_instance), \
+             patch("api.config_api.seed_default_budgets", new_callable=AsyncMock):
             await seed_default_config(mock_session)
 
         mock_repo_instance.set.assert_not_awaited()
