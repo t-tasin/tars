@@ -23,6 +23,7 @@ log = structlog.get_logger()
 # APNs category identifiers — must match the iOS UNNotificationCategory ids.
 CATEGORY_APPROVAL = "APPROVAL"
 CATEGORY_DEFAULT = "DEFAULT"
+CATEGORY_WORKOUT_REMINDER = "WORKOUT_REMINDER"
 
 
 class APNsClient:
@@ -179,3 +180,37 @@ class APNsClient:
             category=category,
         )
         return successes
+
+    async def send_workout_reminder(
+        self,
+        session_id: str,
+        day_name: str,
+    ) -> int:
+        """Send a workout reminder push to all registered devices.
+
+        Uses the WORKOUT_REMINDER category which provides START_WORKOUT
+        and SKIP_WORKOUT action buttons on iOS.
+
+        Returns the number of successful deliveries.
+        """
+        from db.models import DeviceToken
+        from db.session import get_db_session
+        from sqlalchemy import select
+
+        async with get_db_session() as session:
+            result = await session.execute(
+                select(DeviceToken.token).where(DeviceToken.active == True)  # noqa: E712
+            )
+            tokens = [row[0] for row in result.all()]
+
+        if not tokens:
+            log.debug("workout_reminder_no_devices")
+            return 0
+
+        return await self.send_to_all(
+            device_tokens=tokens,
+            title=f"{day_name.title()} Day — Time to Work Out",
+            body="Your workout is scheduled now. Ready to start?",
+            category=CATEGORY_WORKOUT_REMINDER,
+            custom_data={"session_id": session_id, "day_name": day_name},
+        )

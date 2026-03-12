@@ -120,6 +120,24 @@ def create_scheduler(orchestrator: Orchestrator) -> AsyncIOScheduler:
         kwargs={"orchestrator": orchestrator},
     )
 
+    # Workout: create daily session at 5:30 AM
+    scheduler.add_job(
+        create_daily_workout_session,
+        CronTrigger(hour=5, minute=30),
+        id="create_daily_workout",
+        name="Create Daily Workout Session",
+        kwargs={"orchestrator": orchestrator},
+    )
+
+    # Workout: reminder polling every 5 minutes
+    scheduler.add_job(
+        workout_reminder_poll,
+        IntervalTrigger(minutes=5),
+        id="workout_reminder_poll",
+        name="Workout Reminder Poll",
+        kwargs={"orchestrator": orchestrator},
+    )
+
     log.info(
         "scheduler_jobs_registered",
         jobs=[
@@ -132,6 +150,8 @@ def create_scheduler(orchestrator: Orchestrator) -> AsyncIOScheduler:
             "job_search_scan@02:00",
             "usage_report@23:00",
             "daily_backup@03:00",
+            "create_daily_workout@05:30",
+            "workout_reminder_poll@every_5m",
         ],
     )
 
@@ -401,6 +421,219 @@ async def backup_job(orchestrator: Orchestrator) -> None:
             )
         except Exception:
             log.exception("backup_timeout_notify_failed")
+
+    except Exception:
+        duration_ms = int((time.monotonic() - start) * 1000)
+        log.exception("scheduled_job_failed", job=job_name, duration_ms=duration_ms)
+
+
+async def create_daily_workout_session(orchestrator: Orchestrator) -> None:
+    """Create today's workout session from the active split and calendar."""
+    job_name = "create_daily_workout"
+    log.info("scheduled_job_started", job=job_name)
+    start = time.monotonic()
+
+    try:
+        from db.repositories.workout import WorkoutRepository
+        from db.session import get_db_session
+
+        async with get_db_session() as session:
+            repo = WorkoutRepository(session)
+            split = await repo.get_active_split()
+
+            if split is None:
+                log.info("workout_no_active_split", job=job_name)
+                return
+
+            # Check if session already exists for today
+            existing = await repo.get_today_session()
+            if existing is not None:
+                log.info("workout_session_already_exists", job=job_name)
+                return
+
+            # Determine today's rotation day
+            from db.models import WorkoutSession
+            from sqlalchemy import select
+
+            last_result = await session.execute(
+                select(WorkoutSession)
+                .where(WorkoutSession.split_id == split.id)
+                .order_by(WorkoutSession.created_at.desc())
+                .limit(1)
+            )
+            last_session = last_result.scalar_one_or_none()
+
+            if last_session is not None:
+                next_index = (last_session.rotation_index + 1) % len(split.rotation_days)
+            else:
+                next_index = 0
+
+            day_name = split.rotation_days[next_index]
+
+            # Skip creating a session for rest days
+            if day_name.lower() == "rest":
+                log.info("workout_rest_day", job=job_name, day_name=day_name)
+                duration_ms = int((time.monotonic() - start) * 1000)
+                log.info("scheduled_job_completed", job=job_name, duration_ms=duration_ms)
+                return
+
+            # Try to get scheduled time from calendar
+            scheduled_at = None
+            try:
+                from config import get_settings
+                from datetime import date as date_type
+                from integrations.caldav_client import CalDAVClient
+
+                settings = get_settings()
+                caldav = CalDAVClient(
+                    username=settings.icloud_caldav_user,
+                    password=settings.icloud_caldav_password,
+                )
+                today_events = await caldav.get_events(date_type.today())
+
+                gym_keywords = ("gym", "workout", "exercise", "fitness", "lift", "training")
+                for event in today_events:
+                    title = str(event.get("title", "")).lower()
+                    if any(kw in title for kw in gym_keywords):
+                        start_str = event.get("start", "")
+                        if start_str:
+                            from datetime import datetime as dt
+                            scheduled_at = dt.fromisoformat(start_str)
+                            break
+            except Exception:
+                log.warning("workout_calendar_lookup_failed", exc_info=True)
+
+            await repo.create_session(
+                split_id=split.id,
+                day_name=day_name,
+                rotation_index=next_index,
+                scheduled_at=scheduled_at,
+            )
+
+        duration_ms = int((time.monotonic() - start) * 1000)
+        log.info(
+            "scheduled_job_completed",
+            job=job_name,
+            duration_ms=duration_ms,
+            day_name=day_name,
+            scheduled_at=str(scheduled_at) if scheduled_at else None,
+        )
+
+    except Exception:
+        duration_ms = int((time.monotonic() - start) * 1000)
+        log.exception("scheduled_job_failed", job=job_name, duration_ms=duration_ms)
+
+
+async def workout_reminder_poll(orchestrator: Orchestrator) -> None:
+    """Poll for pending workout sessions past their scheduled time and send nudges."""
+    job_name = "workout_reminder_poll"
+    log.info("scheduled_job_started", job=job_name)
+    start = time.monotonic()
+
+    try:
+        import json as _json
+        from datetime import datetime, timezone
+
+        from db.repositories.workout import WorkoutRepository
+        from db.session import get_db_session
+
+        async with get_db_session() as session:
+            repo = WorkoutRepository(session)
+            pending = await repo.get_pending_sessions_past_schedule()
+
+            now = datetime.now(timezone.utc)
+
+            for pending_session in pending:
+                if pending_session.scheduled_at is None:
+                    continue
+
+                elapsed = now - pending_session.scheduled_at
+                elapsed_minutes = elapsed.total_seconds() / 60
+
+                # Track which nudges have been sent via notes field (JSON)
+                nudge_state = _json.loads(pending_session.notes or '{"sent": []}')
+                sent = set(nudge_state.get("sent", []))
+
+                if elapsed_minutes >= 90 and "auto_skip" not in sent:
+                    # Auto-skip
+                    await repo.skip_session(pending_session.id, reason="no response")
+                    log.info(
+                        "workout_auto_skipped",
+                        session_id=str(pending_session.id),
+                        elapsed_min=int(elapsed_minutes),
+                    )
+                    try:
+                        from integrations.notification_service import get_notification_service
+                        notifier = get_notification_service()
+                        await notifier.notify_alert(
+                            title="Workout Skipped",
+                            body=f"No response for {pending_session.day_name} day. Session auto-skipped. Streak broken.",
+                            severity="warning",
+                        )
+                    except Exception:
+                        log.warning("workout_skip_notify_failed", exc_info=True)
+
+                elif elapsed_minutes >= 60 and "nudge_60" not in sent:
+                    # Second nudge
+                    sent.add("nudge_60")
+                    pending_session.notes = _json.dumps({"sent": list(sent)})
+                    await session.flush()
+                    try:
+                        from integrations.notification_service import get_notification_service
+                        notifier = get_notification_service()
+                        await notifier.notify_alert(
+                            title=f"Last chance — {pending_session.day_name.title()} Day",
+                            body="You have 30 minutes before this gets marked as skipped. Get moving.",
+                            severity="warning",
+                        )
+                    except Exception:
+                        log.warning("workout_nudge_failed", exc_info=True)
+
+                elif elapsed_minutes >= 30 and "nudge_30" not in sent:
+                    # First nudge
+                    sent.add("nudge_30")
+                    pending_session.notes = _json.dumps({"sent": list(sent)})
+                    await session.flush()
+                    try:
+                        from integrations.notification_service import get_notification_service
+                        notifier = get_notification_service()
+                        await notifier.notify(
+                            title=f"{pending_session.day_name.title()} Day — Still Waiting",
+                            body="Workout was scheduled. Starting now or skipping?",
+                            priority="info",
+                        )
+                    except Exception:
+                        log.warning("workout_nudge_failed", exc_info=True)
+
+                elif elapsed_minutes >= 0 and "reminder" not in sent:
+                    # Initial reminder (workout time arrived)
+                    sent.add("reminder")
+                    pending_session.notes = _json.dumps({"sent": list(sent)})
+                    await session.flush()
+                    try:
+                        from integrations.apns_client import APNsClient
+                        from config import get_settings
+                        settings = get_settings()
+                        apns = APNsClient(
+                            key_path=settings.apns_key_path,
+                            key_id=settings.apns_key_id,
+                            team_id=settings.apns_team_id,
+                            bundle_id=settings.apns_bundle_id,
+                        )
+                        await apns.send_workout_reminder(
+                            session_id=str(pending_session.id),
+                            day_name=pending_session.day_name,
+                        )
+                    except Exception:
+                        log.warning("workout_apns_reminder_failed", exc_info=True)
+
+        duration_ms = int((time.monotonic() - start) * 1000)
+        log.info(
+            "scheduled_job_completed",
+            job=job_name,
+            duration_ms=duration_ms,
+            pending_sessions=len(pending),
+        )
 
     except Exception:
         duration_ms = int((time.monotonic() - start) * 1000)
