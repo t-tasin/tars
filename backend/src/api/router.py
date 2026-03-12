@@ -17,6 +17,7 @@ from src.api.jobs import router as jobs_router
 from src.api.messages import router as messages_router
 from src.api.wardrobe import router as wardrobe_router
 from src.api.websocket import router as websocket_router
+from src.api.workout import router as workout_router
 from src.api.device_tokens import router as device_tokens_router
 
 router = APIRouter()
@@ -34,4 +35,5 @@ router.include_router(deploy_router)
 router.include_router(jobs_router)
 router.include_router(health_data_router)
 router.include_router(contacts_router)
+router.include_router(workout_router)
 router.include_router(device_tokens_router)
