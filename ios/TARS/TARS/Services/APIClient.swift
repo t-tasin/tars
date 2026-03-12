@@ -326,6 +326,94 @@ final class APIClient: ObservableObject {
     }
 }
 
+// MARK: - Workout endpoints
+
+extension Endpoint {
+    static func createSplit(_ body: CreateSplitRequest) -> Endpoint {
+        .custom(path: "/api/v1/workout/splits", method: "POST", body: body)
+    }
+
+    static var activeSplit: Endpoint {
+        .custom(path: "/api/v1/workout/splits/active", method: "GET")
+    }
+
+    static func todaySession() -> Endpoint {
+        .custom(path: "/api/v1/workout/sessions/today", method: "GET")
+    }
+
+    static func startSession(_ sessionId: String) -> Endpoint {
+        .custom(path: "/api/v1/workout/sessions/\(sessionId)/start", method: "POST")
+    }
+
+    static func skipSession(_ sessionId: String, reason: String) -> Endpoint {
+        .custom(path: "/api/v1/workout/sessions/\(sessionId)/skip", method: "POST", body: SkipSessionBody(reason: reason))
+    }
+
+    static func completeSession(_ sessionId: String) -> Endpoint {
+        .custom(path: "/api/v1/workout/sessions/\(sessionId)/complete", method: "POST")
+    }
+
+    static func logSet(_ body: LogSetBody) -> Endpoint {
+        .custom(path: "/api/v1/workout/logs", method: "POST", body: body)
+    }
+
+    static var workoutStreak: Endpoint {
+        .custom(path: "/api/v1/workout/streak", method: "GET")
+    }
+}
+
+// MARK: - Workout models
+
+struct CreateSplitRequest: Codable, Sendable {
+    let name: String
+    let rotationDays: [String]
+    let exercises: [CreateExerciseBody]
+}
+
+struct CreateExerciseBody: Codable, Sendable {
+    let dayName: String
+    let exerciseName: String
+    let targetSets: Int
+    let targetReps: Int
+    let currentWeight: Double
+    let weightUnit: String
+    let weightIncrement: Double
+}
+
+struct SkipSessionBody: Codable, Sendable {
+    let reason: String
+}
+
+struct LogSetBody: Codable, Sendable {
+    let sessionId: String
+    let exerciseId: String
+    let setNumber: Int
+    let actualReps: Int
+    let actualWeight: Double
+}
+
+struct WorkoutSessionResponse: Codable, Sendable {
+    let id: String
+    let dayName: String
+    let status: String
+    let logs: [WorkoutLogResponse]
+}
+
+struct WorkoutLogResponse: Codable, Sendable, Identifiable {
+    let id: String
+    let exerciseId: String
+    let setNumber: Int
+    let targetReps: Int
+    let targetWeight: Double
+    let actualReps: Int?
+    let actualWeight: Double?
+}
+
+struct StreakResponseModel: Codable, Sendable {
+    let streak: Int
+    let recentSkips: [[String: String]]
+}
+
 // MARK: - Type-erased Encodable wrapper
 
 private struct AnyEncodable: Encodable {
