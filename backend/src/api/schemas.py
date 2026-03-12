@@ -264,3 +264,103 @@ class BudgetListResponse(BaseModel):
 
 class ErrorResponse(BaseModel):
     error: ErrorDetail
+
+
+# ---------------------------------------------------------------------------
+# Workout schemas
+# ---------------------------------------------------------------------------
+
+
+class CreateExerciseSchema(BaseModel):
+    day_name: str
+    exercise_name: str
+    target_sets: int = Field(gt=0)
+    target_reps: int = Field(gt=0)
+    current_weight: float = Field(ge=0)
+    weight_unit: str = "lbs"
+    weight_increment: float = 2.5
+
+
+class CreateSplitRequest(BaseModel):
+    name: str = Field(min_length=1)
+    rotation_days: list[str] = Field(min_length=1)
+    exercises: list[CreateExerciseSchema]
+
+
+class UpdateSplitRequest(BaseModel):
+    name: str | None = None
+    rotation_days: list[str] | None = None
+
+
+class LogSetRequest(BaseModel):
+    session_id: UUID
+    exercise_id: UUID
+    set_number: int = Field(gt=0)
+    actual_reps: int = Field(ge=0)
+    actual_weight: float = Field(ge=0)
+
+
+class SkipSessionRequest(BaseModel):
+    reason: str = Field(min_length=1)
+
+
+class ExerciseDetail(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: UUID
+    day_name: str
+    exercise_name: str
+    target_sets: int
+    target_reps: int
+    current_weight: float
+    weight_unit: str
+    weight_increment: float
+    order_index: int
+
+
+class SplitDetail(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: UUID
+    name: str
+    rotation_days: list[str]
+    active: bool
+    exercises: list[ExerciseDetail] = []
+
+
+class LogDetail(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: UUID
+    exercise_id: UUID
+    set_number: int
+    target_reps: int
+    target_weight: float
+    actual_reps: int | None
+    actual_weight: float | None
+    logged_at: datetime | None
+
+
+class SessionDetail(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: UUID
+    split_id: UUID
+    day_name: str
+    rotation_index: int
+    scheduled_at: datetime | None
+    status: str
+    skip_reason: str | None
+    started_at: datetime | None
+    completed_at: datetime | None
+    logs: list[LogDetail] = []
+
+
+class StreakResponse(BaseModel):
+    streak: int
+    recent_skips: list[dict[str, Any]]
+
+
+class WorkoutHistoryResponse(BaseModel):
+    logs: list[LogDetail]
+    total: int
