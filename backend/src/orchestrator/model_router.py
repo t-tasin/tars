@@ -43,6 +43,7 @@ class ModelRouter:
         IntentType.EMAIL_CLASSIFIER: ModelRoute(model=ModelName.GEMINI_FLASH, node="node1"),
         IntentType.FASHION: ModelRoute(model=ModelName.GEMINI_VISION, node="node1"),
         IntentType.HEALTH_FITNESS: ModelRoute(model=ModelName.GEMINI_FLASH, node="node1"),
+        IntentType.WORKOUT_TRACKER: ModelRoute(model=ModelName.GEMINI_FLASH, node="node1"),
         IntentType.FINANCE: ModelRoute(model=ModelName.GEMINI_FLASH, node="node1"),
         # Gemini default, Claude escalation on high complexity
         IntentType.BRIEFING: ModelRoute(model=ModelName.GEMINI_PRO, node="node1"),

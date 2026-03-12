@@ -40,6 +40,7 @@ _COMMAND_MAP: dict[str, Intent] = {
     "/outfit": Intent(agent=IntentType.FASHION, action="outfit"),
     "/deploy": Intent(agent=IntentType.SYSTEM, action="deploy"),
     "/help": Intent(agent=IntentType.GENERAL, action="help"),
+    "/workout": Intent(agent=IntentType.WORKOUT_TRACKER),
 }
 
 # ---------------------------------------------------------------------------
@@ -90,7 +91,14 @@ _INTENT_RULES: list[tuple[re.Pattern[str], Intent]] = [
         Intent(agent=IntentType.FINANCE),
     ),
     (
-        re.compile(r"sleep|steps|workout|gym|exercise|health|fitness", re.IGNORECASE),
+        re.compile(
+            r"set\s+\d|reps?\b.*\b(done|complete)|workout\s*(split|routine|log)?|gym|exercise|progressive\s+overload",
+            re.IGNORECASE,
+        ),
+        Intent(agent=IntentType.WORKOUT_TRACKER),
+    ),
+    (
+        re.compile(r"sleep|steps|health|fitness", re.IGNORECASE),
         Intent(agent=IntentType.HEALTH_FITNESS),
     ),
 ]
