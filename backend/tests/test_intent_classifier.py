@@ -165,9 +165,9 @@ class TestKeywordMatching:
         "message, expected_agent",
         [
             ("How was my sleep last night?", IntentType.HEALTH_FITNESS),
-            ("Log my workout", IntentType.HEALTH_FITNESS),
+            ("Log my workout", IntentType.WORKOUT_TRACKER),
             ("How many steps today?", IntentType.HEALTH_FITNESS),
-            ("Track my gym session", IntentType.HEALTH_FITNESS),
+            ("Track my gym session", IntentType.WORKOUT_TRACKER),
         ],
     )
     def test_health_fitness(self, classifier: IntentClassifier, message: str, expected_agent: str) -> None:
