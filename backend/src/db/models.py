@@ -30,6 +30,7 @@ from shared.constants import (
     RiskTier,
     TaskPriority,
     TaskStatus,
+    WorkoutSessionStatus,
 )
 
 
@@ -579,6 +580,117 @@ class HealthData(Base):
     source: Mapped[str | None] = mapped_column(String(30), server_default=text("'healthkit'"))
     synced_at: Mapped[datetime] = mapped_column(TIMESTAMP(timezone=True), nullable=False, server_default=text("now()"))
     created_at: Mapped[datetime] = _created_at()
+
+
+# ---------------------------------------------------------------------------
+# 21. WorkoutSplit
+# ---------------------------------------------------------------------------
+
+class WorkoutSplit(Base):
+    __tablename__ = "workout_splits"
+    __table_args__ = (
+        Index("idx_splits_active", "active", postgresql_where=text("active = true")),
+    )
+
+    id: Mapped[uuid.UUID] = _uuid_pk()
+    name: Mapped[str] = mapped_column(String(100), nullable=False)
+    rotation_days: Mapped[list] = mapped_column(JSONB, nullable=False)
+    active: Mapped[bool] = mapped_column(Boolean, nullable=False, server_default=text("false"))
+    created_at: Mapped[datetime] = _created_at()
+    updated_at: Mapped[datetime] = _updated_at()
+
+    # relationships
+    exercises: Mapped[list[WorkoutExercise]] = relationship(back_populates="split", cascade="save-update, merge")
+    sessions: Mapped[list[WorkoutSession]] = relationship(back_populates="split")
+
+
+# ---------------------------------------------------------------------------
+# 22. WorkoutExercise
+# ---------------------------------------------------------------------------
+
+class WorkoutExercise(Base):
+    __tablename__ = "workout_exercises"
+    __table_args__ = (
+        Index("idx_exercises_split_day", "split_id", "day_name"),
+    )
+
+    id: Mapped[uuid.UUID] = _uuid_pk()
+    split_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("workout_splits.id", ondelete="RESTRICT"), nullable=False)
+    day_name: Mapped[str] = mapped_column(String(30), nullable=False)
+    exercise_name: Mapped[str] = mapped_column(String(100), nullable=False)
+    target_sets: Mapped[int] = mapped_column(Integer, nullable=False)
+    target_reps: Mapped[int] = mapped_column(Integer, nullable=False)
+    current_weight: Mapped[Decimal] = mapped_column(Numeric(8, 2), nullable=False)
+    weight_unit: Mapped[str] = mapped_column(String(5), nullable=False, server_default=text("'lbs'"))
+    weight_increment: Mapped[Decimal] = mapped_column(Numeric(8, 2), nullable=False, server_default=text("2.5"))
+    order_index: Mapped[int] = mapped_column(Integer, nullable=False, server_default=text("0"))
+    created_at: Mapped[datetime] = _created_at()
+    updated_at: Mapped[datetime] = _updated_at()
+
+    # relationships
+    split: Mapped[WorkoutSplit] = relationship(back_populates="exercises")
+    logs: Mapped[list[WorkoutLog]] = relationship(back_populates="exercise")
+
+
+# ---------------------------------------------------------------------------
+# 23. WorkoutSession
+# ---------------------------------------------------------------------------
+
+class WorkoutSession(Base):
+    __tablename__ = "workout_sessions"
+    __table_args__ = (
+        Index("idx_sessions_status", "status", postgresql_where=text("status = 'pending'")),
+        Index("idx_sessions_date", "created_at"),
+        Index("idx_sessions_split", "split_id", "created_at"),
+    )
+
+    id: Mapped[uuid.UUID] = _uuid_pk()
+    split_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("workout_splits.id", ondelete="RESTRICT"), nullable=False)
+    day_name: Mapped[str] = mapped_column(String(30), nullable=False)
+    rotation_index: Mapped[int] = mapped_column(Integer, nullable=False)
+    scheduled_at: Mapped[datetime | None] = mapped_column(TIMESTAMP(timezone=True))
+    status: Mapped[WorkoutSessionStatus] = mapped_column(
+        default=WorkoutSessionStatus.PENDING,
+        server_default=text("'pending'"),
+    )
+    skip_reason: Mapped[str | None] = mapped_column(Text)
+    started_at: Mapped[datetime | None] = mapped_column(TIMESTAMP(timezone=True))
+    completed_at: Mapped[datetime | None] = mapped_column(TIMESTAMP(timezone=True))
+    notes: Mapped[str | None] = mapped_column(Text)
+    created_at: Mapped[datetime] = _created_at()
+    updated_at: Mapped[datetime] = _updated_at()
+
+    # relationships
+    split: Mapped[WorkoutSplit] = relationship(back_populates="sessions")
+    logs: Mapped[list[WorkoutLog]] = relationship(back_populates="session", cascade="save-update, merge")
+
+
+# ---------------------------------------------------------------------------
+# 24. WorkoutLog
+# ---------------------------------------------------------------------------
+
+class WorkoutLog(Base):
+    __tablename__ = "workout_logs"
+    __table_args__ = (
+        Index("idx_logs_session", "session_id"),
+        Index("idx_logs_exercise_date", "exercise_id", "created_at"),
+    )
+
+    id: Mapped[uuid.UUID] = _uuid_pk()
+    session_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("workout_sessions.id", ondelete="RESTRICT"), nullable=False)
+    exercise_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("workout_exercises.id", ondelete="RESTRICT"), nullable=False)
+    set_number: Mapped[int] = mapped_column(Integer, nullable=False)
+    target_reps: Mapped[int] = mapped_column(Integer, nullable=False)
+    target_weight: Mapped[Decimal] = mapped_column(Numeric(8, 2), nullable=False)
+    actual_reps: Mapped[int | None] = mapped_column(Integer)
+    actual_weight: Mapped[Decimal | None] = mapped_column(Numeric(8, 2))
+    logged_at: Mapped[datetime | None] = mapped_column(TIMESTAMP(timezone=True))
+    created_at: Mapped[datetime] = _created_at()
+    updated_at: Mapped[datetime] = _updated_at()
+
+    # relationships
+    session: Mapped[WorkoutSession] = relationship(back_populates="logs")
+    exercise: Mapped[WorkoutExercise] = relationship(back_populates="logs")
 
 
 # ---------------------------------------------------------------------------
