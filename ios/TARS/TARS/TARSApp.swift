@@ -80,6 +80,23 @@ final class AppDelegate: NSObject, UIApplicationDelegate, UNUserNotificationCent
             return
         }
 
+        // Workout reminder notifications
+        if userInfo["type"] as? String == "workout_reminder" {
+            let sessionId = userInfo["session_id"] as? String
+            switch actionIdentifier {
+            case "START_WORKOUT":
+                if let sessionId {
+                    await handleWorkoutStart(sessionId: sessionId)
+                }
+            case "SKIP_WORKOUT":
+                // Skip action — the app will prompt for a reason in the UI
+                break
+            default:
+                break
+            }
+            return
+        }
+
         // Approval notifications
         guard let approvalId = userInfo["approval_id"] as? String else { return }
 
@@ -106,6 +123,16 @@ final class AppDelegate: NSObject, UIApplicationDelegate, UNUserNotificationCent
             }
         } catch {
             print("Approval action failed for \(approvalId): \(error.localizedDescription)")
+        }
+    }
+
+    // MARK: - Workout action handler
+
+    private func handleWorkoutStart(sessionId: String) async {
+        do {
+            let _: [String: String] = try await APIClient.shared.request(.startSession(sessionId))
+        } catch {
+            print("Workout start failed for \(sessionId): \(error.localizedDescription)")
         }
     }
 
@@ -148,7 +175,22 @@ final class AppDelegate: NSObject, UIApplicationDelegate, UNUserNotificationCent
                 actions: [approveAction, rejectAction],
                 intentIdentifiers: []
             )
-            UNUserNotificationCenter.current().setNotificationCategories([approvalCategory])
+            let startWorkoutAction = UNNotificationAction(
+                identifier: "START_WORKOUT",
+                title: "Start",
+                options: [.foreground]
+            )
+            let skipWorkoutAction = UNNotificationAction(
+                identifier: "SKIP_WORKOUT",
+                title: "Skip",
+                options: [.destructive, .foreground]
+            )
+            let workoutCategory = UNNotificationCategory(
+                identifier: "WORKOUT_REMINDER",
+                actions: [startWorkoutAction, skipWorkoutAction],
+                intentIdentifiers: []
+            )
+            UNUserNotificationCenter.current().setNotificationCategories([approvalCategory, workoutCategory])
 
             DispatchQueue.main.async {
                 UIApplication.shared.registerForRemoteNotifications()
