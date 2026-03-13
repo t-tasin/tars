@@ -41,16 +41,16 @@ def upgrade() -> None:
         postgresql_where=sa.text("active = true"),
     )
 
-    # Apply the updated_at trigger
+    # Apply the updated_at trigger (function created in 001_initial_schema)
     op.execute("""
-        CREATE TRIGGER set_updated_at_device_tokens
+        CREATE TRIGGER set_updated_at
         BEFORE UPDATE ON device_tokens
         FOR EACH ROW
-        EXECUTE FUNCTION update_updated_at_column();
+        EXECUTE FUNCTION trigger_set_updated_at();
     """)
 
 
 def downgrade() -> None:
-    op.execute("DROP TRIGGER IF EXISTS set_updated_at_device_tokens ON device_tokens;")
+    op.execute("DROP TRIGGER IF EXISTS set_updated_at ON device_tokens;")
     op.drop_index("idx_device_tokens_active", table_name="device_tokens")
     op.drop_table("device_tokens")
