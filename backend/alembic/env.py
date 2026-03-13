@@ -17,8 +17,16 @@ from src.db.models import Base
 # without this patch the ORM metadata's enum types (registered via
 # Base.metadata import) fire before_create events that duplicate the
 # CREATE TYPE statements and cause "type already exists" errors.
-_sqltypes.Enum._on_table_create = lambda self, target, bind, **kw: None
-_sqltypes.Enum._on_metadata_create = lambda self, target, bind, **kw: None
+# NOTE: Functions must keep original names because SQLAlchemy's
+# portable_instancemethod looks them up by __name__ at call time.
+def _on_table_create(self, target, bind, **kw):  # noqa: ARG001
+    pass
+
+def _on_metadata_create(self, target, bind, **kw):  # noqa: ARG001
+    pass
+
+_sqltypes.Enum._on_table_create = _on_table_create
+_sqltypes.Enum._on_metadata_create = _on_metadata_create
 
 config = context.config
 
