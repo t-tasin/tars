@@ -20,12 +20,16 @@ depends_on: str | None = None
 
 
 def upgrade() -> None:
-    # Create ENUM type
+    # Create ENUM type (raw SQL with duplicate-safe handling)
+    op.execute("""
+        DO $$ BEGIN
+            CREATE TYPE workout_session_status AS ENUM ('pending','active','completed','skipped');
+        EXCEPTION WHEN duplicate_object THEN NULL; END $$
+    """)
     workout_status = sa.Enum(
         "pending", "active", "completed", "skipped",
         name="workout_session_status", create_type=False,
     )
-    workout_status.create(op.get_bind(), checkfirst=True)
 
     # 1. workout_splits
     op.create_table(

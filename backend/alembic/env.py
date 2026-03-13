@@ -8,8 +8,17 @@ from alembic import context
 from sqlalchemy import pool
 from sqlalchemy.engine import Connection
 from sqlalchemy.ext.asyncio import async_engine_from_config
+import sqlalchemy.sql.sqltypes as _sqltypes
 
 from src.db.models import Base
+
+# Prevent SQLAlchemy from auto-creating PostgreSQL enum types during
+# op.create_table() in migrations.  Migrations handle enum DDL explicitly;
+# without this patch the ORM metadata's enum types (registered via
+# Base.metadata import) fire before_create events that duplicate the
+# CREATE TYPE statements and cause "type already exists" errors.
+_sqltypes.Enum._on_table_create = lambda self, target, bind, **kw: None
+_sqltypes.Enum._on_metadata_create = lambda self, target, bind, **kw: None
 
 config = context.config
 

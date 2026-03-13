@@ -60,14 +60,42 @@ def upgrade() -> None:
     op.execute("CREATE EXTENSION IF NOT EXISTS pgcrypto")
     op.execute("CREATE EXTENSION IF NOT EXISTS pg_trgm")
 
-    # -- Enum types ---------------------------------------------------------
-    task_status.create(op.get_bind(), checkfirst=True)
-    task_priority.create(op.get_bind(), checkfirst=True)
-    approval_status.create(op.get_bind(), checkfirst=True)
-    risk_tier.create(op.get_bind(), checkfirst=True)
-    email_tier.create(op.get_bind(), checkfirst=True)
-    job_status.create(op.get_bind(), checkfirst=True)
-    health_status.create(op.get_bind(), checkfirst=True)
+    # -- Enum types (raw SQL with duplicate-safe handling) ------------------
+    op.execute("""
+        DO $$ BEGIN
+            CREATE TYPE task_status AS ENUM ('pending','running','completed','failed','cancelled');
+        EXCEPTION WHEN duplicate_object THEN NULL; END $$
+    """)
+    op.execute("""
+        DO $$ BEGIN
+            CREATE TYPE task_priority AS ENUM ('critical','high','normal','low');
+        EXCEPTION WHEN duplicate_object THEN NULL; END $$
+    """)
+    op.execute("""
+        DO $$ BEGIN
+            CREATE TYPE approval_status AS ENUM ('pending','approved','rejected','edited','expired','executed');
+        EXCEPTION WHEN duplicate_object THEN NULL; END $$
+    """)
+    op.execute("""
+        DO $$ BEGIN
+            CREATE TYPE risk_tier AS ENUM ('tier1_autonomous','tier2_approval','tier3_escalation');
+        EXCEPTION WHEN duplicate_object THEN NULL; END $$
+    """)
+    op.execute("""
+        DO $$ BEGIN
+            CREATE TYPE email_tier AS ENUM ('urgent','actionable','informational','noise');
+        EXCEPTION WHEN duplicate_object THEN NULL; END $$
+    """)
+    op.execute("""
+        DO $$ BEGIN
+            CREATE TYPE job_status AS ENUM ('new','saved','applying','applied','interview','offer','rejected','skipped','expired');
+        EXCEPTION WHEN duplicate_object THEN NULL; END $$
+    """)
+    op.execute("""
+        DO $$ BEGIN
+            CREATE TYPE health_status AS ENUM ('green','yellow','red','unknown');
+        EXCEPTION WHEN duplicate_object THEN NULL; END $$
+    """)
 
     # ======================================================================
     # 1. conversations
