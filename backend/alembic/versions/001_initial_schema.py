@@ -26,32 +26,32 @@ depends_on: str | None = None
 # ---------------------------------------------------------------------------
 task_status = sa.Enum(
     "pending", "running", "completed", "failed", "cancelled",
-    name="task_status",
+    name="task_status", create_type=False,
 )
 task_priority = sa.Enum(
     "critical", "high", "normal", "low",
-    name="task_priority",
+    name="task_priority", create_type=False,
 )
 approval_status = sa.Enum(
     "pending", "approved", "rejected", "edited", "expired", "executed",
-    name="approval_status",
+    name="approval_status", create_type=False,
 )
 risk_tier = sa.Enum(
     "tier1_autonomous", "tier2_approval", "tier3_escalation",
-    name="risk_tier",
+    name="risk_tier", create_type=False,
 )
 email_tier = sa.Enum(
     "urgent", "actionable", "informational", "noise",
-    name="email_tier",
+    name="email_tier", create_type=False,
 )
 job_status = sa.Enum(
     "new", "saved", "applying", "applied", "interview",
     "offer", "rejected", "skipped", "expired",
-    name="job_status",
+    name="job_status", create_type=False,
 )
 health_status = sa.Enum(
     "green", "yellow", "red", "unknown",
-    name="health_status",
+    name="health_status", create_type=False,
 )
 
 

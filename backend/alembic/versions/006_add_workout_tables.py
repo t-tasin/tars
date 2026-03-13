@@ -23,7 +23,7 @@ def upgrade() -> None:
     # Create ENUM type
     workout_status = sa.Enum(
         "pending", "active", "completed", "skipped",
-        name="workout_session_status",
+        name="workout_session_status", create_type=False,
     )
     workout_status.create(op.get_bind(), checkfirst=True)
 
