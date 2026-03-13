@@ -8,14 +8,15 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     portaudio19-dev \
     && rm -rf /var/lib/apt/lists/*
 
-COPY pyproject.toml .
+COPY backend/pyproject.toml .
+COPY backend/src/ src/
 RUN pip install --no-cache-dir .
 
-COPY src/ src/
-COPY alembic.ini .
-COPY alembic/ alembic/
+COPY backend/alembic.ini .
+COPY backend/alembic/ alembic/
+COPY shared/ /app/shared/
 
-ENV PYTHONPATH=/app/src
+ENV PYTHONPATH=/app/src:/app
 
 EXPOSE 8000
 

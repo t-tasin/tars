@@ -47,7 +47,7 @@ services:
       - tars-net
 
   tars-worker:
-    image: ghcr.io/tasin/tars-worker:latest
+    image: ghcr.io/t-tasin/tars-worker:latest
     container_name: tars-worker
     restart: unless-stopped
     environment:

@@ -1,6 +1,6 @@
 services:
   tars-backend:
-    image: ghcr.io/tasin/tars-backend:latest
+    image: ghcr.io/t-tasin/tars-backend:latest
     container_name: tars-backend
     restart: unless-stopped
     ports:

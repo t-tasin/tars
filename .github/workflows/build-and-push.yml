@@ -6,6 +6,7 @@ on:
     paths:
       - "backend/**"
       - "worker/**"
+      - "shared/**"
       - "deploy/**"
   workflow_dispatch:
 
@@ -39,7 +40,7 @@ jobs:
           IMAGE_NAME: ghcr.io/${{ github.repository_owner }}/tars-backend
           SHA_TAG: ${{ github.sha }}
         with:
-          context: ./backend
+          context: .
           file: backend/Dockerfile
           push: true
           tags: |
