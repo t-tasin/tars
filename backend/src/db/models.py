@@ -36,14 +36,17 @@ from shared.constants import (
 
 # Reusable SQLAlchemy Enum types with create_type=False so that
 # migrations (not ORM metadata) are the sole owner of PG enum DDL.
-_task_status_enum = Enum(TaskStatus, name="task_status", create_type=False)
-_task_priority_enum = Enum(TaskPriority, name="task_priority", create_type=False)
-_approval_status_enum = Enum(ApprovalStatus, name="approval_status", create_type=False)
-_risk_tier_enum = Enum(RiskTier, name="risk_tier", create_type=False)
-_email_tier_enum = Enum(EmailTier, name="email_tier", create_type=False)
-_job_status_enum = Enum(JobStatus, name="job_status", create_type=False)
-_health_status_enum = Enum(HealthStatus, name="health_status", create_type=False)
-_workout_session_status_enum = Enum(WorkoutSessionStatus, name="workout_session_status", create_type=False)
+# values_callable ensures SQLAlchemy sends lowercase VALUES ("pending")
+# instead of uppercase member NAMES ("PENDING") to PostgreSQL.
+_enum_values = staticmethod(lambda e: [m.value for m in e])
+_task_status_enum = Enum(TaskStatus, name="task_status", create_type=False, values_callable=_enum_values)
+_task_priority_enum = Enum(TaskPriority, name="task_priority", create_type=False, values_callable=_enum_values)
+_approval_status_enum = Enum(ApprovalStatus, name="approval_status", create_type=False, values_callable=_enum_values)
+_risk_tier_enum = Enum(RiskTier, name="risk_tier", create_type=False, values_callable=_enum_values)
+_email_tier_enum = Enum(EmailTier, name="email_tier", create_type=False, values_callable=_enum_values)
+_job_status_enum = Enum(JobStatus, name="job_status", create_type=False, values_callable=_enum_values)
+_health_status_enum = Enum(HealthStatus, name="health_status", create_type=False, values_callable=_enum_values)
+_workout_session_status_enum = Enum(WorkoutSessionStatus, name="workout_session_status", create_type=False, values_callable=_enum_values)
 
 
 # ---------------------------------------------------------------------------

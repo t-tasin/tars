@@ -47,7 +47,7 @@ class GeminiClient:
     async def generate(
         self,
         prompt: str,
-        model: str = "gemini-2.0-flash",
+        model: str = "gemini-2.5-flash",
         system_instruction: str | None = None,
         temperature: float = 0.7,
         max_output_tokens: int = 2048,
@@ -57,7 +57,7 @@ class GeminiClient:
 
         Args:
             prompt: User prompt / content.
-            model: Model name (e.g. ``gemini-2.0-flash``, ``gemini-2.0-pro``).
+            model: Model name (e.g. ``gemini-2.5-flash``, ``gemini-2.5-pro``).
             system_instruction: Optional system-level instruction.
             temperature: Sampling temperature.
             max_output_tokens: Max tokens in the response.
@@ -77,7 +77,7 @@ class GeminiClient:
         self,
         prompt: str,
         images: list[bytes],
-        model: str = "gemini-2.0-flash",
+        model: str = "gemini-2.5-flash",
         system_instruction: str | None = None,
     ) -> GeminiResponse:
         """Generate text with image input.
@@ -116,7 +116,7 @@ class GeminiClient:
         )
         response = await self.generate(
             prompt=prompt,
-            model="gemini-2.0-flash",
+            model="gemini-2.5-flash",
             system_instruction=system_instruction,
             temperature=0.0,
             max_output_tokens=64,

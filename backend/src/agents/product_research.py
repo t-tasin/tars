@@ -110,7 +110,7 @@ class ProductResearchAgent(BaseAgent):
         try:
             response = await gemini.generate(
                 prompt=prompt,
-                model="gemini-2.0-pro",
+                model="gemini-2.5-pro",
                 system_instruction=_SYSTEM_PROMPT,
                 temperature=0.4,
                 max_output_tokens=4096,

@@ -33,9 +33,9 @@ log = structlog.get_logger()
 
 # Gemini model name mapping: internal label → API model ID
 _GEMINI_MODEL_IDS: dict[str, str] = {
-    ModelName.GEMINI_FLASH: "gemini-2.0-flash",
-    ModelName.GEMINI_PRO: "gemini-2.0-pro",
-    ModelName.GEMINI_VISION: "gemini-2.0-flash",
+    ModelName.GEMINI_FLASH: "gemini-2.5-flash",
+    ModelName.GEMINI_PRO: "gemini-2.5-pro",
+    ModelName.GEMINI_VISION: "gemini-2.5-flash",
 }
 
 
@@ -368,7 +368,7 @@ class Orchestrator:
         context: AgentContext,
     ) -> AgentResult:
         """Call Gemini directly as a conversational fallback."""
-        model_id = _GEMINI_MODEL_IDS.get(route.model, "gemini-2.0-flash")
+        model_id = _GEMINI_MODEL_IDS.get(route.model, "gemini-2.5-flash")
         try:
             response = await self.gemini_client.generate(
                 prompt=context.user_message,

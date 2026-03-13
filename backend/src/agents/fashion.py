@@ -158,7 +158,7 @@ class FashionAgent(BaseAgent):
         try:
             response = await self._gemini.generate(
                 prompt=prompt,
-                model="gemini-2.0-pro",
+                model="gemini-2.5-pro",
                 system_instruction=_SUGGEST_SYSTEM_PROMPT,
                 temperature=0.7,
                 response_format="json",
@@ -252,7 +252,7 @@ class FashionAgent(BaseAgent):
             response = await self._gemini.generate_with_vision(
                 prompt="Analyze this clothing item. Return the analysis as JSON.",
                 images=[image_bytes],
-                model="gemini-2.0-flash",
+                model="gemini-2.5-flash",
                 system_instruction=_CATALOG_SYSTEM_PROMPT,
             )
 
@@ -353,7 +353,7 @@ class FashionAgent(BaseAgent):
         try:
             response = await self._gemini.generate(
                 prompt=prompt,
-                model="gemini-2.0-pro",
+                model="gemini-2.5-pro",
                 system_instruction=_SHOPPING_SYSTEM_PROMPT,
                 temperature=0.7,
                 max_output_tokens=2048,

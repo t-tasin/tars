@@ -569,7 +569,7 @@ class FinanceAgent(BaseAgent):
         try:
             response = await gemini.generate(
                 prompt=prompt,
-                model="gemini-2.0-flash",
+                model="gemini-2.5-flash",
                 system_instruction=_FINANCE_SYSTEM_PROMPT,
                 temperature=0.3,
                 max_output_tokens=256,

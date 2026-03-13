@@ -137,7 +137,7 @@ class WorkoutTrackerAgent(BaseAgent):
         try:
             response = await gemini.generate(
                 prompt=prompt,
-                model="gemini-2.0-flash",
+                model="gemini-2.5-flash",
                 temperature=0.1,
                 max_output_tokens=256,
             )

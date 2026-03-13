@@ -385,7 +385,7 @@ class DailyLifeAgent(BaseAgent):
         try:
             response = await gemini.generate(
                 prompt=prompt,
-                model="gemini-2.0-flash",
+                model="gemini-2.5-flash",
                 system_instruction=_SYSTEM_PROMPT,
                 temperature=0.0,
                 max_output_tokens=512,
@@ -427,7 +427,7 @@ class DailyLifeAgent(BaseAgent):
         try:
             response = await gemini.generate(
                 prompt=prompt,
-                model="gemini-2.0-flash",
+                model="gemini-2.5-flash",
                 system_instruction=_SYSTEM_PROMPT,
                 temperature=0.0,
                 max_output_tokens=256,
@@ -462,7 +462,7 @@ class DailyLifeAgent(BaseAgent):
         try:
             response = await gemini.generate(
                 prompt=prompt,
-                model="gemini-2.0-flash",
+                model="gemini-2.5-flash",
                 system_instruction=_SYSTEM_PROMPT,
                 temperature=0.0,
                 max_output_tokens=256,

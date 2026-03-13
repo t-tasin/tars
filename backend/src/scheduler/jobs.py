@@ -748,7 +748,7 @@ Respond in JSON format:
 
         response = await gemini.generate(
             prompt=prompt,
-            model="gemini-2.0-flash",
+            model="gemini-2.5-flash",
             system_instruction="You are T.A.R.S., a personal finance assistant. Be concise and practical.",
             temperature=0.3,
             max_output_tokens=512,

@@ -400,7 +400,7 @@ class EODSummaryAgent(BaseAgent):
         try:
             response = await gemini.generate(
                 prompt=prompt,
-                model="gemini-2.0-pro",
+                model="gemini-2.5-pro",
                 system_instruction=_NARRATIVE_SYSTEM_PROMPT,
                 temperature=0.7,
                 max_output_tokens=2048,
