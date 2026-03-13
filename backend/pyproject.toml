@@ -39,6 +39,7 @@ dependencies = [
     "cryptography>=42.0",
     "psutil>=6.0",
     "python-jobspy>=1.1.0",
+    "python-multipart>=0.0.9",
 ]
 
 [project.optional-dependencies]
