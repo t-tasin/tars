@@ -9,6 +9,7 @@ from decimal import Decimal
 from sqlalchemy import (
     Boolean,
     Date,
+    Enum,
     Float,
     ForeignKey,
     Index,
@@ -32,6 +33,17 @@ from shared.constants import (
     TaskStatus,
     WorkoutSessionStatus,
 )
+
+# Reusable SQLAlchemy Enum types with create_type=False so that
+# migrations (not ORM metadata) are the sole owner of PG enum DDL.
+_task_status_enum = Enum(TaskStatus, name="task_status", create_type=False)
+_task_priority_enum = Enum(TaskPriority, name="task_priority", create_type=False)
+_approval_status_enum = Enum(ApprovalStatus, name="approval_status", create_type=False)
+_risk_tier_enum = Enum(RiskTier, name="risk_tier", create_type=False)
+_email_tier_enum = Enum(EmailTier, name="email_tier", create_type=False)
+_job_status_enum = Enum(JobStatus, name="job_status", create_type=False)
+_health_status_enum = Enum(HealthStatus, name="health_status", create_type=False)
+_workout_session_status_enum = Enum(WorkoutSessionStatus, name="workout_session_status", create_type=False)
 
 
 # ---------------------------------------------------------------------------
@@ -123,8 +135,8 @@ class AgentTask(Base):
     id: Mapped[uuid.UUID] = _uuid_pk()
     agent_type: Mapped[str] = mapped_column(String(50), nullable=False)
     model_used: Mapped[str | None] = mapped_column(String(30))
-    status: Mapped[TaskStatus] = mapped_column(default=TaskStatus.PENDING, server_default=text("'pending'"))
-    priority: Mapped[TaskPriority] = mapped_column(default=TaskPriority.NORMAL, server_default=text("'normal'"))
+    status: Mapped[TaskStatus] = mapped_column(_task_status_enum, default=TaskStatus.PENDING, server_default=text("'pending'"))
+    priority: Mapped[TaskPriority] = mapped_column(_task_priority_enum, default=TaskPriority.NORMAL, server_default=text("'normal'"))
     input_payload: Mapped[dict] = mapped_column(JSONB, nullable=False)
     output_payload: Mapped[dict | None] = mapped_column(JSONB)
     error_message: Mapped[str | None] = mapped_column(Text)
@@ -157,8 +169,8 @@ class Approval(Base):
     id: Mapped[uuid.UUID] = _uuid_pk()
     task_id: Mapped[uuid.UUID | None] = mapped_column(ForeignKey("agent_tasks.id"))
     action_type: Mapped[str] = mapped_column(String(50), nullable=False)
-    risk_tier: Mapped[RiskTier] = mapped_column(nullable=False)
-    status: Mapped[ApprovalStatus] = mapped_column(default=ApprovalStatus.PENDING, server_default=text("'pending'"))
+    risk_tier: Mapped[RiskTier] = mapped_column(_risk_tier_enum, nullable=False)
+    status: Mapped[ApprovalStatus] = mapped_column(_approval_status_enum, default=ApprovalStatus.PENDING, server_default=text("'pending'"))
     title: Mapped[str] = mapped_column(String(255), nullable=False)
     preview_payload: Mapped[dict] = mapped_column(JSONB, nullable=False)
     edited_payload: Mapped[dict | None] = mapped_column(JSONB)
@@ -219,10 +231,10 @@ class EmailClassification(Base):
     from_name: Mapped[str | None] = mapped_column(String(255))
     subject: Mapped[str | None] = mapped_column(String(500))
     snippet: Mapped[str | None] = mapped_column(Text)
-    classified_tier: Mapped[EmailTier] = mapped_column(nullable=False)
+    classified_tier: Mapped[EmailTier] = mapped_column(_email_tier_enum, nullable=False)
     confidence: Mapped[float | None] = mapped_column(Float)
     model_used: Mapped[str] = mapped_column(String(30), nullable=False)
-    user_correction: Mapped[EmailTier | None] = mapped_column()
+    user_correction: Mapped[EmailTier | None] = mapped_column(_email_tier_enum)
     correction_at: Mapped[datetime | None] = mapped_column(TIMESTAMP(timezone=True))
     contact_id: Mapped[uuid.UUID | None] = mapped_column(ForeignKey("contacts.id"))
     received_at: Mapped[datetime] = mapped_column(TIMESTAMP(timezone=True), nullable=False)
@@ -307,7 +319,7 @@ class SystemHealthLog(Base):
 
     id: Mapped[uuid.UUID] = _uuid_pk()
     target: Mapped[str] = mapped_column(String(50), nullable=False)
-    status: Mapped[HealthStatus] = mapped_column(nullable=False)
+    status: Mapped[HealthStatus] = mapped_column(_health_status_enum, nullable=False)
     response_time_ms: Mapped[int | None] = mapped_column(Integer)
     details: Mapped[dict | None] = mapped_column(JSONB)
     checked_at: Mapped[datetime] = mapped_column(TIMESTAMP(timezone=True), nullable=False, server_default=text("now()"))
@@ -355,7 +367,7 @@ class JobListing(Base):
     salary_range: Mapped[str | None] = mapped_column(String(100))
     description: Mapped[str | None] = mapped_column(Text)
     url: Mapped[str] = mapped_column(Text, nullable=False)
-    status: Mapped[JobStatus] = mapped_column(default=JobStatus.NEW, server_default=text("'new'"))
+    status: Mapped[JobStatus] = mapped_column(_job_status_enum, default=JobStatus.NEW, server_default=text("'new'"))
     match_score: Mapped[int | None] = mapped_column(Integer)
     match_reasons: Mapped[list] = mapped_column(JSONB, nullable=False, server_default=text("'[]'::jsonb"))
     concerns: Mapped[list] = mapped_column(JSONB, nullable=False, server_default=text("'[]'::jsonb"))
@@ -650,6 +662,7 @@ class WorkoutSession(Base):
     rotation_index: Mapped[int] = mapped_column(Integer, nullable=False)
     scheduled_at: Mapped[datetime | None] = mapped_column(TIMESTAMP(timezone=True))
     status: Mapped[WorkoutSessionStatus] = mapped_column(
+        _workout_session_status_enum,
         default=WorkoutSessionStatus.PENDING,
         server_default=text("'pending'"),
     )
