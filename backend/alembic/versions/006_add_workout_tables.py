@@ -105,28 +105,19 @@ def upgrade() -> None:
     op.create_index("idx_logs_session", "workout_logs", ["session_id"])
     op.create_index("idx_logs_exercise_date", "workout_logs", ["exercise_id", sa.text("created_at DESC")])
 
-    # Auto-update triggers for updated_at
+    # Reuse trigger_set_updated_at() from 001_initial_schema
     for table in ("workout_splits", "workout_exercises", "workout_sessions", "workout_logs"):
         op.execute(f"""
-            CREATE OR REPLACE FUNCTION update_{table}_updated_at()
-            RETURNS TRIGGER AS $$
-            BEGIN
-                NEW.updated_at = now();
-                RETURN NEW;
-            END;
-            $$ LANGUAGE plpgsql;
-
-            CREATE TRIGGER trg_{table}_updated_at
-                BEFORE UPDATE ON {table}
-                FOR EACH ROW
-                EXECUTE FUNCTION update_{table}_updated_at();
+            CREATE TRIGGER set_updated_at
+            BEFORE UPDATE ON {table}
+            FOR EACH ROW
+            EXECUTE FUNCTION trigger_set_updated_at()
         """)
 
 
 def downgrade() -> None:
     for table in ("workout_logs", "workout_sessions", "workout_exercises", "workout_splits"):
-        op.execute(f"DROP TRIGGER IF EXISTS trg_{table}_updated_at ON {table}")
-        op.execute(f"DROP FUNCTION IF EXISTS update_{table}_updated_at()")
+        op.execute(f"DROP TRIGGER IF EXISTS set_updated_at ON {table}")
         op.drop_table(table)
 
     op.execute("DROP TYPE IF EXISTS workout_session_status")
