@@ -58,6 +58,20 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None]:
     )
     init_notification_service(telegram_gateway=telegram, apns_client=apns_client)
 
+    # Start Telegram polling (incoming messages + callbacks)
+    from src.integrations.telegram_handlers import create_telegram_application
+
+    tg_app = None
+    if settings.telegram_bot_token and settings.telegram_chat_id:
+        tg_app = create_telegram_application(
+            bot_token=settings.telegram_bot_token,
+            chat_id=settings.telegram_chat_id,
+        )
+        await tg_app.initialize()
+        await tg_app.start()
+        await tg_app.updater.start_polling(drop_pending_updates=True)
+        log.info("telegram_polling_started")
+
     # Start the orchestrator, register agents, and start scheduler
     orchestrator = get_orchestrator()
     _register_agents(orchestrator)
@@ -93,6 +107,13 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None]:
         except asyncio.CancelledError:
             pass
         log.info("wake_word_daemon_stopped")
+
+    # Shutdown Telegram polling
+    if tg_app is not None:
+        await tg_app.updater.stop()
+        await tg_app.stop()
+        await tg_app.shutdown()
+        log.info("telegram_polling_stopped")
 
     scheduler.shutdown(wait=False)
     log.info("scheduler_stopped")
