@@ -9,6 +9,7 @@ User=tasin
 Group=tasin
 WorkingDirectory=/opt/tars/backend
 EnvironmentFile=/opt/tars/deploy/node1/.env
+Environment=PYTHONPATH=/opt/tars/backend/src:/opt/tars
 ExecStart=/opt/tars/backend/.venv/bin/uvicorn src.main:app --host 0.0.0.0 --port 8000 --loop uvloop --workers 1
 Restart=on-failure
 RestartSec=5
