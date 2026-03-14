@@ -60,7 +60,7 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
 
     try:
         # Lazy import to avoid circular dependencies
-        from orchestrator.engine import get_orchestrator
+        from src.orchestrator.engine import get_orchestrator
 
         orchestrator = get_orchestrator()
         response = await orchestrator.process_message(text=text, source="telegram")
@@ -149,8 +149,8 @@ async def _handle_approval_callback(
 
     try:
         # Lazy imports to avoid circular dependencies
-        from db.session import get_db_session
-        from orchestrator.engine import get_orchestrator
+        from src.db.session import get_db_session
+        from src.orchestrator.engine import get_orchestrator
 
         orchestrator = get_orchestrator()
         approval_manager = orchestrator.approval_manager
@@ -194,13 +194,13 @@ async def _handle_approval_callback(
 async def _handle_job_callback(query: Any, action: str, job_id: str) -> None:
     """Process job apply / skip / details callbacks."""
     try:
-        from integrations.telegram_job_handlers import (
+        from src.integrations.telegram_job_handlers import (
             handle_job_apply,
             handle_job_details,
             handle_job_skip,
             send_job_details_message,
         )
-        from integrations.notification_service import get_notification_service
+        from src.integrations.notification_service import get_notification_service
 
         if action == "apply":
             result = await handle_job_apply(job_id)
