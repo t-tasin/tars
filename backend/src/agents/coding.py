@@ -1,12 +1,22 @@
-"""Coding/DevOps agent — dispatches code tasks to Node 2 via Redis job queue.
+"""Coding/DevOps agent — handles code tasks via local pipeline or Node 2.
 
-Workflow:
+Simple tasks are dispatched to Node 2 via Redis job queue.  Complex tasks
+(refactors, new features, migrations, etc.) use the local multi-agent
+coding pipeline that plans, executes, reviews, and tests via multiple
+Claude Code CLI invocations.
+
+Workflow (simple):
     1. Parse the coding request (repo URL, branch, task description)
     2. Dispatch a job to Node 2 via Redis queue
     3. Node 2 spins up a Docker container, clones the repo, injects CLAUDE.md
     4. Claude Code runs with MCP servers (GitHub + filesystem)
     5. Results (diff, test output) returned via Redis pub/sub
     6. Any code push / PR creation requires explicit approval (HC-02)
+
+Workflow (complex — pipeline):
+    1. Parse the coding request
+    2. Run CodingPipeline locally (plan → execute → review → test)
+    3. Results returned as approval-gated AgentResult (HC-02)
 """
 
 from __future__ import annotations
@@ -21,9 +31,22 @@ from uuid import uuid4
 import structlog
 
 from agents.base import AgentContext, AgentResult, BaseAgent
+from agents.coding_pipeline import CodingPipeline
 from config import get_settings
 
 log = structlog.get_logger()
+
+# Keywords that indicate a complex task requiring the multi-agent pipeline.
+_COMPLEX_KEYWORDS = (
+    "refactor", "implement", "add feature", "build", "create", "migrate",
+    "redesign", "rewrite", "add oauth", "add auth", "add api", "new endpoint",
+)
+
+
+def _is_complex_task(description: str) -> bool:
+    """Return True if the task description suggests a complex coding job."""
+    lower = description.lower()
+    return any(kw in lower for kw in _COMPLEX_KEYWORDS)
 
 # How long to wait for a code execution job to complete (seconds).
 _JOB_TIMEOUT = 300
@@ -82,6 +105,10 @@ class CodingAgent(BaseAgent):
         repo_url = parsed["repo_url"]
         branch = parsed["branch"]
         task = parsed["task"]
+
+        # Route complex tasks to the multi-agent pipeline
+        if repo_url and task and _is_complex_task(task):
+            return await self._run_pipeline(repo_url, task, branch, context)
 
         if not repo_url:
             return AgentResult(
@@ -233,6 +260,97 @@ class CodingAgent(BaseAgent):
                 "files_changed": files_changed,
                 "duration_ms": result.get("duration_ms", 0),
                 "cost_usd": result.get("cost_usd", 0.0),
+            },
+        )
+
+    # ------------------------------------------------------------------
+    # Multi-agent pipeline (complex tasks)
+    # ------------------------------------------------------------------
+
+    async def _run_pipeline(
+        self,
+        repo_url: str,
+        task: str,
+        branch: str,
+        context: AgentContext,
+    ) -> AgentResult:
+        """Run the multi-agent coding pipeline for complex tasks."""
+        log.info(
+            "coding_pipeline_start",
+            repo_url=repo_url,
+            branch=branch,
+            task=task[:200],
+        )
+
+        pipeline = CodingPipeline()
+
+        # Build a notify callback for progress updates
+        async def _notify(phase: str, message: str) -> None:
+            log.info("coding_pipeline_progress", phase=phase, message=message)
+
+        try:
+            result = await pipeline.run(
+                repo_url=repo_url,
+                task_description=task,
+                branch=branch,
+                notify_callback=_notify,
+            )
+        except Exception:
+            log.exception("coding_pipeline_error")
+            return AgentResult(
+                success=False,
+                text="The coding pipeline encountered an unexpected error.",
+                error="pipeline_error",
+            )
+
+        if not result.success:
+            log.error("coding_pipeline_failed", error=result.error)
+            return AgentResult(
+                success=False,
+                text=f"The coding pipeline failed: {result.error}",
+                error="pipeline_failed",
+                data={"plan_summary": result.plan_summary},
+            )
+
+        # Pipeline succeeded — require approval before any push/PR (HC-02)
+        preview = {
+            "repo": repo_url,
+            "branch": branch,
+            "work_branch": result.branch_name,
+            "task": task,
+            "plan_summary": result.plan_summary,
+            "tasks_completed": result.tasks_completed,
+            "tasks_total": result.tasks_total,
+            "review_passed": result.review_passed,
+            "tests_passed": result.tests_passed,
+            "diff_stats": result.diff_stats,
+        }
+
+        log.info(
+            "coding_pipeline_complete",
+            branch=result.branch_name,
+            tasks_completed=result.tasks_completed,
+            tasks_total=result.tasks_total,
+        )
+
+        return AgentResult(
+            success=True,
+            text=(
+                f"Pipeline completed: {result.tasks_completed}/{result.tasks_total} "
+                f"tasks done. Review {'passed' if result.review_passed else 'failed'}. "
+                f"Tests {'passed' if result.tests_passed else 'failed'}.\n\n"
+                f"**Plan:** {result.plan_summary}\n"
+                f"**Branch:** `{result.branch_name}`\n"
+                f"**Changes:** {result.diff_stats}"
+            ),
+            content_type="approval",
+            has_side_effects=True,
+            action_type="create_pr",
+            approval_title=f"Create PR for: {task[:80]}",
+            preview=preview,
+            data={
+                "model": "claude_code",
+                "pipeline": True,
             },
         )
 
