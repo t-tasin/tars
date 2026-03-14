@@ -90,6 +90,16 @@ class Settings(BaseSettings):
     # --- Brave Search ---
     brave_api_key: str = ""
 
+    # --- Coding Pipeline ---
+    coding_max_plan_turns: int = 10
+    coding_max_worker_turns: int = 15
+    coding_max_review_turns: int = 5
+    coding_max_retries: int = 2
+    coding_repo_base_path: str = "/data/repos"
+
+    # --- Telegram ---
+    telegram_polling: bool = True
+
     # --- System ---
     node_role: str = "brain"
     log_level: str = "INFO"

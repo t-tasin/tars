@@ -1,0 +1,26 @@
+[Unit]
+Description=T.A.R.S. Backend API
+After=network.target docker.service
+Requires=docker.service
+
+[Service]
+Type=exec
+User=tasin
+Group=tasin
+WorkingDirectory=/opt/tars/backend
+EnvironmentFile=/opt/tars/deploy/node1/.env
+ExecStart=/opt/tars/backend/.venv/bin/uvicorn src.main:app --host 0.0.0.0 --port 8000 --loop uvloop --workers 1
+Restart=on-failure
+RestartSec=5
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=tars-backend
+
+NoNewPrivileges=true
+ProtectSystem=strict
+ReadWritePaths=/opt/tars /data
+PrivateTmp=true
+SupplementaryGroups=audio
+
+[Install]
+WantedBy=multi-user.target
