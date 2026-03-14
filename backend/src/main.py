@@ -58,8 +58,9 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None]:
     )
     init_notification_service(telegram_gateway=telegram, apns_client=apns_client)
 
-    # Start the orchestrator and scheduler
+    # Start the orchestrator, register agents, and start scheduler
     orchestrator = get_orchestrator()
+    _register_agents(orchestrator)
     scheduler = create_scheduler(orchestrator)
     scheduler.start()
     log.info("tars_online", node_role=settings.node_role, scheduler="started")
@@ -107,3 +108,41 @@ app = FastAPI(
 )
 
 app.include_router(router)
+
+
+def _register_agents(orchestrator: object) -> None:
+    """Instantiate and register all agents with the orchestrator."""
+    from src.agents.briefing import BriefingAgent
+    from src.agents.coding import CodingAgent
+    from src.agents.communication import CommunicationAgent
+    from src.agents.daily_life import DailyLifeAgent
+    from src.agents.email_classifier import EmailClassifierAgent
+    from src.agents.eod_summary import EODSummaryAgent
+    from src.agents.fashion import FashionAgent
+    from src.agents.finance import FinanceAgent
+    from src.agents.health_fitness import HealthFitnessAgent
+    from src.agents.health_monitor import HealthMonitorAgent
+    from src.agents.job_search import JobSearchAgent
+    from src.agents.product_research import ProductResearchAgent
+    from src.agents.research import ResearchAgent
+    from src.agents.workout_tracker import WorkoutTrackerAgent
+
+    agents = [
+        BriefingAgent(),
+        EmailClassifierAgent(),
+        CommunicationAgent(),
+        DailyLifeAgent(),
+        JobSearchAgent(),
+        FashionAgent(),
+        ProductResearchAgent(),
+        CodingAgent(),
+        ResearchAgent(),
+        HealthMonitorAgent(),
+        FinanceAgent(),
+        HealthFitnessAgent(),
+        EODSummaryAgent(),
+        WorkoutTrackerAgent(),
+    ]
+
+    for agent in agents:
+        orchestrator.register_agent(agent)
