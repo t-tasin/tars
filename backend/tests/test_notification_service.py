@@ -2,16 +2,10 @@
 
 from __future__ import annotations
 
-import sys
 from typing import Any
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
-
-# Ensure `telegram` module is available (may not be installed in test env)
-if "telegram" not in sys.modules:
-    _telegram_mock = MagicMock()
-    sys.modules["telegram"] = _telegram_mock
 
 from integrations.notification_service import NotificationService
 

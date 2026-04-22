@@ -68,7 +68,7 @@ async def test_generate_returns_gemini_response(client: GeminiClient, mock_genai
 
     assert isinstance(result, GeminiResponse)
     assert result.text == "hello"
-    assert result.model == "gemini-2.0-flash"
+    assert result.model == "gemini-2.5-flash"
     assert result.tokens_input == 10
     assert result.tokens_output == 20
     assert result.duration_ms >= 0

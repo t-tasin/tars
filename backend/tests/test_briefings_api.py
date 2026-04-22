@@ -2,9 +2,6 @@
 
 from __future__ import annotations
 
-import sys
-import types
-from typing import Any
 from unittest.mock import AsyncMock, MagicMock
 
 import pytest
@@ -68,30 +65,9 @@ class TestTelegramSplitting:
 # Tests: TelegramGateway.deliver_briefing
 # ---------------------------------------------------------------------------
 
-class _FakeInlineKeyboardButton:
-    def __init__(self, text: str, **kwargs: Any) -> None:
-        self.text = text
-        self.callback_data = kwargs.get("callback_data")
-
-
-class _FakeInlineKeyboardMarkup:
-    def __init__(self, inline_keyboard: Any) -> None:
-        self.inline_keyboard = inline_keyboard
-
-
-def _install_telegram_mock() -> None:
-    """Install a fake telegram module so deliver_briefing can import it."""
-    fake_telegram = types.ModuleType("telegram")
-    fake_telegram.InlineKeyboardButton = _FakeInlineKeyboardButton  # type: ignore[attr-defined]
-    fake_telegram.InlineKeyboardMarkup = _FakeInlineKeyboardMarkup  # type: ignore[attr-defined]
-    fake_telegram.Bot = MagicMock  # type: ignore[attr-defined]
-    sys.modules["telegram"] = fake_telegram
-
-
 class TestDeliverBriefing:
     @pytest.mark.asyncio
     async def test_deliver_morning_briefing(self) -> None:
-        _install_telegram_mock()
         from integrations.telegram_bot import TelegramGateway
 
         gateway = TelegramGateway(bot_token="fake", chat_id="123")
@@ -113,7 +89,6 @@ class TestDeliverBriefing:
 
     @pytest.mark.asyncio
     async def test_deliver_eod_briefing(self) -> None:
-        _install_telegram_mock()
         from integrations.telegram_bot import TelegramGateway
 
         gateway = TelegramGateway(bot_token="fake", chat_id="123")
@@ -134,7 +109,6 @@ class TestDeliverBriefing:
 
     @pytest.mark.asyncio
     async def test_briefing_includes_keyboard(self) -> None:
-        _install_telegram_mock()
         from integrations.telegram_bot import TelegramGateway
 
         gateway = TelegramGateway(bot_token="fake", chat_id="123")
