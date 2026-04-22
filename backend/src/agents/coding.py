@@ -1,16 +1,17 @@
 """Coding/DevOps agent — handles code tasks via local pipeline or Node 2.
 
-Simple tasks are dispatched to Node 2 via Redis job queue.  Complex tasks
-(refactors, new features, migrations, etc.) use the local multi-agent
-coding pipeline that plans, executes, reviews, and tests via multiple
-Claude Code CLI invocations.
+Simple tasks are dispatched to Node 2 via the shared :class:`JobQueue`
+(sorted-set enqueue on ``tars:jobs:queue``; results on
+``tars:jobs:results``).  Complex tasks (refactors, new features,
+migrations, etc.) use the local multi-agent coding pipeline that plans,
+executes, reviews, and tests via multiple Claude Code CLI invocations.
 
 Workflow (simple):
     1. Parse the coding request (repo URL, branch, task description)
-    2. Dispatch a job to Node 2 via Redis queue
+    2. Dispatch a ``code`` job via JobQueue
     3. Node 2 spins up a Docker container, clones the repo, injects CLAUDE.md
     4. Claude Code runs with MCP servers (GitHub + filesystem)
-    5. Results (diff, test output) returned via Redis pub/sub
+    5. Results returned on the shared results pub/sub channel
     6. Any code push / PR creation requires explicit approval (HC-02)
 
 Workflow (complex — pipeline):
@@ -21,10 +22,7 @@ Workflow (complex — pipeline):
 
 from __future__ import annotations
 
-import json
 import re
-import time
-from typing import Any
 from uuid import uuid4
 
 import structlog
@@ -32,6 +30,7 @@ import structlog
 from agents.base import AgentContext, AgentResult, BaseAgent
 from agents.coding_pipeline import CodingPipeline
 from config import get_settings
+from integrations.job_queue import JobQueue, get_job_queue
 
 log = structlog.get_logger()
 
@@ -61,9 +60,8 @@ def _is_complex_task(description: str) -> bool:
 # How long to wait for a code execution job to complete (seconds).
 _JOB_TIMEOUT = 300
 
-# Redis key prefixes for the coding job queue.
-_QUEUE_KEY = "tars:jobs:code"
-_RESULT_CHANNEL_PREFIX = "tars:results:code:"
+# Worker executor type for coding jobs (CodeExecutor.EXECUTOR_TYPE).
+_JOB_TYPE = "code"
 
 # Default branch to operate on when none is specified.
 _DEFAULT_BRANCH = "main"
@@ -83,24 +81,19 @@ class CodingAgent(BaseAgent):
 
     agent_type = "coding"
 
-    def __init__(self) -> None:
+    def __init__(self, job_queue: JobQueue | None = None) -> None:
         self._settings = get_settings()
-        self._redis: Any | None = None
+        self._job_queue = job_queue
 
     # ------------------------------------------------------------------
-    # Redis connection (lazy)
+    # JobQueue (lazy)
     # ------------------------------------------------------------------
 
-    async def _get_redis(self) -> Any:
-        """Return a shared async Redis connection (lazy-initialised)."""
-        if self._redis is None:
-            import redis.asyncio as aioredis
-
-            self._redis = aioredis.from_url(
-                self._settings.redis_url,
-                decode_responses=True,
-            )
-        return self._redis
+    def _get_queue(self) -> JobQueue:
+        """Return a shared :class:`JobQueue` (lazy-initialised)."""
+        if self._job_queue is None:
+            self._job_queue = get_job_queue(self._settings.redis_url)
+        return self._job_queue
 
     # ------------------------------------------------------------------
     # Public API
@@ -138,11 +131,10 @@ class CodingAgent(BaseAgent):
                 error="no_task",
             )
 
-        # 2. Build job payload
+        # 2. Build job payload (executor reads: repo_url, branch, task,
+        #    github_pat, timeout — see worker CodeExecutor).
         job_id = str(uuid4())
-        job_payload = {
-            "job_id": job_id,
-            "type": "code_execution",
+        payload = {
             "repo_url": repo_url,
             "branch": branch,
             "task": task,
@@ -150,10 +142,9 @@ class CodingAgent(BaseAgent):
             "mcp_profile": "coding",
             "max_turns": 10,
             "timeout": _JOB_TIMEOUT - 30,  # leave margin for cleanup
-            "created_at": time.time(),
         }
 
-        # 3. Dispatch to Node 2 via Redis queue
+        # 3. Dispatch via JobQueue (ZADD tars:jobs:queue).
         log.info(
             "coding_job_dispatching",
             job_id=job_id,
@@ -163,7 +154,13 @@ class CodingAgent(BaseAgent):
         )
 
         try:
-            result = await self._dispatch_and_wait(job_id, job_payload)
+            message = await self._get_queue().enqueue_and_wait(
+                _JOB_TYPE,
+                payload,
+                priority="normal",
+                timeout=_JOB_TIMEOUT,
+                job_id=job_id,
+            )
         except TimeoutError:
             log.error("coding_job_timeout", job_id=job_id, timeout=_JOB_TIMEOUT)
             return AgentResult(
@@ -182,7 +179,9 @@ class CodingAgent(BaseAgent):
                 error="dispatch_error",
             )
 
-        # 4. Process result
+        # 4. Process result.  The worker wraps the executor's output as
+        # ``{"job_id", "type", "result", "duration_ms"}``.
+        result = message.get("result") or {}
         if not result.get("success"):
             error_msg = result.get("error", "unknown error")
             log.error("coding_job_failed", job_id=job_id, error=error_msg)
@@ -360,48 +359,6 @@ class CodingAgent(BaseAgent):
                 "pipeline": True,
             },
         )
-
-    # ------------------------------------------------------------------
-    # Job dispatch + wait
-    # ------------------------------------------------------------------
-
-    async def _dispatch_and_wait(
-        self,
-        job_id: str,
-        payload: dict[str, Any],
-    ) -> dict[str, Any]:
-        """Push job to Redis queue and wait for result on pub/sub channel.
-
-        Raises ``TimeoutError`` if the worker doesn't respond in time.
-        """
-        r = await self._get_redis()
-        result_channel = f"{_RESULT_CHANNEL_PREFIX}{job_id}"
-
-        # Subscribe to the result channel BEFORE pushing the job so we
-        # don't miss the response.
-        pubsub = r.pubsub()
-        await pubsub.subscribe(result_channel)
-
-        try:
-            # Push job onto the queue (LPUSH so the worker BRPOP's FIFO).
-            await r.lpush(_QUEUE_KEY, json.dumps(payload))
-
-            log.info("coding_job_dispatched", job_id=job_id, queue=_QUEUE_KEY)
-
-            # Wait for the result message.
-            deadline = time.monotonic() + _JOB_TIMEOUT
-            while time.monotonic() < deadline:
-                message = await pubsub.get_message(
-                    ignore_subscribe_messages=True,
-                    timeout=5.0,
-                )
-                if message and message["type"] == "message":
-                    return json.loads(message["data"])
-
-            raise TimeoutError(f"No result for job {job_id} within {_JOB_TIMEOUT}s")
-        finally:
-            await pubsub.unsubscribe(result_channel)
-            await pubsub.aclose()
 
 
 # ---------------------------------------------------------------------------
