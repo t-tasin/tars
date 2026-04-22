@@ -1,40 +1,15 @@
 services:
-  redis:
-    image: redis:7-alpine
-    container_name: tars-redis
-    restart: unless-stopped
-    command: redis-server --maxmemory 2gb --maxmemory-policy allkeys-lru --appendonly yes
-    ports:
-      - "6379:6379"
-    volumes:
-      - redis-data:/data
-    healthcheck:
-      test: ["CMD", "redis-cli", "ping"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-      start_period: 5s
-    deploy:
-      resources:
-        limits:
-          memory: 2G
-    networks:
-      - tars-net
-
   tars-worker:
     image: ghcr.io/t-tasin/tars-worker:latest
     container_name: tars-worker
     restart: unless-stopped
     environment:
-      REDIS_URL: redis://redis:6379/0
+      REDIS_URL: ${REDIS_URL:-redis://100.94.4.103:6379/0}
       NODE_ROLE: muscle
       LOG_LEVEL: ${LOG_LEVEL:-INFO}
     volumes:
       - worker-data:/data
       - /var/run/docker.sock:/var/run/docker.sock
-    depends_on:
-      redis:
-        condition: service_healthy
     deploy:
       resources:
         limits:
@@ -44,8 +19,6 @@ services:
       - tars-net
 
 volumes:
-  redis-data:
-    driver: local
   worker-data:
     driver: local
 

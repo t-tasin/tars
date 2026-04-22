@@ -33,6 +33,28 @@ services:
       TUNNEL_TOKEN: ${CLOUDFLARE_TUNNEL_TOKEN}
     network_mode: host
 
+  redis:
+    image: redis:7-alpine
+    container_name: tars-redis
+    restart: unless-stopped
+    command: redis-server --maxmemory 2gb --maxmemory-policy allkeys-lru --appendonly yes
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis-data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 5s
+    deploy:
+      resources:
+        limits:
+          memory: 2G
+    networks:
+      - tars-net
+
   prometheus:
     image: prom/prometheus:v2.55.0
     container_name: tars-prometheus
@@ -80,6 +102,8 @@ services:
 
 volumes:
   pgdata:
+    driver: local
+  redis-data:
     driver: local
   prometheus-data:
     driver: local

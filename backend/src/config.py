@@ -11,8 +11,8 @@ class Settings(BaseSettings):
     # --- Database ---
     database_url: str
 
-    # --- Redis ---
-    redis_url: str = "redis://100.119.114.125:6379/0"
+    # --- Redis (colocated on Node 1) ---
+    redis_url: str = "redis://localhost:6379/0"
 
     # --- TARS API ---
     tars_api_key: str
