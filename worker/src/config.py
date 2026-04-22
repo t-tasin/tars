@@ -9,8 +9,8 @@ from pydantic_settings import BaseSettings
 class WorkerSettings(BaseSettings):
     """Worker node configuration loaded from environment variables."""
 
-    # --- Redis ---
-    redis_url: str = "redis://100.119.114.125:6379/0"
+    # --- Redis (Node 1 — brain) ---
+    redis_url: str = "redis://100.94.4.103:6379/0"
 
     # --- System ---
     node_role: str = "muscle"

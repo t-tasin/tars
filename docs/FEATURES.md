@@ -49,7 +49,7 @@ Claude Code: this doc is the source of truth. Check before picking up work. Upda
 | P0-14 | Install lm-sensors on both nodes, baseline thermals | PLANNED | Tasin | — | 2026-04-21 | — | `sudo apt install lm-sensors && sudo sensors-detect --auto` |
 | P0-15 | Install CUDA toolkit on Node 2 (for Quadro M620) | TESTED | Tasin | runfile 12.2.2 + driver 535.288.01 + g++-12 host; sm_50 smoke kernel printed `gpu alive` 2026-04-22 | 2026-04-22 | — | CUDA 12.2 @ /usr/local/cuda-12.2; driver held; `CUDAHOSTCXX=/usr/bin/g++-12` in ~/.bashrc; llama.cpp/whisper.cpp builds must pass `-DCMAKE_CUDA_HOST_COMPILER=/usr/bin/g++-12 -DCMAKE_CUDA_ARCHITECTURES=50` |
 | P0-16 | Storage cleanup Node 2 (36GB used vs Node 1 17GB) | PLANNED | Tasin | — | 2026-04-21 | — | `docker system prune -af` after audit |
-| P0-17 | Wire Node 2 worker to point at Node 1 Redis (10.0.1.1:6379) | PLANNED | Claude | — | 2026-04-21 | depends P0-13 | Update worker config |
+| P0-17 | Wire Node 2 worker to point at Node 1 Redis (100.94.4.103:6379) | BUILT | Claude | phase-0-green branch | 2026-04-21 | — | worker/src/config.py redis_url default → redis://100.94.4.103:6379/0 (Node 1 tailscale IP). node2 compose already resolves REDIS_URL via env override. 20 worker tests pass. |
 
 ---
 
