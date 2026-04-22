@@ -10,9 +10,10 @@ import asyncio
 import functools
 import time
 from collections import deque
+from collections.abc import Callable
 from dataclasses import dataclass, field
-from datetime import datetime, timezone
-from typing import Any, Callable, TypeVar
+from datetime import UTC, datetime
+from typing import Any, TypeVar
 
 import structlog
 
@@ -58,7 +59,7 @@ class CircuitBreakerState:
             return None
         # Convert monotonic offset to wall-clock approximation
         offset = time.monotonic() - self._last_success_at
-        return datetime.now(timezone.utc) - __import__("datetime").timedelta(seconds=offset)
+        return datetime.now(UTC) - __import__("datetime").timedelta(seconds=offset)
 
     def record_success(self) -> None:
         """Record a successful call — resets the breaker."""

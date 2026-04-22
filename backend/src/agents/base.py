@@ -7,7 +7,7 @@ from dataclasses import dataclass, field
 from typing import Any
 from uuid import UUID
 
-from shared.constants import RiskTier, TIER_MAP
+from shared.constants import TIER_MAP, RiskTier
 
 
 @dataclass

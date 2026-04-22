@@ -2,9 +2,9 @@
 
 from __future__ import annotations
 
-from datetime import date, datetime, timedelta
+from datetime import date, datetime
 from typing import Any
-from unittest.mock import AsyncMock, MagicMock, patch
+from unittest.mock import MagicMock, patch
 from zoneinfo import ZoneInfo
 
 import pytest
@@ -159,12 +159,14 @@ class TestGetEvents:
     @pytest.mark.asyncio
     async def test_fetches_and_sorts_events(self) -> None:
         later = _make_mock_event(
-            uid="ev2", summary="Afternoon",
+            uid="ev2",
+            summary="Afternoon",
             dtstart=datetime(2026, 3, 10, 18, 0, tzinfo=UTC),
             dtend=datetime(2026, 3, 10, 19, 0, tzinfo=UTC),
         )
         earlier = _make_mock_event(
-            uid="ev1", summary="Morning",
+            uid="ev1",
+            summary="Morning",
             dtstart=datetime(2026, 3, 10, 13, 0, tzinfo=UTC),
             dtend=datetime(2026, 3, 10, 14, 0, tzinfo=UTC),
         )

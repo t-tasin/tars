@@ -2,15 +2,12 @@
 
 from __future__ import annotations
 
-import ast
-from pathlib import Path
 from typing import Any
-from unittest.mock import AsyncMock, MagicMock, patch
+from unittest.mock import AsyncMock, patch
 
 import pytest
 
 from api.config_api import DEFAULT_CONFIG, seed_default_config
-
 
 # ---------------------------------------------------------------------------
 # Helpers
@@ -55,13 +52,9 @@ class TestDefaultConfigQABank:
 
     def test_default_config_includes_qa_bank(self) -> None:
         """Every expected Q&A bank key should exist under the job_application namespace."""
-        job_app_keys = [
-            key for (ns, key) in DEFAULT_CONFIG if ns == "job_application"
-        ]
+        job_app_keys = [key for (ns, key) in DEFAULT_CONFIG if ns == "job_application"]
         for expected_key in EXPECTED_JOB_APPLICATION_KEYS:
-            assert expected_key in job_app_keys, (
-                f"Missing job_application key in DEFAULT_CONFIG: {expected_key}"
-            )
+            assert expected_key in job_app_keys, f"Missing job_application key in DEFAULT_CONFIG: {expected_key}"
 
     def test_job_application_namespace_present(self) -> None:
         """The 'job_application' namespace must exist in DEFAULT_CONFIG."""
@@ -87,8 +80,10 @@ class TestSeedDefaultConfig:
         mock_repo_instance.get_all = AsyncMock(return_value={})
         mock_repo_instance.set = AsyncMock()
 
-        with patch("api.config_api.ConfigRepository", return_value=mock_repo_instance), \
-             patch("api.config_api.seed_default_budgets", new_callable=AsyncMock):
+        with (
+            patch("api.config_api.ConfigRepository", return_value=mock_repo_instance),
+            patch("api.config_api.seed_default_budgets", new_callable=AsyncMock),
+        ):
             await seed_default_config(mock_session)
 
         # Every key in DEFAULT_CONFIG should have been set
@@ -110,8 +105,10 @@ class TestSeedDefaultConfig:
         mock_repo_instance.get_all = AsyncMock(return_value=existing_config)
         mock_repo_instance.set = AsyncMock()
 
-        with patch("api.config_api.ConfigRepository", return_value=mock_repo_instance), \
-             patch("api.config_api.seed_default_budgets", new_callable=AsyncMock):
+        with (
+            patch("api.config_api.ConfigRepository", return_value=mock_repo_instance),
+            patch("api.config_api.seed_default_budgets", new_callable=AsyncMock),
+        ):
             await seed_default_config(mock_session)
 
         # Two keys should be skipped
@@ -132,8 +129,10 @@ class TestSeedDefaultConfig:
         mock_repo_instance.get_all = AsyncMock(return_value=existing_config)
         mock_repo_instance.set = AsyncMock()
 
-        with patch("api.config_api.ConfigRepository", return_value=mock_repo_instance), \
-             patch("api.config_api.seed_default_budgets", new_callable=AsyncMock):
+        with (
+            patch("api.config_api.ConfigRepository", return_value=mock_repo_instance),
+            patch("api.config_api.seed_default_budgets", new_callable=AsyncMock),
+        ):
             await seed_default_config(mock_session)
 
         mock_repo_instance.set.assert_not_awaited()
@@ -174,8 +173,8 @@ class TestConfigUpdateAPI:
 
         app.dependency_overrides = {}
 
-        from src.dependencies import get_db
         from src.api.auth import verify_api_key
+        from src.dependencies import get_db
 
         app.dependency_overrides[get_db] = override_get_db
         app.dependency_overrides[verify_api_key] = override_verify

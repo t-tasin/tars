@@ -2,10 +2,7 @@
 
 from __future__ import annotations
 
-import pytest
-
 from agents.coding_pipeline import CodingPipeline, PipelineTask
-
 
 # ---------------------------------------------------------------------------
 # TestTopologicalBatches

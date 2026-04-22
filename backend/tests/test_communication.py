@@ -3,8 +3,7 @@
 from __future__ import annotations
 
 import sys
-from contextlib import asynccontextmanager
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from typing import Any
 from unittest.mock import AsyncMock, MagicMock, patch
 
@@ -25,6 +24,7 @@ _fake_db_session_module = sys.modules["db.session"]
 # ---------------------------------------------------------------------------
 # Helpers
 # ---------------------------------------------------------------------------
+
 
 def _make_context(message: str, **config_overrides: Any) -> AgentContext:
     return AgentContext(
@@ -118,7 +118,7 @@ def _make_email_history_result(
         row.from_name = email["from_name"]
         row.subject = email["subject"]
         row.snippet = email["snippet"]
-        row.received_at = datetime(2026, 3, 8, 14, 30, tzinfo=timezone.utc)
+        row.received_at = datetime(2026, 3, 8, 14, 30, tzinfo=UTC)
         rows.append(row)
 
     result = MagicMock()
@@ -129,6 +129,7 @@ def _make_email_history_result(
 # ---------------------------------------------------------------------------
 # Test: _parse_request
 # ---------------------------------------------------------------------------
+
 
 class TestParseRequest:
     def test_extracts_recipient_name(self) -> None:
@@ -164,6 +165,7 @@ class TestParseRequest:
 # Test: _generate_subject
 # ---------------------------------------------------------------------------
 
+
 class TestGenerateSubject:
     def test_follow_up_subject(self) -> None:
         assert _generate_subject("follow_up", "John", "body") == "Following up"
@@ -185,6 +187,7 @@ class TestGenerateSubject:
 # Test: CommunicationAgent.execute
 # ---------------------------------------------------------------------------
 
+
 @pytest.mark.asyncio
 class TestCommunicationAgentExecute:
     async def test_successful_draft_professor(self) -> None:
@@ -192,10 +195,12 @@ class TestCommunicationAgentExecute:
         agent = CommunicationAgent()
 
         # DB returns: 1) contact lookup, 2) email history
-        _install_mock_session([
-            _make_contact_result(),
-            _make_email_history_result(),
-        ])
+        _install_mock_session(
+            [
+                _make_contact_result(),
+                _make_email_history_result(),
+            ]
+        )
 
         with patch.object(agent, "_claude") as mock_claude:
             mock_claude.execute = AsyncMock(return_value=_make_claude_result())
@@ -216,15 +221,17 @@ class TestCommunicationAgentExecute:
         """Drafting to a normal contact returns tier2 approval."""
         agent = CommunicationAgent()
 
-        _install_mock_session([
-            _make_contact_result(
-                full_name="Sarah Chen",
-                email="sarah@company.com",
-                organization="Acme Corp",
-                relationship_type="colleague",
-            ),
-            _make_email_history_result(emails=[]),
-        ])
+        _install_mock_session(
+            [
+                _make_contact_result(
+                    full_name="Sarah Chen",
+                    email="sarah@company.com",
+                    organization="Acme Corp",
+                    relationship_type="colleague",
+                ),
+                _make_email_history_result(emails=[]),
+            ]
+        )
 
         with patch.object(agent, "_claude") as mock_claude:
             mock_claude.execute = AsyncMock(
@@ -233,9 +240,7 @@ class TestCommunicationAgentExecute:
                 )
             )
 
-            result = await agent.execute(
-                _make_context("Follow up with Sarah Chen about the project")
-            )
+            result = await agent.execute(_make_context("Follow up with Sarah Chen about the project"))
 
         assert result.success is True
         assert result.has_side_effects is True
@@ -265,9 +270,7 @@ class TestCommunicationAgentExecute:
 
         _install_mock_session([contact_result])
 
-        result = await agent.execute(
-            _make_context("Email John Doe about the meeting")
-        )
+        result = await agent.execute(_make_context("Email John Doe about the meeting"))
 
         assert result.success is False
         assert result.error == "no_email"
@@ -282,9 +285,7 @@ class TestCommunicationAgentExecute:
 
         _install_mock_session([contact_result])
 
-        result = await agent.execute(
-            _make_context("Email John Doe about the meeting")
-        )
+        result = await agent.execute(_make_context("Email John Doe about the meeting"))
 
         assert result.success is False
         # No contact found means no email → no_email or no contact
@@ -294,21 +295,21 @@ class TestCommunicationAgentExecute:
         """When Claude spawn fails, return a graceful error."""
         agent = CommunicationAgent()
 
-        _install_mock_session([
-            _make_contact_result(
-                full_name="Sarah Chen",
-                email="sarah@company.com",
-                relationship_type="colleague",
-            ),
-            _make_email_history_result(emails=[]),
-        ])
+        _install_mock_session(
+            [
+                _make_contact_result(
+                    full_name="Sarah Chen",
+                    email="sarah@company.com",
+                    relationship_type="colleague",
+                ),
+                _make_email_history_result(emails=[]),
+            ]
+        )
 
         with patch.object(agent, "_claude") as mock_claude:
             mock_claude.execute = AsyncMock(side_effect=ClaudeSpawnError("not found"))
 
-            result = await agent.execute(
-                _make_context("Email Sarah Chen about the deadline")
-            )
+            result = await agent.execute(_make_context("Email Sarah Chen about the deadline"))
 
         assert result.success is False
         assert result.error == "claude_unavailable"
@@ -317,23 +318,21 @@ class TestCommunicationAgentExecute:
         """When Claude returns empty text, return an error."""
         agent = CommunicationAgent()
 
-        _install_mock_session([
-            _make_contact_result(
-                full_name="Sarah Chen",
-                email="sarah@company.com",
-                relationship_type="colleague",
-            ),
-            _make_email_history_result(emails=[]),
-        ])
+        _install_mock_session(
+            [
+                _make_contact_result(
+                    full_name="Sarah Chen",
+                    email="sarah@company.com",
+                    relationship_type="colleague",
+                ),
+                _make_email_history_result(emails=[]),
+            ]
+        )
 
         with patch.object(agent, "_claude") as mock_claude:
-            mock_claude.execute = AsyncMock(
-                return_value=_make_claude_result(text="", success=True)
-            )
+            mock_claude.execute = AsyncMock(return_value=_make_claude_result(text="", success=True))
 
-            result = await agent.execute(
-                _make_context("Email Sarah Chen about the deadline")
-            )
+            result = await agent.execute(_make_context("Email Sarah Chen about the deadline"))
 
         assert result.success is False
         assert result.error == "empty_draft"
@@ -342,24 +341,22 @@ class TestCommunicationAgentExecute:
         """The preview dict must include to, subject, and body."""
         agent = CommunicationAgent()
 
-        _install_mock_session([
-            _make_contact_result(
-                full_name="Sarah Chen",
-                email="sarah@company.com",
-                relationship_type="colleague",
-            ),
-            _make_email_history_result(emails=[]),
-        ])
+        _install_mock_session(
+            [
+                _make_contact_result(
+                    full_name="Sarah Chen",
+                    email="sarah@company.com",
+                    relationship_type="colleague",
+                ),
+                _make_email_history_result(emails=[]),
+            ]
+        )
 
         draft = "Hi Sarah,\n\nWanted to follow up.\n\nBest,\nTasin"
         with patch.object(agent, "_claude") as mock_claude:
-            mock_claude.execute = AsyncMock(
-                return_value=_make_claude_result(text=draft)
-            )
+            mock_claude.execute = AsyncMock(return_value=_make_claude_result(text=draft))
 
-            result = await agent.execute(
-                _make_context("Follow up with Sarah Chen about the deadline")
-            )
+            result = await agent.execute(_make_context("Follow up with Sarah Chen about the deadline"))
 
         assert result.preview is not None
         assert "to" in result.preview
@@ -371,6 +368,7 @@ class TestCommunicationAgentExecute:
 # ---------------------------------------------------------------------------
 # Test: _get_action_type
 # ---------------------------------------------------------------------------
+
 
 class TestGetActionType:
     def test_professor_relationship(self) -> None:
@@ -422,6 +420,7 @@ class TestGetActionType:
 # ---------------------------------------------------------------------------
 # Test: Contact lookup (DB layer)
 # ---------------------------------------------------------------------------
+
 
 @pytest.mark.asyncio
 class TestLookupContact:

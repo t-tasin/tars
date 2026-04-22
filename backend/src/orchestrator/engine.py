@@ -12,6 +12,7 @@ from typing import Any
 from uuid import UUID
 
 import structlog
+from shared.constants import ModelName
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from agents.base import AgentContext, AgentResult, BaseAgent
@@ -26,8 +27,6 @@ from orchestrator.context_builder import ContextBuilder
 from orchestrator.intent_classifier import Intent, IntentClassifier
 from orchestrator.model_router import ModelRoute, ModelRouter
 from orchestrator.response_formatter import ResponseFormatter
-from shared.constants import ModelName
-from utils.errors import AIModelUnavailableError, ClaudeUnavailableError, GeminiUnavailableError
 
 log = structlog.get_logger()
 
@@ -97,7 +96,10 @@ class Orchestrator:
         async with get_db_session() as session:
             # 1. Save user message
             conv_id, msg_id = await self._save_message(
-                session, text, source, conversation_id,
+                session,
+                text,
+                source,
+                conversation_id,
             )
 
             # 2. Classify intent
@@ -120,7 +122,12 @@ class Orchestrator:
 
             # 4. Build scoped context
             context = await self.context_builder.build(
-                intent, route, text, source, conv_id, attachments,
+                intent,
+                route,
+                text,
+                source,
+                conv_id,
+                attachments,
                 session=session,
             )
 
@@ -161,7 +168,12 @@ class Orchestrator:
                     task_id=None,
                 )
                 response = self.response_formatter.format_approval(
-                    result, approval, conv_id, msg_id, intent.agent, route.model,
+                    result,
+                    approval,
+                    conv_id,
+                    msg_id,
+                    intent.agent,
+                    route.model,
                 )
 
                 # Push approval request via notification service
@@ -170,7 +182,11 @@ class Orchestrator:
                     await notifier.notify_approval(approval)
             else:
                 response = self.response_formatter.format(
-                    result, conv_id, msg_id, intent.agent, route.model,
+                    result,
+                    conv_id,
+                    msg_id,
+                    intent.agent,
+                    route.model,
                 )
 
             # 8. Save assistant response
@@ -220,6 +236,7 @@ class Orchestrator:
         if self._notifications is None:
             try:
                 from integrations.notification_service import get_notification_service
+
                 self._notifications = get_notification_service()
             except RuntimeError:
                 log.debug("notification_service_not_available")
@@ -373,10 +390,7 @@ class Orchestrator:
             response = await self.gemini_client.generate(
                 prompt=context.user_message,
                 model=model_id,
-                system_instruction=(
-                    "You are T.A.R.S., a personal AI assistant. "
-                    "Be helpful, concise, and friendly."
-                ),
+                system_instruction=("You are T.A.R.S., a personal AI assistant. Be helpful, concise, and friendly."),
             )
             return AgentResult(
                 success=True,
@@ -540,7 +554,9 @@ def get_orchestrator() -> Orchestrator:
 # Internal helpers
 # ---------------------------------------------------------------------------
 
+
 def _now_ms() -> int:
     """Current monotonic time in milliseconds."""
     import time as _time
+
     return int(_time.monotonic() * 1000)

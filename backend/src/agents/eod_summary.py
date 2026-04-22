@@ -10,15 +10,15 @@ from __future__ import annotations
 import asyncio
 import json
 import uuid
-from datetime import date, datetime, time, timedelta, timezone
+from datetime import UTC, date, datetime, time, timedelta
 from typing import Any
 
 import structlog
+from shared.constants import ApprovalStatus, TaskStatus
 from sqlalchemy import func, select
 
 from agents.base import AgentContext, AgentResult, BaseAgent
 from models.gemini_client import GeminiClient
-from shared.constants import ApprovalStatus, ModelName, TaskStatus
 
 log = structlog.get_logger()
 
@@ -89,9 +89,14 @@ class EODSummaryAgent(BaseAgent):
         )
 
         keys = [
-            "tasks_completed", "emails_classified", "approvals_processed",
-            "tomorrow_calendar", "ai_usage", "spending",
-            "health", "pending_items",
+            "tasks_completed",
+            "emails_classified",
+            "approvals_processed",
+            "tomorrow_calendar",
+            "ai_usage",
+            "spending",
+            "health",
+            "pending_items",
         ]
         defaults: dict[str, Any] = {
             "tasks_completed": [],
@@ -329,9 +334,7 @@ class EODSummaryAgent(BaseAgent):
 
         async with get_db_session() as session:
             pending_approvals_result = await session.execute(
-                select(func.count())
-                .select_from(Approval)
-                .where(Approval.status == ApprovalStatus.PENDING)
+                select(func.count()).select_from(Approval).where(Approval.status == ApprovalStatus.PENDING)
             )
             pending_approvals = pending_approvals_result.scalar() or 0
 
@@ -392,7 +395,7 @@ class EODSummaryAgent(BaseAgent):
             "suggested wake-up time based on first event, and an encouraging close.\n"
             "Speak directly to Tasin in second person. Be warm but concise.\n"
             "No markdown, no bullet points — flowing sentences.\n"
-            "Start with \"Good evening, Tasin.\" and end with an encouraging note about rest.\n"
+            'Start with "Good evening, Tasin." and end with an encouraging note about rest.\n'
             "Keep it under 400 words.\n\n"
             f"Data:\n{json.dumps(payload, indent=2, default=str)}"
         )
@@ -460,6 +463,6 @@ class EODSummaryAgent(BaseAgent):
 def _today_range() -> tuple[datetime, datetime]:
     """Return (start, end) datetime range for today in UTC."""
     today = date.today()
-    start = datetime.combine(today, time.min, tzinfo=timezone.utc)
+    start = datetime.combine(today, time.min, tzinfo=UTC)
     end = start + timedelta(days=1)
     return start, end

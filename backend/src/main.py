@@ -8,6 +8,7 @@ from contextlib import asynccontextmanager
 
 import structlog
 from fastapi import FastAPI
+from prometheus_fastapi_instrumentator import Instrumentator
 
 from src.api.config_api import seed_default_config
 from src.api.router import router
@@ -127,6 +128,8 @@ app = FastAPI(
     version="1.0.0",
     lifespan=lifespan,
 )
+
+Instrumentator().instrument(app).expose(app, endpoint="/metrics", include_in_schema=False)
 
 app.include_router(router)
 

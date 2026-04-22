@@ -56,9 +56,7 @@ class JobApplicationRepository:
         status: str,
     ) -> JobApplication | None:
         """Update an application's status."""
-        result = await self._session.execute(
-            select(JobApplication).where(JobApplication.id == application_id)
-        )
+        result = await self._session.execute(select(JobApplication).where(JobApplication.id == application_id))
         app = result.scalar_one_or_none()
         if app is None:
             return None

@@ -5,7 +5,6 @@ from __future__ import annotations
 import datetime as dt
 from decimal import Decimal
 from typing import Any
-from uuid import UUID
 
 import structlog
 from sqlalchemy import func, select
@@ -35,7 +34,7 @@ class ModelUsageRepository:
     ) -> dict[str, dict[str, int | str]]:
         """Get usage totals grouped by model for a given day."""
         target = date or dt.date.today()
-        start = dt.datetime.combine(target, dt.time.min, tzinfo=dt.timezone.utc)
+        start = dt.datetime.combine(target, dt.time.min, tzinfo=dt.UTC)
         end = start + dt.timedelta(days=1)
 
         stmt = (
@@ -64,7 +63,7 @@ class ModelUsageRepository:
         """Get usage totals for the current week (Monday-Sunday)."""
         today = dt.date.today()
         monday = today - dt.timedelta(days=today.weekday())
-        week_start = dt.datetime.combine(monday, dt.time.min, tzinfo=dt.timezone.utc)
+        week_start = dt.datetime.combine(monday, dt.time.min, tzinfo=dt.UTC)
         week_end = week_start + dt.timedelta(days=7)
 
         stmt = (
@@ -104,10 +103,7 @@ class ModelUsageRepository:
     ) -> list[ModelUsage]:
         """Fetch recent usage records for a specific model."""
         result = await self._session.execute(
-            select(ModelUsage)
-            .where(ModelUsage.model == model)
-            .order_by(ModelUsage.created_at.desc())
-            .limit(limit)
+            select(ModelUsage).where(ModelUsage.model == model).order_by(ModelUsage.created_at.desc()).limit(limit)
         )
         return list(result.scalars().all())
 

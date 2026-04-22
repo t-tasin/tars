@@ -14,15 +14,14 @@ from agents.finance import (
     FinanceAgent,
     _fallback_insights,
     _format_budget_alerts,
-    _format_summary_text,
 )
 from models.gemini_client import GeminiResponse
 from utils.finance import pct_change, resolve_period
 
-
 # ---------------------------------------------------------------------------
 # Helpers
 # ---------------------------------------------------------------------------
+
 
 def _make_context(
     period: str = "week",
@@ -61,12 +60,14 @@ def _mock_summary() -> dict[str, Any]:
 def _mock_execute_patches(agent: FinanceAgent) -> dict[str, Any]:
     """Return a dict of context managers that mock all execute() dependencies."""
     mock_tracker = AsyncMock()
-    mock_tracker.get_subscription_summary = AsyncMock(return_value={
-        "subscription_count": 0,
-        "monthly_total": 0.0,
-        "subscriptions": [],
-        "price_changes": [],
-    })
+    mock_tracker.get_subscription_summary = AsyncMock(
+        return_value={
+            "subscription_count": 0,
+            "monthly_total": 0.0,
+            "subscriptions": [],
+            "price_changes": [],
+        }
+    )
 
     mock_detector = AsyncMock()
     mock_detector.scan_recent = AsyncMock(return_value=[])
@@ -81,22 +82,34 @@ def _mock_execute_patches(agent: FinanceAgent) -> dict[str, Any]:
             return_value=mock_detector,
         ),
         "build_summary": patch.object(
-            agent, "_build_summary", new_callable=AsyncMock,
+            agent,
+            "_build_summary",
+            new_callable=AsyncMock,
         ),
         "fetch_txns": patch.object(
-            agent, "_fetch_transactions", new_callable=AsyncMock,
+            agent,
+            "_fetch_transactions",
+            new_callable=AsyncMock,
         ),
         "fetch_subs": patch.object(
-            agent, "_fetch_subscriptions", new_callable=AsyncMock,
+            agent,
+            "_fetch_subscriptions",
+            new_callable=AsyncMock,
         ),
         "compute_trends": patch.object(
-            agent, "_compute_trends", new_callable=AsyncMock,
+            agent,
+            "_compute_trends",
+            new_callable=AsyncMock,
         ),
         "persist_summary": patch.object(
-            agent, "_persist_summary", new_callable=AsyncMock,
+            agent,
+            "_persist_summary",
+            new_callable=AsyncMock,
         ),
         "budget_status": patch.object(
-            agent, "_build_budget_status", new_callable=AsyncMock,
+            agent,
+            "_build_budget_status",
+            new_callable=AsyncMock,
         ),
     }
 
@@ -104,6 +117,7 @@ def _mock_execute_patches(agent: FinanceAgent) -> dict[str, Any]:
 # ---------------------------------------------------------------------------
 # Tests — resolve_period
 # ---------------------------------------------------------------------------
+
 
 class TestPctChange:
     def test_normal(self) -> None:
@@ -140,6 +154,7 @@ class TestResolvePeriod:
 # Tests — _fallback_insights
 # ---------------------------------------------------------------------------
 
+
 class TestFallbackInsights:
     def test_no_transactions(self) -> None:
         summary = _mock_summary()
@@ -158,6 +173,7 @@ class TestFallbackInsights:
 # ---------------------------------------------------------------------------
 # Tests — _format_budget_alerts
 # ---------------------------------------------------------------------------
+
 
 class TestFormatBudgetAlerts:
     def test_no_alerts_under_threshold(self) -> None:
@@ -199,6 +215,7 @@ class TestFormatBudgetAlerts:
 # Tests — FinanceAgent.execute
 # ---------------------------------------------------------------------------
 
+
 class TestFinanceAgentExecute:
     @pytest.mark.asyncio
     async def test_execute_without_gemini(self) -> None:
@@ -207,11 +224,16 @@ class TestFinanceAgentExecute:
         context = _make_context(period="week")
         p = _mock_execute_patches(agent)
 
-        with p["sub_tracker"], p["anomaly_det"], \
-             p["build_summary"] as m_build, p["fetch_txns"] as m_txns, \
-             p["fetch_subs"] as m_subs, p["compute_trends"] as m_trends, \
-             p["persist_summary"], p["budget_status"] as m_budget:
-
+        with (
+            p["sub_tracker"],
+            p["anomaly_det"],
+            p["build_summary"] as m_build,
+            p["fetch_txns"] as m_txns,
+            p["fetch_subs"] as m_subs,
+            p["compute_trends"] as m_trends,
+            p["persist_summary"],
+            p["budget_status"] as m_budget,
+        ):
             m_build.return_value = _mock_summary()
             m_txns.return_value = []
             m_subs.return_value = []
@@ -231,24 +253,31 @@ class TestFinanceAgentExecute:
     async def test_execute_with_gemini_insights(self) -> None:
         """FinanceAgent uses Gemini Flash for insights when available."""
         mock_gemini = AsyncMock()
-        mock_gemini.generate = AsyncMock(return_value=GeminiResponse(
-            text="Dining spending is up 30% vs last week. Consider meal prepping.",
-            model="gemini-2.0-flash",
-            tokens_input=200,
-            tokens_output=50,
-            duration_ms=800,
-            finish_reason="STOP",
-        ))
+        mock_gemini.generate = AsyncMock(
+            return_value=GeminiResponse(
+                text="Dining spending is up 30% vs last week. Consider meal prepping.",
+                model="gemini-2.0-flash",
+                tokens_input=200,
+                tokens_output=50,
+                duration_ms=800,
+                finish_reason="STOP",
+            )
+        )
 
         agent = FinanceAgent()
         context = _make_context(period="week", gemini=mock_gemini)
         p = _mock_execute_patches(agent)
 
-        with p["sub_tracker"], p["anomaly_det"], \
-             p["build_summary"] as m_build, p["fetch_txns"] as m_txns, \
-             p["fetch_subs"] as m_subs, p["compute_trends"] as m_trends, \
-             p["persist_summary"], p["budget_status"] as m_budget:
-
+        with (
+            p["sub_tracker"],
+            p["anomaly_det"],
+            p["build_summary"] as m_build,
+            p["fetch_txns"] as m_txns,
+            p["fetch_subs"] as m_subs,
+            p["compute_trends"] as m_trends,
+            p["persist_summary"],
+            p["budget_status"] as m_budget,
+        ):
             m_build.return_value = _mock_summary()
             m_txns.return_value = []
             m_subs.return_value = []
@@ -271,11 +300,16 @@ class TestFinanceAgentExecute:
         context = _make_context(period="week", gemini=mock_gemini)
         p = _mock_execute_patches(agent)
 
-        with p["sub_tracker"], p["anomaly_det"], \
-             p["build_summary"] as m_build, p["fetch_txns"] as m_txns, \
-             p["fetch_subs"] as m_subs, p["compute_trends"] as m_trends, \
-             p["persist_summary"], p["budget_status"] as m_budget:
-
+        with (
+            p["sub_tracker"],
+            p["anomaly_det"],
+            p["build_summary"] as m_build,
+            p["fetch_txns"] as m_txns,
+            p["fetch_subs"] as m_subs,
+            p["compute_trends"] as m_trends,
+            p["persist_summary"],
+            p["budget_status"] as m_budget,
+        ):
             m_build.return_value = _mock_summary()
             m_txns.return_value = []
             m_subs.return_value = []
@@ -294,11 +328,16 @@ class TestFinanceAgentExecute:
         context = _make_context()
         p = _mock_execute_patches(agent)
 
-        with p["sub_tracker"], p["anomaly_det"], \
-             p["build_summary"] as m_build, p["fetch_txns"] as m_txns, \
-             p["fetch_subs"] as m_subs, p["compute_trends"] as m_trends, \
-             p["persist_summary"], p["budget_status"] as m_budget:
-
+        with (
+            p["sub_tracker"],
+            p["anomaly_det"],
+            p["build_summary"] as m_build,
+            p["fetch_txns"] as m_txns,
+            p["fetch_subs"] as m_subs,
+            p["compute_trends"] as m_trends,
+            p["persist_summary"],
+            p["budget_status"] as m_budget,
+        ):
             m_build.return_value = _mock_summary()
             m_txns.return_value = []
             m_subs.return_value = []
@@ -329,11 +368,16 @@ class TestFinanceAgentExecute:
 
         p = _mock_execute_patches(agent)
 
-        with p["sub_tracker"], p["anomaly_det"], \
-             p["build_summary"] as m_build, p["fetch_txns"] as m_txns, \
-             p["fetch_subs"] as m_subs, p["compute_trends"] as m_trends, \
-             p["persist_summary"], p["budget_status"] as m_budget:
-
+        with (
+            p["sub_tracker"],
+            p["anomaly_det"],
+            p["build_summary"] as m_build,
+            p["fetch_txns"] as m_txns,
+            p["fetch_subs"] as m_subs,
+            p["compute_trends"] as m_trends,
+            p["persist_summary"],
+            p["budget_status"] as m_budget,
+        ):
             m_build.return_value = _mock_summary()
             m_txns.return_value = []
             m_subs.return_value = []
@@ -366,11 +410,16 @@ class TestFinanceAgentTrends:
             "top_decrease": None,
         }
 
-        with p["sub_tracker"], p["anomaly_det"], \
-             p["build_summary"] as m_build, p["fetch_txns"] as m_txns, \
-             p["fetch_subs"] as m_subs, p["compute_trends"] as m_trends, \
-             p["persist_summary"], p["budget_status"] as m_budget:
-
+        with (
+            p["sub_tracker"],
+            p["anomaly_det"],
+            p["build_summary"] as m_build,
+            p["fetch_txns"] as m_txns,
+            p["fetch_subs"] as m_subs,
+            p["compute_trends"] as m_trends,
+            p["persist_summary"],
+            p["budget_status"] as m_budget,
+        ):
             m_build.return_value = _mock_summary()
             m_txns.return_value = []
             m_subs.return_value = []
@@ -391,11 +440,16 @@ class TestFinanceAgentTrends:
         context = _make_context(period="week")
         p = _mock_execute_patches(agent)
 
-        with p["sub_tracker"], p["anomaly_det"], \
-             p["build_summary"] as m_build, p["fetch_txns"] as m_txns, \
-             p["fetch_subs"] as m_subs, p["compute_trends"] as m_trends, \
-             p["persist_summary"], p["budget_status"] as m_budget:
-
+        with (
+            p["sub_tracker"],
+            p["anomaly_det"],
+            p["build_summary"] as m_build,
+            p["fetch_txns"] as m_txns,
+            p["fetch_subs"] as m_subs,
+            p["compute_trends"] as m_trends,
+            p["persist_summary"],
+            p["budget_status"] as m_budget,
+        ):
             m_build.return_value = _mock_summary()
             m_txns.return_value = []
             m_subs.return_value = []
@@ -417,11 +471,16 @@ class TestFinanceAgentPersistence:
         context = _make_context(period="week")
         p = _mock_execute_patches(agent)
 
-        with p["sub_tracker"], p["anomaly_det"], \
-             p["build_summary"] as m_build, p["fetch_txns"] as m_txns, \
-             p["fetch_subs"] as m_subs, p["compute_trends"] as m_trends, \
-             p["persist_summary"] as m_persist, p["budget_status"] as m_budget:
-
+        with (
+            p["sub_tracker"],
+            p["anomaly_det"],
+            p["build_summary"] as m_build,
+            p["fetch_txns"] as m_txns,
+            p["fetch_subs"] as m_subs,
+            p["compute_trends"] as m_trends,
+            p["persist_summary"] as m_persist,
+            p["budget_status"] as m_budget,
+        ):
             m_build.return_value = _mock_summary()
             m_txns.return_value = []
             m_subs.return_value = []
@@ -453,12 +512,17 @@ class TestFinanceAgentClaudeEscalation:
         mock_claude_result.duration_ms = 3000
         mock_claude_result.cost_usd = 0.02
 
-        with p["sub_tracker"], p["anomaly_det"], \
-             p["build_summary"] as m_build, p["fetch_txns"] as m_txns, \
-             p["fetch_subs"] as m_subs, p["compute_trends"] as m_trends, \
-             p["persist_summary"], p["budget_status"] as m_budget, \
-             patch.object(agent._claude, "execute", new_callable=AsyncMock) as m_claude:
-
+        with (
+            p["sub_tracker"],
+            p["anomaly_det"],
+            p["build_summary"] as m_build,
+            p["fetch_txns"] as m_txns,
+            p["fetch_subs"] as m_subs,
+            p["compute_trends"] as m_trends,
+            p["persist_summary"],
+            p["budget_status"] as m_budget,
+            patch.object(agent._claude, "execute", new_callable=AsyncMock) as m_claude,
+        ):
             m_build.return_value = _mock_summary()
             m_txns.return_value = []
             m_subs.return_value = []
@@ -477,14 +541,16 @@ class TestFinanceAgentClaudeEscalation:
         from models.claude_spawner import ClaudeSpawnError
 
         mock_gemini = AsyncMock()
-        mock_gemini.generate = AsyncMock(return_value=GeminiResponse(
-            text="Gemini fallback insight: spending is normal.",
-            model="gemini-2.0-flash",
-            tokens_input=200,
-            tokens_output=50,
-            duration_ms=800,
-            finish_reason="STOP",
-        ))
+        mock_gemini.generate = AsyncMock(
+            return_value=GeminiResponse(
+                text="Gemini fallback insight: spending is normal.",
+                model="gemini-2.0-flash",
+                tokens_input=200,
+                tokens_output=50,
+                duration_ms=800,
+                finish_reason="STOP",
+            )
+        )
 
         agent = FinanceAgent()
         context = AgentContext(
@@ -494,12 +560,17 @@ class TestFinanceAgentClaudeEscalation:
         )
         p = _mock_execute_patches(agent)
 
-        with p["sub_tracker"], p["anomaly_det"], \
-             p["build_summary"] as m_build, p["fetch_txns"] as m_txns, \
-             p["fetch_subs"] as m_subs, p["compute_trends"] as m_trends, \
-             p["persist_summary"], p["budget_status"] as m_budget, \
-             patch.object(agent._claude, "execute", new_callable=AsyncMock) as m_claude:
-
+        with (
+            p["sub_tracker"],
+            p["anomaly_det"],
+            p["build_summary"] as m_build,
+            p["fetch_txns"] as m_txns,
+            p["fetch_subs"] as m_subs,
+            p["compute_trends"] as m_trends,
+            p["persist_summary"],
+            p["budget_status"] as m_budget,
+            patch.object(agent._claude, "execute", new_callable=AsyncMock) as m_claude,
+        ):
             m_build.return_value = _mock_summary()
             m_txns.return_value = []
             m_subs.return_value = []
@@ -529,12 +600,17 @@ class TestFinanceAgentClaudeEscalation:
         )
         p = _mock_execute_patches(agent)
 
-        with p["sub_tracker"], p["anomaly_det"], \
-             p["build_summary"] as m_build, p["fetch_txns"] as m_txns, \
-             p["fetch_subs"] as m_subs, p["compute_trends"] as m_trends, \
-             p["persist_summary"], p["budget_status"] as m_budget, \
-             patch.object(agent._claude, "execute", new_callable=AsyncMock) as m_claude:
-
+        with (
+            p["sub_tracker"],
+            p["anomaly_det"],
+            p["build_summary"] as m_build,
+            p["fetch_txns"] as m_txns,
+            p["fetch_subs"] as m_subs,
+            p["compute_trends"] as m_trends,
+            p["persist_summary"],
+            p["budget_status"] as m_budget,
+            patch.object(agent._claude, "execute", new_callable=AsyncMock) as m_claude,
+        ):
             m_build.return_value = _mock_summary()
             m_txns.return_value = []
             m_subs.return_value = []
@@ -586,6 +662,7 @@ class TestHC04Compliance:
 
     def test_no_write_operations_in_source(self) -> None:
         import inspect
+
         from agents import finance
 
         source = inspect.getsource(finance)
@@ -596,6 +673,5 @@ class TestHC04Compliance:
         ]
         for pattern in forbidden:
             assert pattern not in source, (
-                f"HC-04 VIOLATION: Found '{pattern}' in finance.py. "
-                "FinanceAgent must be strictly read-only."
+                f"HC-04 VIOLATION: Found '{pattern}' in finance.py. FinanceAgent must be strictly read-only."
             )

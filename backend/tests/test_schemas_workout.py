@@ -1,4 +1,5 @@
 """Test workout Pydantic schemas validate correctly."""
+
 from __future__ import annotations
 
 import uuid

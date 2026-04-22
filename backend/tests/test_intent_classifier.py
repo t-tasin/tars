@@ -3,9 +3,9 @@
 from __future__ import annotations
 
 import pytest
-
 from shared.constants import IntentType, ModelName
-from src.orchestrator.intent_classifier import Intent, IntentClassifier
+
+from src.orchestrator.intent_classifier import IntentClassifier
 
 
 @pytest.fixture
@@ -16,6 +16,7 @@ def classifier() -> IntentClassifier:
 # ---------------------------------------------------------------------------
 # Slash commands
 # ---------------------------------------------------------------------------
+
 
 class TestSlashCommands:
     @pytest.mark.parametrize(
@@ -50,6 +51,7 @@ class TestSlashCommands:
 # ---------------------------------------------------------------------------
 # Keyword matching
 # ---------------------------------------------------------------------------
+
 
 class TestKeywordMatching:
     @pytest.mark.parametrize(
@@ -178,6 +180,7 @@ class TestKeywordMatching:
 # Fallback
 # ---------------------------------------------------------------------------
 
+
 class TestFallback:
     def test_unrecognised_message(self, classifier: IntentClassifier) -> None:
         intent = classifier.classify("Hello, how are you?", "telegram")
@@ -192,6 +195,7 @@ class TestFallback:
 # ---------------------------------------------------------------------------
 # Modifiers
 # ---------------------------------------------------------------------------
+
 
 class TestModifiers:
     def test_complexity_high(self, classifier: IntentClassifier) -> None:

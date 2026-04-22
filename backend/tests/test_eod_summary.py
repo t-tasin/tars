@@ -4,17 +4,16 @@ from __future__ import annotations
 
 import sys
 import types
-from datetime import date, datetime, timedelta, timezone
+from datetime import UTC, datetime
 from decimal import Decimal
 from typing import Any
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
-from agents.base import AgentContext
-
 # Pre-import db.models so SQLAlchemy registers types once.
 import db.models  # noqa: F401
+from agents.base import AgentContext
 
 # Install or reuse a fake db.session (same pattern as test_briefing_agent.py)
 if "db.session" not in sys.modules:
@@ -28,6 +27,7 @@ else:
 # ---------------------------------------------------------------------------
 # Helpers
 # ---------------------------------------------------------------------------
+
 
 def _context(**kwargs: Any) -> AgentContext:
     defaults = {
@@ -80,6 +80,7 @@ def _install_mock_session(
 # Tests: _compute_alarm_time
 # ---------------------------------------------------------------------------
 
+
 class TestComputeAlarmTime:
     def test_alarm_from_first_event(self) -> None:
         agent = _make_agent()
@@ -109,6 +110,7 @@ class TestComputeAlarmTime:
 # Tests: _fetch_tasks_completed
 # ---------------------------------------------------------------------------
 
+
 class TestFetchTasksCompleted:
     @pytest.mark.asyncio
     async def test_returns_completed_tasks(self) -> None:
@@ -118,7 +120,7 @@ class TestFetchTasksCompleted:
             MagicMock(
                 agent_type="briefing",
                 status="completed",
-                completed_at=datetime.now(timezone.utc),
+                completed_at=datetime.now(UTC),
                 duration_ms=3000,
             ),
         ]
@@ -139,6 +141,7 @@ class TestFetchTasksCompleted:
 # ---------------------------------------------------------------------------
 # Tests: _fetch_emails_classified
 # ---------------------------------------------------------------------------
+
 
 class TestFetchEmailsClassified:
     @pytest.mark.asyncio
@@ -161,6 +164,7 @@ class TestFetchEmailsClassified:
 # Tests: _fetch_approvals_processed
 # ---------------------------------------------------------------------------
 
+
 class TestFetchApprovalsProcessed:
     @pytest.mark.asyncio
     async def test_returns_approval_counts(self) -> None:
@@ -182,6 +186,7 @@ class TestFetchApprovalsProcessed:
 # Tests: _fetch_pending_items
 # ---------------------------------------------------------------------------
 
+
 class TestFetchPendingItems:
     @pytest.mark.asyncio
     async def test_returns_pending_counts(self) -> None:
@@ -201,6 +206,7 @@ class TestFetchPendingItems:
 # ---------------------------------------------------------------------------
 # Tests: _compose_narrative
 # ---------------------------------------------------------------------------
+
 
 class TestComposeNarrative:
     @pytest.mark.asyncio
@@ -238,6 +244,7 @@ class TestComposeNarrative:
 # Tests: _store_briefing
 # ---------------------------------------------------------------------------
 
+
 class TestStoreBriefing:
     @pytest.mark.asyncio
     async def test_stores_with_eod_type(self) -> None:
@@ -253,6 +260,7 @@ class TestStoreBriefing:
 # Tests: execute (full flow)
 # ---------------------------------------------------------------------------
 
+
 class TestExecute:
     @pytest.mark.asyncio
     async def test_execute_returns_agent_result(self) -> None:
@@ -262,15 +270,32 @@ class TestExecute:
         mock_caldav = AsyncMock()
         mock_caldav.get_events = AsyncMock(return_value=[])
 
-        with patch.object(agent, "_fetch_tasks_completed", new_callable=AsyncMock, return_value=[]), \
-             patch.object(agent, "_fetch_emails_classified", new_callable=AsyncMock, return_value={"total": 0, "by_tier": {}}), \
-             patch.object(agent, "_fetch_approvals_processed", new_callable=AsyncMock, return_value={"approved": 0, "rejected": 0, "total": 0}), \
-             patch.object(agent, "_fetch_tomorrow_calendar", new_callable=AsyncMock, return_value=[]), \
-             patch.object(agent, "_fetch_ai_usage", new_callable=AsyncMock, return_value={"total_calls": 0, "by_model": {}}), \
-             patch.object(agent, "_fetch_spending", new_callable=AsyncMock, return_value={"total": 0, "transactions": []}), \
-             patch.object(agent, "_fetch_health_data", new_callable=AsyncMock, return_value={}), \
-             patch.object(agent, "_fetch_pending_items", new_callable=AsyncMock, return_value={"pending_approvals": 0, "open_tasks": 0}):
-
+        with (
+            patch.object(agent, "_fetch_tasks_completed", new_callable=AsyncMock, return_value=[]),
+            patch.object(
+                agent, "_fetch_emails_classified", new_callable=AsyncMock, return_value={"total": 0, "by_tier": {}}
+            ),
+            patch.object(
+                agent,
+                "_fetch_approvals_processed",
+                new_callable=AsyncMock,
+                return_value={"approved": 0, "rejected": 0, "total": 0},
+            ),
+            patch.object(agent, "_fetch_tomorrow_calendar", new_callable=AsyncMock, return_value=[]),
+            patch.object(
+                agent, "_fetch_ai_usage", new_callable=AsyncMock, return_value={"total_calls": 0, "by_model": {}}
+            ),
+            patch.object(
+                agent, "_fetch_spending", new_callable=AsyncMock, return_value={"total": 0, "transactions": []}
+            ),
+            patch.object(agent, "_fetch_health_data", new_callable=AsyncMock, return_value={}),
+            patch.object(
+                agent,
+                "_fetch_pending_items",
+                new_callable=AsyncMock,
+                return_value={"pending_approvals": 0, "open_tasks": 0},
+            ),
+        ):
             result = await agent.execute(_context())
 
         assert result.success is True
@@ -291,15 +316,32 @@ class TestExecute:
         agent = _make_agent()
         _install_mock_session()
 
-        with patch.object(agent, "_fetch_tasks_completed", new_callable=AsyncMock, side_effect=RuntimeError("DB down")), \
-             patch.object(agent, "_fetch_emails_classified", new_callable=AsyncMock, side_effect=RuntimeError("fail")), \
-             patch.object(agent, "_fetch_approvals_processed", new_callable=AsyncMock, return_value={"approved": 0, "rejected": 0, "total": 0}), \
-             patch.object(agent, "_fetch_tomorrow_calendar", new_callable=AsyncMock, side_effect=ConnectionError("CalDAV down")), \
-             patch.object(agent, "_fetch_ai_usage", new_callable=AsyncMock, return_value={"total_calls": 0, "by_model": {}}), \
-             patch.object(agent, "_fetch_spending", new_callable=AsyncMock, return_value={"total": 0, "transactions": []}), \
-             patch.object(agent, "_fetch_health_data", new_callable=AsyncMock, return_value={}), \
-             patch.object(agent, "_fetch_pending_items", new_callable=AsyncMock, return_value={"pending_approvals": 0, "open_tasks": 0}):
-
+        with (
+            patch.object(agent, "_fetch_tasks_completed", new_callable=AsyncMock, side_effect=RuntimeError("DB down")),
+            patch.object(agent, "_fetch_emails_classified", new_callable=AsyncMock, side_effect=RuntimeError("fail")),
+            patch.object(
+                agent,
+                "_fetch_approvals_processed",
+                new_callable=AsyncMock,
+                return_value={"approved": 0, "rejected": 0, "total": 0},
+            ),
+            patch.object(
+                agent, "_fetch_tomorrow_calendar", new_callable=AsyncMock, side_effect=ConnectionError("CalDAV down")
+            ),
+            patch.object(
+                agent, "_fetch_ai_usage", new_callable=AsyncMock, return_value={"total_calls": 0, "by_model": {}}
+            ),
+            patch.object(
+                agent, "_fetch_spending", new_callable=AsyncMock, return_value={"total": 0, "transactions": []}
+            ),
+            patch.object(agent, "_fetch_health_data", new_callable=AsyncMock, return_value={}),
+            patch.object(
+                agent,
+                "_fetch_pending_items",
+                new_callable=AsyncMock,
+                return_value={"pending_approvals": 0, "open_tasks": 0},
+            ),
+        ):
             result = await agent.execute(_context())
 
         assert result.success is True

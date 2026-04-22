@@ -7,12 +7,12 @@ from typing import Any
 from uuid import UUID
 
 import structlog
+from shared.constants import IntentType
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from agents.base import AgentContext
 from orchestrator.intent_classifier import Intent
 from orchestrator.model_router import ModelRoute
-from shared.constants import IntentType
 
 log = structlog.get_logger()
 
@@ -99,7 +99,9 @@ class ContextBuilder:
 
         if conversation_id:
             db_context["recent_messages"] = await self._get_recent_messages(
-                conversation_id, limit=5, session=session,
+                conversation_id,
+                limit=5,
+                session=session,
             )
 
         # --- Attach model/route metadata ---
@@ -137,18 +139,22 @@ class ContextBuilder:
             return {}
         try:
             from db.repositories.config import ConfigRepository
+
             repo = ConfigRepository(session)
             return await repo.get_namespace(namespace)
         except Exception:
             log.error("repo_query_failed", repo="config", namespace=namespace, exc_info=True)
             return {}
 
-    async def _get_recent_email_corrections(self, limit: int, session: AsyncSession | None = None) -> list[dict[str, Any]]:
+    async def _get_recent_email_corrections(
+        self, limit: int, session: AsyncSession | None = None
+    ) -> list[dict[str, Any]]:
         """Fetch recent email classification corrections for learning."""
         if session is None:
             return []
         try:
             from db.repositories.email_classifications import EmailClassificationRepository
+
             repo = EmailClassificationRepository(session)
             rows = await repo.get_recent_corrections(limit)
             return [
@@ -165,12 +171,15 @@ class ContextBuilder:
             log.error("repo_query_failed", repo="email_classifications", exc_info=True)
             return []
 
-    async def _get_recipient_history(self, conversation_id: UUID, session: AsyncSession | None = None) -> list[dict[str, Any]]:
+    async def _get_recipient_history(
+        self, conversation_id: UUID, session: AsyncSession | None = None
+    ) -> list[dict[str, Any]]:
         """Fetch past communication with the recipient in this conversation."""
         if session is None:
             return []
         try:
             from db.repositories.messages import MessageRepository
+
             repo = MessageRepository(session)
             msgs = await repo.get_by_conversation(conversation_id, limit=20)
             return [
@@ -196,6 +205,7 @@ class ContextBuilder:
             return []
         try:
             from db.repositories.messages import MessageRepository
+
             repo = MessageRepository(session)
             msgs = await repo.get_by_conversation(conversation_id, limit=limit)
             return [
@@ -216,6 +226,7 @@ class ContextBuilder:
             return []
         try:
             from db.repositories.transactions import TransactionRepository
+
             repo = TransactionRepository(session)
             txns = await repo.get_recent(days=days)
             return [
@@ -238,6 +249,7 @@ class ContextBuilder:
             return {}
         try:
             from db.repositories.wardrobe_items import WardrobeItemRepository
+
             repo = WardrobeItemRepository(session)
             return await repo.get_active_count()
         except Exception:
@@ -250,6 +262,7 @@ class ContextBuilder:
             return 0
         try:
             from db.repositories.job_listings import JobListingRepository
+
             repo = JobListingRepository(session)
             return await repo.get_saved_count()
         except Exception:
@@ -262,6 +275,7 @@ class ContextBuilder:
             return []
         try:
             from db.repositories.health_data import HealthDataRepository
+
             repo = HealthDataRepository(session)
             rows = await repo.get_recent(days=days)
             return [
@@ -283,6 +297,7 @@ class ContextBuilder:
             return {}
         try:
             from db.repositories.system_health_log import SystemHealthLogRepository
+
             repo = SystemHealthLogRepository(session)
             return await repo.get_latest()
         except Exception:
@@ -294,9 +309,8 @@ class ContextBuilder:
         if session is None:
             return {}
         try:
+            from db.models import Message
             from db.repositories.agent_tasks import AgentTaskRepository
-            from db.repositories.messages import MessageRepository
-            from db.models import Message, Conversation
 
             task_repo = AgentTaskRepository(session)
             tasks_by_agent = await task_repo.get_todays_by_agent()
@@ -304,13 +318,14 @@ class ContextBuilder:
 
             # Count today's messages
             today_start = dt.datetime.combine(
-                dt.date.today(), dt.time.min, tzinfo=dt.timezone.utc,
+                dt.date.today(),
+                dt.time.min,
+                tzinfo=dt.UTC,
             )
             from sqlalchemy import func, select
+
             msg_result = await session.execute(
-                select(func.count())
-                .select_from(Message)
-                .where(Message.created_at >= today_start)
+                select(func.count()).select_from(Message).where(Message.created_at >= today_start)
             )
             total_messages = msg_result.scalar_one()
 

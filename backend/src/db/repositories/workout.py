@@ -1,18 +1,19 @@
 """Repository for workout tracking tables."""
+
 from __future__ import annotations
 
 import uuid
-from datetime import date, datetime, timezone
+from datetime import UTC, date, datetime
 from decimal import Decimal
 from typing import Any
 
 import structlog
-from sqlalchemy import and_, select, update
+from shared.constants import WorkoutSessionStatus
+from sqlalchemy import select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
 from db.models import WorkoutExercise, WorkoutLog, WorkoutSession, WorkoutSplit
-from shared.constants import WorkoutSessionStatus
 
 log = structlog.get_logger()
 
@@ -51,17 +52,19 @@ class WorkoutRepository:
 
         # Create exercises
         for idx, ex in enumerate(exercises):
-            self._session.add(WorkoutExercise(
-                split_id=split.id,
-                day_name=ex["day_name"],
-                exercise_name=ex["exercise_name"],
-                target_sets=ex["target_sets"],
-                target_reps=ex["target_reps"],
-                current_weight=Decimal(str(ex["current_weight"])),
-                weight_unit=ex.get("weight_unit", "lbs"),
-                weight_increment=Decimal(str(ex.get("weight_increment", 2.5))),
-                order_index=idx,
-            ))
+            self._session.add(
+                WorkoutExercise(
+                    split_id=split.id,
+                    day_name=ex["day_name"],
+                    exercise_name=ex["exercise_name"],
+                    target_sets=ex["target_sets"],
+                    target_reps=ex["target_reps"],
+                    current_weight=Decimal(str(ex["current_weight"])),
+                    weight_unit=ex.get("weight_unit", "lbs"),
+                    weight_increment=Decimal(str(ex.get("weight_increment", 2.5))),
+                    order_index=idx,
+                )
+            )
 
         await self._session.flush()
         return split
@@ -82,9 +85,7 @@ class WorkoutRepository:
         rotation_days: list[str] | None = None,
     ) -> WorkoutSplit | None:
         """Update a split's name and/or rotation."""
-        result = await self._session.execute(
-            select(WorkoutSplit).where(WorkoutSplit.id == split_id)
-        )
+        result = await self._session.execute(select(WorkoutSplit).where(WorkoutSplit.id == split_id))
         split = result.scalar_one_or_none()
         if split is None:
             return None
@@ -131,21 +132,23 @@ class WorkoutRepository:
 
         for exercise in exercises:
             for set_num in range(1, exercise.target_sets + 1):
-                self._session.add(WorkoutLog(
-                    session_id=session.id,
-                    exercise_id=exercise.id,
-                    set_number=set_num,
-                    target_reps=exercise.target_reps,
-                    target_weight=exercise.current_weight,
-                ))
+                self._session.add(
+                    WorkoutLog(
+                        session_id=session.id,
+                        exercise_id=exercise.id,
+                        set_number=set_num,
+                        target_reps=exercise.target_reps,
+                        target_weight=exercise.current_weight,
+                    )
+                )
 
         await self._session.flush()
         return session
 
     async def get_today_session(self) -> WorkoutSession | None:
         """Get today's session with eager-loaded logs."""
-        today_start = datetime.combine(date.today(), datetime.min.time(), tzinfo=timezone.utc)
-        today_end = datetime.combine(date.today(), datetime.max.time(), tzinfo=timezone.utc)
+        today_start = datetime.combine(date.today(), datetime.min.time(), tzinfo=UTC)
+        today_end = datetime.combine(date.today(), datetime.max.time(), tzinfo=UTC)
 
         result = await self._session.execute(
             select(WorkoutSession)
@@ -164,48 +167,43 @@ class WorkoutRepository:
 
     async def start_session(self, session_id: uuid.UUID) -> WorkoutSession | None:
         """Mark a session as active."""
-        result = await self._session.execute(
-            select(WorkoutSession).where(WorkoutSession.id == session_id)
-        )
+        result = await self._session.execute(select(WorkoutSession).where(WorkoutSession.id == session_id))
         session = result.scalar_one_or_none()
         if session is None or session.status != WorkoutSessionStatus.PENDING:
             return None
 
         session.status = WorkoutSessionStatus.ACTIVE
-        session.started_at = datetime.now(timezone.utc)
+        session.started_at = datetime.now(UTC)
         await self._session.flush()
         return session
 
     async def skip_session(self, session_id: uuid.UUID, reason: str) -> WorkoutSession | None:
         """Mark a session as skipped with a mandatory reason."""
-        result = await self._session.execute(
-            select(WorkoutSession).where(WorkoutSession.id == session_id)
-        )
+        result = await self._session.execute(select(WorkoutSession).where(WorkoutSession.id == session_id))
         session = result.scalar_one_or_none()
         if session is None or session.status not in (
-            WorkoutSessionStatus.PENDING, WorkoutSessionStatus.ACTIVE,
+            WorkoutSessionStatus.PENDING,
+            WorkoutSessionStatus.ACTIVE,
         ):
             return None
 
         session.status = WorkoutSessionStatus.SKIPPED
         session.skip_reason = reason
-        session.completed_at = datetime.now(timezone.utc)
+        session.completed_at = datetime.now(UTC)
         await self._session.flush()
         return session
 
     async def complete_session(self, session_id: uuid.UUID) -> WorkoutSession | None:
         """Mark a session as completed."""
         result = await self._session.execute(
-            select(WorkoutSession)
-            .where(WorkoutSession.id == session_id)
-            .options(selectinload(WorkoutSession.logs))
+            select(WorkoutSession).where(WorkoutSession.id == session_id).options(selectinload(WorkoutSession.logs))
         )
         session = result.scalar_one_or_none()
         if session is None or session.status != WorkoutSessionStatus.ACTIVE:
             return None
 
         session.status = WorkoutSessionStatus.COMPLETED
-        session.completed_at = datetime.now(timezone.utc)
+        session.completed_at = datetime.now(UTC)
         await self._session.flush()
         return session
 
@@ -235,7 +233,7 @@ class WorkoutRepository:
 
         log_entry.actual_reps = actual_reps
         log_entry.actual_weight = Decimal(str(actual_weight))
-        log_entry.logged_at = datetime.now(timezone.utc)
+        log_entry.logged_at = datetime.now(UTC)
         await self._session.flush()
         return log_entry
 
@@ -317,9 +315,7 @@ class WorkoutRepository:
         Only 'skipped' workout sessions break it.
         """
         result = await self._session.execute(
-            select(WorkoutSession)
-            .where(WorkoutSession.split_id == split_id)
-            .order_by(WorkoutSession.created_at.desc())
+            select(WorkoutSession).where(WorkoutSession.split_id == split_id).order_by(WorkoutSession.created_at.desc())
         )
         sessions = result.scalars().all()
 
@@ -341,7 +337,7 @@ class WorkoutRepository:
         """Get recently skipped sessions for accountability messaging."""
         from datetime import timedelta
 
-        cutoff = datetime.now(timezone.utc) - timedelta(days=days)
+        cutoff = datetime.now(UTC) - timedelta(days=days)
 
         result = await self._session.execute(
             select(WorkoutSession)
@@ -356,10 +352,9 @@ class WorkoutRepository:
 
     async def get_pending_sessions_past_schedule(self) -> list[WorkoutSession]:
         """Get pending sessions whose scheduled_at has passed (for reminder polling)."""
-        now = datetime.now(timezone.utc)
+        now = datetime.now(UTC)
         result = await self._session.execute(
-            select(WorkoutSession)
-            .where(
+            select(WorkoutSession).where(
                 WorkoutSession.status == WorkoutSessionStatus.PENDING,
                 WorkoutSession.scheduled_at.isnot(None),
                 WorkoutSession.scheduled_at <= now,

@@ -7,7 +7,7 @@ from typing import Any
 import httpx
 import structlog
 
-from utils.resilience import CircuitBreakerOpenError, get_service_health_registry, retry_with_backoff
+from utils.resilience import get_service_health_registry, retry_with_backoff
 
 log = structlog.get_logger()
 
@@ -63,7 +63,9 @@ class WeatherClient:
         }
 
     async def get_forecast(
-        self, location: str | None = None, hours: int = 24,
+        self,
+        location: str | None = None,
+        hours: int = 24,
     ) -> list[dict[str, Any]]:
         """Hourly forecast (3-hour intervals from the free 5-day endpoint).
 
@@ -87,13 +89,15 @@ class WeatherClient:
             dt_txt: str = entry.get("dt_txt", "")
             time_str = dt_txt.split(" ")[1][:5] if " " in dt_txt else dt_txt
 
-            result.append({
-                "time": time_str,
-                "temp_c": round(temp_c, 1),
-                "temp_f": round(temp_c * 9 / 5 + 32, 1),
-                "conditions": weather.get("description", "unknown"),
-                "rain_probability": round(pop * 100),
-            })
+            result.append(
+                {
+                    "time": time_str,
+                    "temp_c": round(temp_c, 1),
+                    "temp_f": round(temp_c * 9 / 5 + 32, 1),
+                    "conditions": weather.get("description", "unknown"),
+                    "rain_probability": round(pop * 100),
+                }
+            )
 
         return result
 
@@ -117,14 +121,8 @@ class WeatherClient:
         needs_umbrella = max_rain >= 50
 
         # Build human-readable summary
-        rain_note = (
-            f"rain likely ({max_rain}% chance)"
-            if needs_umbrella
-            else "no rain expected"
-        )
-        summary = (
-            f"{current['temp_c']}°C, {current['conditions']}, {rain_note}."
-        )
+        rain_note = f"rain likely ({max_rain}% chance)" if needs_umbrella else "no rain expected"
+        summary = f"{current['temp_c']}°C, {current['conditions']}, {rain_note}."
 
         suggestion = _build_suggestion(current["temp_c"], current["conditions"], needs_umbrella)
 
@@ -181,6 +179,7 @@ class WeatherClient:
 # ---------------------------------------------------------------------------
 # Helpers
 # ---------------------------------------------------------------------------
+
 
 def _build_suggestion(temp_c: float, conditions: str, needs_umbrella: bool) -> str:
     """Generate a brief outfit/activity suggestion."""

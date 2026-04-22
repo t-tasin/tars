@@ -54,7 +54,5 @@ class BriefingRepository:
 
     async def get_by_id(self, briefing_id: uuid.UUID) -> Briefing | None:
         """Fetch a briefing by primary key."""
-        result = await self._session.execute(
-            select(Briefing).where(Briefing.id == briefing_id)
-        )
+        result = await self._session.execute(select(Briefing).where(Briefing.id == briefing_id))
         return result.scalar_one_or_none()

@@ -9,9 +9,7 @@ from datetime import date
 from typing import Any
 from unittest.mock import AsyncMock, MagicMock, patch
 
-import pytest
-
-from agents.base import AgentContext, AgentResult
+from agents.base import AgentContext
 from agents.fashion import (
     FashionAgent,
     _build_wardrobe_catalog,
@@ -23,10 +21,10 @@ from agents.fashion import (
     _resolve_suggested_items,
 )
 
-
 # ---------------------------------------------------------------------------
 # Helper factories
 # ---------------------------------------------------------------------------
+
 
 def _make_context(
     message: str = "suggest outfit",
@@ -219,10 +217,12 @@ class TestFashionAgentSuggest:
     async def test_suggest_empty_wardrobe(self, mock_gemini, mock_weather, mock_caldav, mock_settings):
         agent = self._make_agent(mock_gemini, mock_weather, mock_caldav, mock_settings)
 
-        with patch.object(agent, "_fetch_weather", return_value={"temp_c": 22}), \
-             patch.object(agent, "_fetch_today_events", return_value=[]), \
-             patch.object(agent, "_fetch_active_wardrobe", return_value=[]), \
-             patch.object(agent, "_fetch_recently_worn", return_value=[]):
+        with (
+            patch.object(agent, "_fetch_weather", return_value={"temp_c": 22}),
+            patch.object(agent, "_fetch_today_events", return_value=[]),
+            patch.object(agent, "_fetch_active_wardrobe", return_value=[]),
+            patch.object(agent, "_fetch_recently_worn", return_value=[]),
+        ):
             result = await agent.execute(_make_context())
 
         assert result.success is True
@@ -231,11 +231,13 @@ class TestFashionAgentSuggest:
     async def test_suggest_with_wardrobe(self, mock_gemini, mock_weather, mock_caldav, mock_settings):
         agent = self._make_agent(mock_gemini, mock_weather, mock_caldav, mock_settings)
 
-        suggestion_json = json.dumps({
-            "items": ["item-1", "item-2"],
-            "suggestion": "Blue t-shirt with dark jeans",
-            "reasoning": "Casual day, good weather",
-        })
+        suggestion_json = json.dumps(
+            {
+                "items": ["item-1", "item-2"],
+                "suggestion": "Blue t-shirt with dark jeans",
+                "reasoning": "Casual day, good weather",
+            }
+        )
 
         mock_response = MagicMock()
         mock_response.text = suggestion_json
@@ -245,11 +247,13 @@ class TestFashionAgentSuggest:
         mock_response.duration_ms = 1200
         agent._gemini.generate = AsyncMock(return_value=mock_response)
 
-        with patch.object(agent, "_fetch_weather", return_value={"temp_c": 22}), \
-             patch.object(agent, "_fetch_today_events", return_value=[]), \
-             patch.object(agent, "_fetch_active_wardrobe", return_value=_WARDROBE_ITEMS), \
-             patch.object(agent, "_fetch_recently_worn", return_value=[]), \
-             patch.object(agent, "_store_outfit", return_value=uuid.uuid4()):
+        with (
+            patch.object(agent, "_fetch_weather", return_value={"temp_c": 22}),
+            patch.object(agent, "_fetch_today_events", return_value=[]),
+            patch.object(agent, "_fetch_active_wardrobe", return_value=_WARDROBE_ITEMS),
+            patch.object(agent, "_fetch_recently_worn", return_value=[]),
+            patch.object(agent, "_store_outfit", return_value=uuid.uuid4()),
+        ):
             result = await agent.execute(_make_context())
 
         assert result.success is True
@@ -257,15 +261,19 @@ class TestFashionAgentSuggest:
         assert result.content_type == "card"
         assert len(result.cards) == 1
 
-    async def test_suggest_graceful_degradation_weather_fail(self, mock_gemini, mock_weather, mock_caldav, mock_settings):
+    async def test_suggest_graceful_degradation_weather_fail(
+        self, mock_gemini, mock_weather, mock_caldav, mock_settings
+    ):
         """HC-09: Weather failure should not crash the agent."""
         agent = self._make_agent(mock_gemini, mock_weather, mock_caldav, mock_settings)
 
-        suggestion_json = json.dumps({
-            "items": ["item-1"],
-            "suggestion": "Go with a t-shirt",
-            "reasoning": "Default casual",
-        })
+        suggestion_json = json.dumps(
+            {
+                "items": ["item-1"],
+                "suggestion": "Go with a t-shirt",
+                "reasoning": "Default casual",
+            }
+        )
         mock_response = MagicMock()
         mock_response.text = suggestion_json
         mock_response.model = "gemini-2.0-pro"
@@ -274,11 +282,13 @@ class TestFashionAgentSuggest:
         mock_response.duration_ms = 1200
         agent._gemini.generate = AsyncMock(return_value=mock_response)
 
-        with patch.object(agent, "_fetch_weather", side_effect=Exception("API down")), \
-             patch.object(agent, "_fetch_today_events", return_value=[]), \
-             patch.object(agent, "_fetch_active_wardrobe", return_value=_WARDROBE_ITEMS), \
-             patch.object(agent, "_fetch_recently_worn", return_value=[]), \
-             patch.object(agent, "_store_outfit", return_value=uuid.uuid4()):
+        with (
+            patch.object(agent, "_fetch_weather", side_effect=Exception("API down")),
+            patch.object(agent, "_fetch_today_events", return_value=[]),
+            patch.object(agent, "_fetch_active_wardrobe", return_value=_WARDROBE_ITEMS),
+            patch.object(agent, "_fetch_recently_worn", return_value=[]),
+            patch.object(agent, "_store_outfit", return_value=uuid.uuid4()),
+        ):
             result = await agent.execute(_make_context())
 
         assert result.success is True
@@ -321,16 +331,18 @@ class TestFashionAgentCatalog:
     async def test_catalog_success(self, mock_gemini, mock_weather, mock_caldav, mock_settings):
         agent = self._make_agent(mock_gemini, mock_weather, mock_caldav, mock_settings)
 
-        analysis_json = json.dumps({
-            "item_type": "top",
-            "sub_type": "t-shirt",
-            "color": "red",
-            "pattern": "solid",
-            "seasons": ["summer"],
-            "formality": "casual",
-            "brand": None,
-            "description": "Red cotton t-shirt",
-        })
+        analysis_json = json.dumps(
+            {
+                "item_type": "top",
+                "sub_type": "t-shirt",
+                "color": "red",
+                "pattern": "solid",
+                "seasons": ["summer"],
+                "formality": "casual",
+                "brand": None,
+                "description": "Red cotton t-shirt",
+            }
+        )
         mock_response = MagicMock()
         mock_response.text = analysis_json
         mock_response.model = "gemini-2.0-flash"
@@ -343,9 +355,11 @@ class TestFashionAgentCatalog:
         ctx = _make_context(action="catalog")
         ctx.attachments = [{"data": image_data}]
 
-        with patch.object(agent, "_store_wardrobe_item", return_value=uuid.uuid4()), \
-             patch.object(agent, "_dispatch_image_save", return_value=None), \
-             patch.object(agent, "_update_item_image_path", return_value=None):
+        with (
+            patch.object(agent, "_store_wardrobe_item", return_value=uuid.uuid4()),
+            patch.object(agent, "_dispatch_image_save", return_value=None),
+            patch.object(agent, "_update_item_image_path", return_value=None),
+        ):
             result = await agent.execute(ctx)
 
         assert result.success is True

@@ -1,8 +1,10 @@
 """Test intent classifier routes workout messages correctly."""
+
 from __future__ import annotations
 
-from orchestrator.intent_classifier import IntentClassifier
 from shared.constants import IntentType
+
+from orchestrator.intent_classifier import IntentClassifier
 
 
 def test_set_done_routes_to_workout():

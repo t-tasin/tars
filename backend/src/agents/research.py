@@ -272,9 +272,10 @@ class ResearchAgent(BaseAgent):
 
     async def _fetch_active_job_context(self, limit: int = 5) -> list[str]:
         """Fetch active job search context for cross-referencing."""
+        from shared.constants import JobStatus
+
         from db.models import JobListing
         from db.session import get_db_session
-        from shared.constants import JobStatus
 
         try:
             async with get_db_session() as session:
@@ -283,11 +284,15 @@ class ResearchAgent(BaseAgent):
                         JobListing.title,
                         JobListing.company,
                     )
-                    .where(JobListing.status.in_([
-                        JobStatus.SAVED,
-                        JobStatus.APPLIED,
-                        JobStatus.INTERVIEW,
-                    ]))
+                    .where(
+                        JobListing.status.in_(
+                            [
+                                JobStatus.SAVED,
+                                JobStatus.APPLIED,
+                                JobStatus.INTERVIEW,
+                            ]
+                        )
+                    )
                     .order_by(JobListing.created_at.desc())
                     .limit(limit)
                 )

@@ -12,26 +12,18 @@ from __future__ import annotations
 
 import os
 import uuid
-from datetime import date, datetime, timedelta, timezone
+from datetime import UTC, date, datetime, timedelta
 from decimal import Decimal
 
 import pytest
+from shared.constants import ApprovalStatus, RiskTier
 
-from db.models import (
-    Approval,
-    Briefing,
-    Config,
-    Conversation,
-    Message,
-    ModelUsage,
-)
 from db.repositories.approvals import ApprovalRepository
 from db.repositories.briefings import BriefingRepository
 from db.repositories.config import ConfigRepository
 from db.repositories.conversations import ConversationRepository
 from db.repositories.messages import MessageRepository
 from db.repositories.model_usage import ModelUsageRepository
-from shared.constants import ApprovalStatus, RiskTier
 
 _HAS_PG = bool(os.environ.get("TEST_DATABASE_URL", ""))
 requires_pg = pytest.mark.skipif(not _HAS_PG, reason="Requires real PostgreSQL")
@@ -117,7 +109,7 @@ class TestApprovalRepository:
     @pytest.mark.asyncio
     async def test_create_approval(self, test_db) -> None:
         repo = ApprovalRepository(test_db)
-        now = datetime.now(timezone.utc)
+        now = datetime.now(UTC)
         approval = await repo.create(
             action_type="send_email",
             risk_tier=RiskTier.TIER2_APPROVAL,
@@ -133,7 +125,7 @@ class TestApprovalRepository:
     @pytest.mark.asyncio
     async def test_get_by_id(self, test_db) -> None:
         repo = ApprovalRepository(test_db)
-        now = datetime.now(timezone.utc)
+        now = datetime.now(UTC)
         approval = await repo.create(
             action_type="create_event",
             risk_tier=RiskTier.TIER2_APPROVAL,
@@ -150,7 +142,7 @@ class TestApprovalRepository:
     @pytest.mark.asyncio
     async def test_get_pending(self, test_db) -> None:
         repo = ApprovalRepository(test_db)
-        now = datetime.now(timezone.utc)
+        now = datetime.now(UTC)
 
         await repo.create(
             action_type="send_email",
@@ -176,7 +168,7 @@ class TestApprovalRepository:
     @pytest.mark.asyncio
     async def test_update_status(self, test_db) -> None:
         repo = ApprovalRepository(test_db)
-        now = datetime.now(timezone.utc)
+        now = datetime.now(UTC)
         approval = await repo.create(
             action_type="send_email",
             risk_tier=RiskTier.TIER2_APPROVAL,
@@ -198,7 +190,7 @@ class TestApprovalRepository:
     @pytest.mark.asyncio
     async def test_get_by_filters_returns_results(self, test_db) -> None:
         repo = ApprovalRepository(test_db)
-        now = datetime.now(timezone.utc)
+        now = datetime.now(UTC)
         await repo.create(
             action_type="apply_job",
             risk_tier=RiskTier.TIER2_APPROVAL,

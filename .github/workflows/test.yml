@@ -45,17 +45,29 @@ jobs:
         with:
           python-version: "3.12"
 
+      - name: Install system build dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends \
+            portaudio19-dev \
+            libasound2-dev \
+            ffmpeg
+
       - name: Install backend dependencies
         run: |
           cd backend
           pip install -e ".[dev]"
 
       - name: Run Alembic migrations
+        env:
+          PYTHONPATH: ${{ github.workspace }}/backend/src:${{ github.workspace }}
         run: |
           cd backend
           alembic upgrade head
 
       - name: Run tests
+        env:
+          PYTHONPATH: ${{ github.workspace }}/backend/src:${{ github.workspace }}
         run: |
           cd backend
           python -m pytest tests/ -v --tb=short

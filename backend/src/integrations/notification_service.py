@@ -70,12 +70,15 @@ class NotificationService:
 
         # 1. WebSocket broadcast (all priorities)
         tasks.append(
-            self._ws_send("notification", {
-                "priority": priority,
-                "title": title,
-                "body": body,
-                **data,
-            })
+            self._ws_send(
+                "notification",
+                {
+                    "priority": priority,
+                    "title": title,
+                    "body": body,
+                    **data,
+                },
+            )
         )
 
         # 2. Telegram message (all priorities)
@@ -83,9 +86,7 @@ class NotificationService:
 
         # 3. APNs push — critical and warning only
         if self.apns and priority in ("critical", "warning"):
-            tasks.append(
-                self._apns_send(title=title, body=body, priority=priority, data=data)
-            )
+            tasks.append(self._apns_send(title=title, body=body, priority=priority, data=data))
 
         await asyncio.gather(*tasks, return_exceptions=True)
 
@@ -118,19 +119,20 @@ class NotificationService:
 
         # 1. WebSocket — full approval payload for rich UI
         tasks.append(
-            self._ws_send("approval_request", {
-                "approval_id": approval_id,
-                "action_type": action_type,
-                "risk_tier": risk_tier,
-                "title": title,
-                "preview": preview,
-            })
+            self._ws_send(
+                "approval_request",
+                {
+                    "approval_id": approval_id,
+                    "action_type": action_type,
+                    "risk_tier": risk_tier,
+                    "title": title,
+                    "preview": preview,
+                },
+            )
         )
 
         # 2. Telegram — inline keyboard with approve/reject
-        tasks.append(
-            self._telegram_send_approval(approval_id, title, action_type, risk_tier, preview)
-        )
+        tasks.append(self._telegram_send_approval(approval_id, title, action_type, risk_tier, preview))
 
         # 3. APNs — actionable push with APPROVAL category
         if self.apns:
@@ -201,14 +203,17 @@ class NotificationService:
             log.exception("ws_broadcast_failed")
 
     async def _telegram_send(
-        self, title: str, body: str, priority: NotificationPriority,
+        self,
+        title: str,
+        body: str,
+        priority: NotificationPriority,
     ) -> None:
         """Send a formatted Telegram message."""
         try:
             prefix = {
                 "critical": "\U0001f6a8",  # 🚨
                 "warning": "\u26a0\ufe0f",  # ⚠️
-                "info": "\u2139\ufe0f",      # ℹ️
+                "info": "\u2139\ufe0f",  # ℹ️
             }.get(priority, "")
 
             text = f"{prefix} <b>{title}</b>\n\n{body}"
@@ -250,24 +255,26 @@ class NotificationService:
                 f"<b>Preview:</b>\n{preview_text}"
             )
 
-            keyboard = InlineKeyboardMarkup([
+            keyboard = InlineKeyboardMarkup(
                 [
-                    InlineKeyboardButton(
-                        "\u2705 Approve",
-                        callback_data=f"approve:{approval_id}",
-                    ),
-                    InlineKeyboardButton(
-                        "\u274c Reject",
-                        callback_data=f"reject:{approval_id}",
-                    ),
-                ],
-                [
-                    InlineKeyboardButton(
-                        "\u270f\ufe0f Edit & Approve",
-                        callback_data=f"edit_approve:{approval_id}",
-                    ),
-                ],
-            ])
+                    [
+                        InlineKeyboardButton(
+                            "\u2705 Approve",
+                            callback_data=f"approve:{approval_id}",
+                        ),
+                        InlineKeyboardButton(
+                            "\u274c Reject",
+                            callback_data=f"reject:{approval_id}",
+                        ),
+                    ],
+                    [
+                        InlineKeyboardButton(
+                            "\u270f\ufe0f Edit & Approve",
+                            callback_data=f"edit_approve:{approval_id}",
+                        ),
+                    ],
+                ]
+            )
 
             await self.telegram.send_message(text=text, parse_mode="HTML", reply_markup=keyboard)
         except Exception:
@@ -314,9 +321,7 @@ class NotificationService:
             from db.session import async_session_factory
 
             async with async_session_factory() as session:
-                result = await session.execute(
-                    select(DeviceToken.token).where(DeviceToken.active.is_(True))
-                )
+                result = await session.execute(select(DeviceToken.token).where(DeviceToken.active.is_(True)))
                 return list(result.scalars().all())
         except Exception:
             log.exception("apns_token_lookup_failed")
@@ -336,9 +341,7 @@ def get_notification_service() -> NotificationService:
     Requires that ``init_notification_service()`` was called during startup.
     """
     if _notification_service is None:
-        raise RuntimeError(
-            "NotificationService not initialised \u2014 call init_notification_service() at startup"
-        )
+        raise RuntimeError("NotificationService not initialised \u2014 call init_notification_service() at startup")
     return _notification_service
 
 

@@ -1,10 +1,10 @@
 """System health monitor agent for T.A.R.S.
 
 Runs every 5 minutes via scheduler. Performs local health checks on
-T.A.R.S. infrastructure (PostgreSQL, Redis, ChromaDB, disk, memory,
-Docker containers) and AtlasDesk services (via Grafana/Loki).
-Zero AI tokens for routine checks — Claude is only invoked when an
-anomaly is detected that requires diagnostic reasoning.
+T.A.R.S. infrastructure (PostgreSQL, Redis, disk, memory, Docker
+containers) and AtlasDesk services (via Grafana/Loki). Zero AI tokens
+for routine checks — Claude is only invoked when an anomaly is
+detected that requires diagnostic reasoning.
 """
 
 from __future__ import annotations
@@ -17,12 +17,12 @@ from typing import Any
 import httpx
 import psutil
 import structlog
+from shared.constants import HealthStatus
 from sqlalchemy import text
 
 from agents.base import AgentContext, AgentResult, BaseAgent
 from config import get_settings
 from db.session import get_db_session
-from shared.constants import HealthStatus
 
 log = structlog.get_logger("health_monitor")
 
@@ -49,7 +49,6 @@ class HealthMonitorAgent(BaseAgent):
         results = await asyncio.gather(
             self._check_postgres(),
             self._check_redis(settings.redis_url),
-            self._check_chromadb(settings.chromadb_url, settings.chroma_auth_token),
             self._check_grafana(settings),
             self._check_loki_errors(settings),
             self._check_disk_usage(),
@@ -62,18 +61,27 @@ class HealthMonitorAgent(BaseAgent):
 
         checks: list[dict[str, Any]] = []
         check_names = [
-            "postgresql", "redis", "chromadb", "grafana", "loki_errors",
-            "disk", "memory", "pg_pool", "redis_memory", "docker",
+            "postgresql",
+            "redis",
+            "grafana",
+            "loki_errors",
+            "disk",
+            "memory",
+            "pg_pool",
+            "redis_memory",
+            "docker",
         ]
 
         for name, result in zip(check_names, results):
             if isinstance(result, BaseException):
-                checks.append({
-                    "target": name,
-                    "status": HealthStatus.RED,
-                    "response_time_ms": None,
-                    "details": {"error": str(result)},
-                })
+                checks.append(
+                    {
+                        "target": name,
+                        "status": HealthStatus.RED,
+                        "response_time_ms": None,
+                        "details": {"error": str(result)},
+                    }
+                )
             else:
                 checks.append(result)
 
@@ -193,39 +201,6 @@ class HealthMonitorAgent(BaseAgent):
                 "details": {"connected": False, "error": str(exc)},
             }
 
-    async def _check_chromadb(
-        self, chromadb_url: str, auth_token: str,
-    ) -> dict[str, Any]:
-        """Check ChromaDB health endpoint."""
-        start = time.monotonic()
-        try:
-            async with httpx.AsyncClient(timeout=5.0) as client:
-                headers: dict[str, str] = {}
-                if auth_token:
-                    headers["Authorization"] = f"Bearer {auth_token}"
-
-                resp = await client.get(
-                    f"{chromadb_url}/api/v1/heartbeat",
-                    headers=headers,
-                )
-                resp.raise_for_status()
-                ms = int((time.monotonic() - start) * 1000)
-                return {
-                    "target": "chromadb",
-                    "status": _status_from_ms(ms),
-                    "response_time_ms": ms,
-                    "details": {"connected": True, "heartbeat": resp.json()},
-                }
-        except Exception as exc:
-            ms = int((time.monotonic() - start) * 1000)
-            log.error("health_check_chromadb_failed", error=str(exc))
-            return {
-                "target": "chromadb",
-                "status": HealthStatus.RED,
-                "response_time_ms": ms,
-                "details": {"connected": False, "error": str(exc)},
-            }
-
     async def _check_grafana(self, settings: Any) -> dict[str, Any]:
         """Check Grafana health if configured."""
         if not settings.grafana_url:
@@ -288,7 +263,8 @@ class HealthMonitorAgent(BaseAgent):
             )
             try:
                 error_count = await client.count_errors(
-                    job="tars-backend", since="5m",
+                    job="tars-backend",
+                    since="5m",
                 )
                 ms = int((time.monotonic() - start) * 1000)
 
@@ -323,6 +299,7 @@ class HealthMonitorAgent(BaseAgent):
 
     async def _check_disk_usage(self) -> dict[str, Any]:
         """Check disk usage on key mount points."""
+
         def _get_disk():
             results = {}
             for path in ["/", "/data"]:
@@ -356,6 +333,7 @@ class HealthMonitorAgent(BaseAgent):
 
     async def _check_memory_usage(self) -> dict[str, Any]:
         """Check system memory usage."""
+
         def _get_memory():
             mem = psutil.virtual_memory()
             return {
@@ -384,10 +362,12 @@ class HealthMonitorAgent(BaseAgent):
         start = time.monotonic()
         try:
             async with get_db_session() as session:
-                result = await session.execute(text(
-                    "SELECT numbackends, xact_commit, xact_rollback, conflicts, deadlocks "
-                    "FROM pg_stat_database WHERE datname = current_database()"
-                ))
+                result = await session.execute(
+                    text(
+                        "SELECT numbackends, xact_commit, xact_rollback, conflicts, deadlocks "
+                        "FROM pg_stat_database WHERE datname = current_database()"
+                    )
+                )
                 row = result.one_or_none()
                 ms = int((time.monotonic() - start) * 1000)
 
@@ -599,10 +579,7 @@ class HealthMonitorAgent(BaseAgent):
             from models.claude_spawner import ClaudeCodeSpawner
 
             targets = ", ".join(c["target"] for c in red_checks)
-            details = "\n".join(
-                f"- {c['target']}: {c['status']} — {c.get('details', {})}"
-                for c in red_checks
-            )
+            details = "\n".join(f"- {c['target']}: {c['status']} — {c.get('details', {})}" for c in red_checks)
 
             prompt = (
                 "You are T.A.R.S. system diagnostics. The following infrastructure "

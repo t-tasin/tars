@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import sys
-import types
 from datetime import date, timedelta
 from decimal import Decimal
 from typing import Any
@@ -11,12 +10,11 @@ from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
-from agents.base import AgentContext
-
 # Pre-import db.models so SQLAlchemy registers types once. db.session is the
 # problematic module (calls get_settings at import time), so conftest.py
 # injects a fake into sys.modules before any production code loads.
 import db.models  # noqa: F401
+from agents.base import AgentContext
 
 # Reference the fake db.session module installed by conftest.py.
 _fake_db_session_module = sys.modules["db.session"]
@@ -25,6 +23,7 @@ _fake_db_session_module = sys.modules["db.session"]
 # ---------------------------------------------------------------------------
 # Helpers
 # ---------------------------------------------------------------------------
+
 
 def _context() -> AgentContext:
     return AgentContext(
@@ -129,6 +128,7 @@ def _install_mock_session(
 # Tests: _fetch_calendar
 # ---------------------------------------------------------------------------
 
+
 class TestFetchCalendar:
     @pytest.mark.asyncio
     async def test_returns_today_and_tomorrow(self) -> None:
@@ -156,6 +156,7 @@ class TestFetchCalendar:
 # Tests: _fetch_emails
 # ---------------------------------------------------------------------------
 
+
 class TestFetchEmails:
     @pytest.mark.asyncio
     async def test_returns_both_accounts(self) -> None:
@@ -182,6 +183,7 @@ class TestFetchEmails:
 # Tests: _fetch_weather
 # ---------------------------------------------------------------------------
 
+
 class TestFetchWeather:
     @pytest.mark.asyncio
     async def test_returns_current_forecast_summary(self) -> None:
@@ -199,6 +201,7 @@ class TestFetchWeather:
 # ---------------------------------------------------------------------------
 # Tests: _fetch_health_data
 # ---------------------------------------------------------------------------
+
 
 class TestFetchHealthData:
     @pytest.mark.asyncio
@@ -233,6 +236,7 @@ class TestFetchHealthData:
 # Tests: _fetch_finance_data
 # ---------------------------------------------------------------------------
 
+
 class TestFetchFinanceData:
     @pytest.mark.asyncio
     async def test_returns_transactions_and_mtd(self) -> None:
@@ -258,10 +262,15 @@ class TestFetchFinanceData:
         # Fifth call: recurring subscription query → .all() = []
         mock_recurring_result = MagicMock()
         mock_recurring_result.all.return_value = []
-        _install_mock_session([
-            mock_txn_result, mock_mtd_result, mock_budget_result,
-            mock_anomaly_result, mock_recurring_result,
-        ])
+        _install_mock_session(
+            [
+                mock_txn_result,
+                mock_mtd_result,
+                mock_budget_result,
+                mock_anomaly_result,
+                mock_recurring_result,
+            ]
+        )
 
         result = await agent._fetch_finance_data()
 
@@ -292,10 +301,15 @@ class TestFetchFinanceData:
         # Fifth call: recurring subscription query → .all() = []
         mock_recurring_result = MagicMock()
         mock_recurring_result.all.return_value = []
-        _install_mock_session([
-            mock_txn_result, mock_mtd_result, mock_budget_result,
-            mock_anomaly_result, mock_recurring_result,
-        ])
+        _install_mock_session(
+            [
+                mock_txn_result,
+                mock_mtd_result,
+                mock_budget_result,
+                mock_anomaly_result,
+                mock_recurring_result,
+            ]
+        )
 
         result = await agent._fetch_finance_data()
 
@@ -305,6 +319,7 @@ class TestFetchFinanceData:
 # ---------------------------------------------------------------------------
 # Tests: stubs
 # ---------------------------------------------------------------------------
+
 
 class TestStubs:
     @pytest.mark.asyncio
@@ -317,9 +332,11 @@ class TestStubs:
     @pytest.mark.asyncio
     async def test_tasks_calls_notion_when_db_configured(self) -> None:
         mock_notion = AsyncMock()
-        mock_notion.get_tasks_due = AsyncMock(return_value=[
-            {"id": "page-1", "title": "Write tests", "properties": {}},
-        ])
+        mock_notion.get_tasks_due = AsyncMock(
+            return_value=[
+                {"id": "page-1", "title": "Write tests", "properties": {}},
+            ]
+        )
         agent = _make_agent(notion=mock_notion)
         agent._notion_tasks_db = "db-123"
 
@@ -339,6 +356,7 @@ class TestStubs:
 # ---------------------------------------------------------------------------
 # Tests: _fetch_job_matches
 # ---------------------------------------------------------------------------
+
 
 class TestFetchJobMatches:
     @pytest.mark.asyncio
@@ -372,6 +390,7 @@ class TestFetchJobMatches:
 # Tests: _fetch_system_health
 # ---------------------------------------------------------------------------
 
+
 class TestFetchSystemHealth:
     @pytest.mark.asyncio
     async def test_returns_unknown_when_no_data(self) -> None:
@@ -388,8 +407,18 @@ class TestFetchSystemHealth:
 
         mock_result = MagicMock()
         mock_result.all.return_value = [
-            MagicMock(target="postgres", status="green", response_time_ms=5, checked_at=MagicMock(isoformat=lambda: "2026-03-10T08:00:00+00:00")),
-            MagicMock(target="redis", status="green", response_time_ms=2, checked_at=MagicMock(isoformat=lambda: "2026-03-10T08:00:00+00:00")),
+            MagicMock(
+                target="postgres",
+                status="green",
+                response_time_ms=5,
+                checked_at=MagicMock(isoformat=lambda: "2026-03-10T08:00:00+00:00"),
+            ),
+            MagicMock(
+                target="redis",
+                status="green",
+                response_time_ms=2,
+                checked_at=MagicMock(isoformat=lambda: "2026-03-10T08:00:00+00:00"),
+            ),
         ]
         _install_mock_session(mock_result)
 
@@ -405,8 +434,18 @@ class TestFetchSystemHealth:
 
         mock_result = MagicMock()
         mock_result.all.return_value = [
-            MagicMock(target="postgres", status="green", response_time_ms=5, checked_at=MagicMock(isoformat=lambda: "2026-03-10T08:00:00+00:00")),
-            MagicMock(target="redis", status="red", response_time_ms=None, checked_at=MagicMock(isoformat=lambda: "2026-03-10T08:00:00+00:00")),
+            MagicMock(
+                target="postgres",
+                status="green",
+                response_time_ms=5,
+                checked_at=MagicMock(isoformat=lambda: "2026-03-10T08:00:00+00:00"),
+            ),
+            MagicMock(
+                target="redis",
+                status="red",
+                response_time_ms=None,
+                checked_at=MagicMock(isoformat=lambda: "2026-03-10T08:00:00+00:00"),
+            ),
         ]
         _install_mock_session(mock_result)
 
@@ -419,6 +458,7 @@ class TestFetchSystemHealth:
 # Tests: _fetch_all_data (integration)
 # ---------------------------------------------------------------------------
 
+
 class TestFetchAllData:
     @pytest.mark.asyncio
     async def test_all_sources_succeed(self) -> None:
@@ -429,14 +469,33 @@ class TestFetchAllData:
             weather=_mock_weather(),
         )
 
-        with patch.object(agent, "_fetch_health_data", new_callable=AsyncMock, return_value={"steps": {"value": 10000, "unit": "count"}}), \
-             patch.object(agent, "_fetch_finance_data", new_callable=AsyncMock, return_value={"yesterday_total": 50.0}), \
-             patch.object(agent, "_fetch_job_matches", new_callable=AsyncMock, return_value={"new_today": 2, "listings": []}), \
-             patch.object(agent, "_fetch_system_health", new_callable=AsyncMock, return_value={"status": "green"}):
-
+        with (
+            patch.object(
+                agent,
+                "_fetch_health_data",
+                new_callable=AsyncMock,
+                return_value={"steps": {"value": 10000, "unit": "count"}},
+            ),
+            patch.object(agent, "_fetch_finance_data", new_callable=AsyncMock, return_value={"yesterday_total": 50.0}),
+            patch.object(
+                agent, "_fetch_job_matches", new_callable=AsyncMock, return_value={"new_today": 2, "listings": []}
+            ),
+            patch.object(agent, "_fetch_system_health", new_callable=AsyncMock, return_value={"status": "green"}),
+        ):
             data = await agent._fetch_all_data()
 
-        expected_keys = {"calendar", "emails", "weather", "health", "finance", "tasks", "github", "jobs", "system_health", "_unavailable_sources"}
+        expected_keys = {
+            "calendar",
+            "emails",
+            "weather",
+            "health",
+            "finance",
+            "tasks",
+            "github",
+            "jobs",
+            "system_health",
+            "_unavailable_sources",
+        }
         assert set(data.keys()) == expected_keys
         assert data["_unavailable_sources"] == []
 
@@ -457,11 +516,14 @@ class TestFetchAllData:
             weather=_mock_weather(),
         )
 
-        with patch.object(agent, "_fetch_health_data", new_callable=AsyncMock, side_effect=RuntimeError("DB timeout")), \
-             patch.object(agent, "_fetch_finance_data", new_callable=AsyncMock, return_value={"yesterday_total": 0}), \
-             patch.object(agent, "_fetch_job_matches", new_callable=AsyncMock, return_value={"new_today": 0, "listings": []}), \
-             patch.object(agent, "_fetch_system_health", new_callable=AsyncMock, return_value={"status": "green"}):
-
+        with (
+            patch.object(agent, "_fetch_health_data", new_callable=AsyncMock, side_effect=RuntimeError("DB timeout")),
+            patch.object(agent, "_fetch_finance_data", new_callable=AsyncMock, return_value={"yesterday_total": 0}),
+            patch.object(
+                agent, "_fetch_job_matches", new_callable=AsyncMock, return_value={"new_today": 0, "listings": []}
+            ),
+            patch.object(agent, "_fetch_system_health", new_callable=AsyncMock, return_value={"status": "green"}),
+        ):
             data = await agent._fetch_all_data()
 
         # Calendar failed — should have error fallback
@@ -495,15 +557,27 @@ class TestFetchAllData:
             weather=weather,
         )
 
-        with patch.object(agent, "_fetch_health_data", new_callable=AsyncMock, side_effect=Exception("fail")), \
-             patch.object(agent, "_fetch_finance_data", new_callable=AsyncMock, side_effect=Exception("fail")), \
-             patch.object(agent, "_fetch_job_matches", new_callable=AsyncMock, side_effect=Exception("fail")), \
-             patch.object(agent, "_fetch_system_health", new_callable=AsyncMock, side_effect=Exception("fail")):
-
+        with (
+            patch.object(agent, "_fetch_health_data", new_callable=AsyncMock, side_effect=Exception("fail")),
+            patch.object(agent, "_fetch_finance_data", new_callable=AsyncMock, side_effect=Exception("fail")),
+            patch.object(agent, "_fetch_job_matches", new_callable=AsyncMock, side_effect=Exception("fail")),
+            patch.object(agent, "_fetch_system_health", new_callable=AsyncMock, side_effect=Exception("fail")),
+        ):
             data = await agent._fetch_all_data()
 
         # All 9 data keys + _unavailable_sources must be present with fallback values
-        expected_keys = {"calendar", "emails", "weather", "health", "finance", "tasks", "github", "jobs", "system_health", "_unavailable_sources"}
+        expected_keys = {
+            "calendar",
+            "emails",
+            "weather",
+            "health",
+            "finance",
+            "tasks",
+            "github",
+            "jobs",
+            "system_health",
+            "_unavailable_sources",
+        }
         assert set(data.keys()) == expected_keys
         assert len(data["_unavailable_sources"]) > 0
         assert data["tasks"] == []
@@ -515,17 +589,21 @@ class TestFetchAllData:
 # Tests: execute (BaseAgent interface)
 # ---------------------------------------------------------------------------
 
+
 class TestExecute:
     @pytest.mark.asyncio
     async def test_execute_returns_agent_result(self) -> None:
         agent = _make_agent()
         _install_mock_session()  # for _store_briefing
 
-        with patch.object(agent, "_fetch_health_data", new_callable=AsyncMock, return_value={}), \
-             patch.object(agent, "_fetch_finance_data", new_callable=AsyncMock, return_value={}), \
-             patch.object(agent, "_fetch_job_matches", new_callable=AsyncMock, return_value={"new_today": 0, "listings": []}), \
-             patch.object(agent, "_fetch_system_health", new_callable=AsyncMock, return_value={"status": "green"}):
-
+        with (
+            patch.object(agent, "_fetch_health_data", new_callable=AsyncMock, return_value={}),
+            patch.object(agent, "_fetch_finance_data", new_callable=AsyncMock, return_value={}),
+            patch.object(
+                agent, "_fetch_job_matches", new_callable=AsyncMock, return_value={"new_today": 0, "listings": []}
+            ),
+            patch.object(agent, "_fetch_system_health", new_callable=AsyncMock, return_value={"status": "green"}),
+        ):
             result = await agent.execute(_context())
 
         assert result.success is True
@@ -565,11 +643,14 @@ class TestExecute:
             config={"gemini_client": mock_gemini},
         )
 
-        with patch.object(agent, "_fetch_health_data", new_callable=AsyncMock, return_value={}), \
-             patch.object(agent, "_fetch_finance_data", new_callable=AsyncMock, return_value={}), \
-             patch.object(agent, "_fetch_job_matches", new_callable=AsyncMock, return_value={"new_today": 0, "listings": []}), \
-             patch.object(agent, "_fetch_system_health", new_callable=AsyncMock, return_value={"status": "green"}):
-
+        with (
+            patch.object(agent, "_fetch_health_data", new_callable=AsyncMock, return_value={}),
+            patch.object(agent, "_fetch_finance_data", new_callable=AsyncMock, return_value={}),
+            patch.object(
+                agent, "_fetch_job_matches", new_callable=AsyncMock, return_value={"new_today": 0, "listings": []}
+            ),
+            patch.object(agent, "_fetch_system_health", new_callable=AsyncMock, return_value={"status": "green"}),
+        ):
             result = await agent.execute(ctx)
 
         assert result.success is True
@@ -578,18 +659,21 @@ class TestExecute:
 
         # Verify Gemini was called with the right model
         call_kwargs = mock_gemini.generate.call_args
-        assert call_kwargs.kwargs["model"] == "gemini-2.0-pro"
+        assert call_kwargs.kwargs["model"] == "gemini-2.5-pro"
 
     @pytest.mark.asyncio
     async def test_execute_fallback_narrative_when_gemini_unavailable(self) -> None:
         agent = _make_agent()
         _install_mock_session()
 
-        with patch.object(agent, "_fetch_health_data", new_callable=AsyncMock, return_value={}), \
-             patch.object(agent, "_fetch_finance_data", new_callable=AsyncMock, return_value={}), \
-             patch.object(agent, "_fetch_job_matches", new_callable=AsyncMock, return_value={"new_today": 0, "listings": []}), \
-             patch.object(agent, "_fetch_system_health", new_callable=AsyncMock, return_value={"status": "green"}):
-
+        with (
+            patch.object(agent, "_fetch_health_data", new_callable=AsyncMock, return_value={}),
+            patch.object(agent, "_fetch_finance_data", new_callable=AsyncMock, return_value={}),
+            patch.object(
+                agent, "_fetch_job_matches", new_callable=AsyncMock, return_value={"new_today": 0, "listings": []}
+            ),
+            patch.object(agent, "_fetch_system_health", new_callable=AsyncMock, return_value={"status": "green"}),
+        ):
             result = await agent.execute(_context())
 
         assert result.success is True
@@ -611,11 +695,14 @@ class TestExecute:
             config={"gemini_client": mock_gemini},
         )
 
-        with patch.object(agent, "_fetch_health_data", new_callable=AsyncMock, return_value={}), \
-             patch.object(agent, "_fetch_finance_data", new_callable=AsyncMock, return_value={}), \
-             patch.object(agent, "_fetch_job_matches", new_callable=AsyncMock, return_value={"new_today": 0, "listings": []}), \
-             patch.object(agent, "_fetch_system_health", new_callable=AsyncMock, return_value={"status": "green"}):
-
+        with (
+            patch.object(agent, "_fetch_health_data", new_callable=AsyncMock, return_value={}),
+            patch.object(agent, "_fetch_finance_data", new_callable=AsyncMock, return_value={}),
+            patch.object(
+                agent, "_fetch_job_matches", new_callable=AsyncMock, return_value={"new_today": 0, "listings": []}
+            ),
+            patch.object(agent, "_fetch_system_health", new_callable=AsyncMock, return_value={"status": "green"}),
+        ):
             result = await agent.execute(ctx)
 
         assert result.success is True
@@ -630,6 +717,7 @@ class TestExecute:
 # ---------------------------------------------------------------------------
 # Tests: _build_payload
 # ---------------------------------------------------------------------------
+
 
 class TestBuildPayload:
     def _raw_data(self, **overrides: Any) -> dict[str, Any]:
@@ -656,10 +744,20 @@ class TestBuildPayload:
         payload = agent._build_payload(self._raw_data())
 
         required_keys = {
-            "greeting", "date", "weather", "outfit", "schedule",
-            "leave_home_by", "commute_note", "email_digest",
-            "system_health", "tasks_due_today", "job_matches",
-            "health", "finance", "proactive_suggestions",
+            "greeting",
+            "date",
+            "weather",
+            "outfit",
+            "schedule",
+            "leave_home_by",
+            "commute_note",
+            "email_digest",
+            "system_health",
+            "tasks_due_today",
+            "job_matches",
+            "health",
+            "finance",
+            "proactive_suggestions",
             "unavailability_note",
         }
         assert set(payload.keys()) == required_keys
@@ -677,14 +775,16 @@ class TestBuildPayload:
 
     def test_schedule_from_events(self) -> None:
         agent = _make_agent()
-        raw = self._raw_data(calendar={
-            "today": [
-                {"start": "09:00", "title": "Standup", "location": "Office"},
-                {"start": "14:00", "title": "1:1 with Manager", "location": "Zoom"},
-            ],
-            "tomorrow": [],
-            "date": "2026-03-10",
-        })
+        raw = self._raw_data(
+            calendar={
+                "today": [
+                    {"start": "09:00", "title": "Standup", "location": "Office"},
+                    {"start": "14:00", "title": "1:1 with Manager", "location": "Zoom"},
+                ],
+                "tomorrow": [],
+                "date": "2026-03-10",
+            }
+        )
         payload = agent._build_payload(raw)
 
         assert len(payload["schedule"]) == 2
@@ -694,11 +794,13 @@ class TestBuildPayload:
 
     def test_leave_home_by_computed(self) -> None:
         agent = _make_agent()
-        raw = self._raw_data(calendar={
-            "today": [{"start": "09:00", "title": "Meeting", "location": "Office"}],
-            "tomorrow": [],
-            "date": "2026-03-10",
-        })
+        raw = self._raw_data(
+            calendar={
+                "today": [{"start": "09:00", "title": "Meeting", "location": "Office"}],
+                "tomorrow": [],
+                "date": "2026-03-10",
+            }
+        )
         payload = agent._build_payload(raw)
         assert payload["leave_home_by"] is not None
         assert "8:35 AM" in payload["leave_home_by"]
@@ -744,10 +846,12 @@ class TestBuildPayload:
 
     def test_system_health_degraded(self) -> None:
         agent = _make_agent()
-        raw = self._raw_data(system_health={
-            "status": "degraded",
-            "targets": {"postgres": {"status": "green"}, "redis": {"status": "red"}},
-        })
+        raw = self._raw_data(
+            system_health={
+                "status": "degraded",
+                "targets": {"postgres": {"status": "green"}, "redis": {"status": "red"}},
+            }
+        )
         payload = agent._build_payload(raw)
 
         assert payload["system_health"]["status"] == "degraded"
@@ -755,13 +859,15 @@ class TestBuildPayload:
 
     def test_job_matches_with_listings(self) -> None:
         agent = _make_agent()
-        raw = self._raw_data(jobs={
-            "new_today": 3,
-            "listings": [
-                {"title": "ML Engineer", "company": "Scale AI", "match_score": 92},
-                {"title": "SWE", "company": "Google", "match_score": 85},
-            ],
-        })
+        raw = self._raw_data(
+            jobs={
+                "new_today": 3,
+                "listings": [
+                    {"title": "ML Engineer", "company": "Scale AI", "match_score": 92},
+                    {"title": "SWE", "company": "Google", "match_score": 85},
+                ],
+            }
+        )
         payload = agent._build_payload(raw)
 
         assert payload["job_matches"]["new_today"] == 3
@@ -777,10 +883,12 @@ class TestBuildPayload:
 
     def test_health_section_with_data(self) -> None:
         agent = _make_agent()
-        raw = self._raw_data(health={
-            "sleep": {"value": 7.5, "unit": "hours"},
-            "steps": {"value": 8500, "unit": "count"},
-        })
+        raw = self._raw_data(
+            health={
+                "sleep": {"value": 7.5, "unit": "hours"},
+                "steps": {"value": 8500, "unit": "count"},
+            }
+        )
         payload = agent._build_payload(raw)
 
         assert "7.5 hours" in payload["health"]["sleep"]
@@ -795,13 +903,15 @@ class TestBuildPayload:
 
     def test_finance_section_with_data(self) -> None:
         agent = _make_agent()
-        raw = self._raw_data(finance={
-            "yesterday_transactions": [
-                {"merchant": "Starbucks", "amount": 5.50, "category": "Food"},
-            ],
-            "yesterday_total": 5.50,
-            "month_to_date": 1247.00,
-        })
+        raw = self._raw_data(
+            finance={
+                "yesterday_transactions": [
+                    {"merchant": "Starbucks", "amount": 5.50, "category": "Food"},
+                ],
+                "yesterday_total": 5.50,
+                "month_to_date": 1247.00,
+            }
+        )
         payload = agent._build_payload(raw)
 
         assert "$5.50" in payload["finance"]["yesterday_spending"]
@@ -810,11 +920,13 @@ class TestBuildPayload:
 
     def test_proactive_suggestions_umbrella(self) -> None:
         agent = _make_agent()
-        raw = self._raw_data(weather={
-            "current": {"temp_f": 55, "conditions": "rain"},
-            "forecast": [],
-            "summary": {"summary": "Rainy", "needs_umbrella": True, "suggestion": "Bring rain gear."},
-        })
+        raw = self._raw_data(
+            weather={
+                "current": {"temp_f": 55, "conditions": "rain"},
+                "forecast": [],
+                "summary": {"summary": "Rainy", "needs_umbrella": True, "suggestion": "Bring rain gear."},
+            }
+        )
         payload = agent._build_payload(raw)
 
         suggestions = payload["proactive_suggestions"]
@@ -829,11 +941,13 @@ class TestBuildPayload:
 
     def test_commute_note_for_out_of_town(self) -> None:
         agent = _make_agent()
-        raw = self._raw_data(calendar={
-            "today": [{"start": "11:00", "title": "Cleveland appointment", "location": "Cleveland, OH"}],
-            "tomorrow": [],
-            "date": "2026-03-10",
-        })
+        raw = self._raw_data(
+            calendar={
+                "today": [{"start": "11:00", "title": "Cleveland appointment", "location": "Cleveland, OH"}],
+                "tomorrow": [],
+                "date": "2026-03-10",
+            }
+        )
         payload = agent._build_payload(raw)
 
         assert payload["commute_note"] is not None
@@ -843,6 +957,7 @@ class TestBuildPayload:
 # ---------------------------------------------------------------------------
 # Tests: _compose_narrative
 # ---------------------------------------------------------------------------
+
 
 class TestComposeNarrative:
     @pytest.mark.asyncio
@@ -937,6 +1052,7 @@ class TestComposeNarrative:
 # Tests: _store_briefing
 # ---------------------------------------------------------------------------
 
+
 class TestStoreBriefing:
     @pytest.mark.asyncio
     async def test_stores_and_returns_uuid(self) -> None:
@@ -956,6 +1072,7 @@ class TestStoreBriefing:
 # ---------------------------------------------------------------------------
 # Tests: helper functions
 # ---------------------------------------------------------------------------
+
 
 class TestHelperFunctions:
     def test_build_schedule_from_events(self) -> None:
@@ -983,14 +1100,18 @@ class TestHelperFunctions:
 
     def test_summarize_system_health_green(self) -> None:
         from agents.briefing import _summarize_system_health
+
         assert _summarize_system_health({"status": "green"}) == "All services operational."
 
     def test_summarize_system_health_degraded(self) -> None:
         from agents.briefing import _summarize_system_health
-        result = _summarize_system_health({
-            "status": "degraded",
-            "targets": {"redis": {"status": "red"}, "pg": {"status": "green"}},
-        })
+
+        result = _summarize_system_health(
+            {
+                "status": "degraded",
+                "targets": {"redis": {"status": "red"}, "pg": {"status": "green"}},
+            }
+        )
         assert "redis" in result
 
     def test_filter_payload_for_prompt(self) -> None:

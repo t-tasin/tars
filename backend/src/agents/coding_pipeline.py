@@ -19,8 +19,9 @@ import json
 import os
 import re
 import subprocess
+from collections.abc import Callable, Coroutine
 from dataclasses import dataclass, field
-from typing import Any, Callable, Coroutine
+from typing import Any
 from uuid import uuid4
 
 import structlog
@@ -36,6 +37,7 @@ NotifyCallback = Callable[[str, str], Coroutine[Any, Any, None]] | None
 # ---------------------------------------------------------------------------
 # Data structures
 # ---------------------------------------------------------------------------
+
 
 @dataclass
 class PipelineTask:
@@ -66,6 +68,7 @@ class PipelineResult:
 # ---------------------------------------------------------------------------
 # Pipeline
 # ---------------------------------------------------------------------------
+
 
 class CodingPipeline:
     """Multi-phase coding pipeline using Claude Code CLI."""
@@ -113,7 +116,8 @@ class CodingPipeline:
         try:
             await self._notify(notify_callback, "phase1", "Planning tasks...")
             plan, plan_summary, test_commands = await self._phase_plan(
-                repo_path, task_description,
+                repo_path,
+                task_description,
             )
         except Exception as exc:
             log.error("pipeline_phase1_failed", error=str(exc))
@@ -136,11 +140,14 @@ class CodingPipeline:
         # Phase 2 — Execute
         try:
             await self._notify(
-                notify_callback, "phase2",
+                notify_callback,
+                "phase2",
                 f"Executing {tasks_total} task(s)...",
             )
             tasks_completed = await self._phase_execute(
-                repo_path, plan, plan_summary,
+                repo_path,
+                plan,
+                plan_summary,
             )
         except Exception as exc:
             log.error("pipeline_phase2_failed", error=str(exc))
@@ -156,7 +163,10 @@ class CodingPipeline:
         try:
             await self._notify(notify_callback, "phase3", "Reviewing changes...")
             review_passed = await self._phase_review(
-                repo_path, branch, plan_summary, task_description,
+                repo_path,
+                branch,
+                plan_summary,
+                task_description,
             )
         except Exception as exc:
             log.error("pipeline_phase3_failed", error=str(exc))
@@ -168,7 +178,8 @@ class CodingPipeline:
             try:
                 await self._notify(notify_callback, "phase4", "Running tests...")
                 tests_passed = await self._phase_test(
-                    repo_path, test_commands,
+                    repo_path,
+                    test_commands,
                 )
             except Exception as exc:
                 log.error("pipeline_phase4_failed", error=str(exc))
@@ -251,12 +262,14 @@ class CodingPipeline:
 
         tasks: list[PipelineTask] = []
         for t in parsed.get("tasks", []):
-            tasks.append(PipelineTask(
-                id=int(t.get("id", len(tasks) + 1)),
-                description=t.get("description", ""),
-                files=t.get("files", []),
-                depends_on=t.get("depends_on", []),
-            ))
+            tasks.append(
+                PipelineTask(
+                    id=int(t.get("id", len(tasks) + 1)),
+                    description=t.get("description", ""),
+                    files=t.get("files", []),
+                    depends_on=t.get("depends_on", []),
+                )
+            )
 
         log.info(
             "pipeline_plan_complete",
@@ -292,10 +305,7 @@ class CodingPipeline:
                 tasks=[t.id for t in batch],
             )
 
-            coros = [
-                self._execute_single_task(repo_path, task, plan_summary, max_turns)
-                for task in batch
-            ]
+            coros = [self._execute_single_task(repo_path, task, plan_summary, max_turns) for task in batch]
             results = await asyncio.gather(*coros, return_exceptions=True)
 
             for task, res in zip(batch, results):
@@ -375,7 +385,10 @@ class CodingPipeline:
         max_retries = getattr(settings, "coding_max_retries", 2)
 
         diff_stat = await self._run_git(
-            repo_path, "diff", f"{base_branch}...HEAD", "--stat",
+            repo_path,
+            "diff",
+            f"{base_branch}...HEAD",
+            "--stat",
         )
 
         prompt = (
@@ -470,7 +483,7 @@ class CodingPipeline:
 
             for cmd in test_commands:
                 try:
-                    output = await asyncio.to_thread(
+                    await asyncio.to_thread(
                         subprocess.check_output,
                         cmd,
                         shell=True,
@@ -485,10 +498,7 @@ class CodingPipeline:
                     )
                 except subprocess.CalledProcessError as exc:
                     all_passed = False
-                    failure_output = (
-                        exc.output.decode("utf-8", errors="replace")
-                        if exc.output else str(exc)
-                    )
+                    failure_output = exc.output.decode("utf-8", errors="replace") if exc.output else str(exc)
                     log.warning(
                         "pipeline_test_failed",
                         command=cmd,
@@ -544,10 +554,7 @@ class CodingPipeline:
         batches: list[list[PipelineTask]] = []
 
         while remaining:
-            batch_ids = [
-                tid for tid in remaining
-                if all(dep in completed for dep in task_map[tid].depends_on)
-            ]
+            batch_ids = [tid for tid in remaining if all(dep in completed for dep in task_map[tid].depends_on)]
 
             if not batch_ids:
                 # Circular dependency — force remaining into one batch
@@ -640,7 +647,10 @@ class CodingPipeline:
         """Return git diff --shortstat for the working branch vs base."""
         try:
             return await self._run_git(
-                repo_path, "diff", f"{base_branch}...HEAD", "--shortstat",
+                repo_path,
+                "diff",
+                f"{base_branch}...HEAD",
+                "--shortstat",
             )
         except Exception:
             return ""

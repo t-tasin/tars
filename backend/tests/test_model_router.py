@@ -3,10 +3,10 @@
 from __future__ import annotations
 
 import pytest
+from shared.constants import IntentType, ModelName
 
 from orchestrator.intent_classifier import Intent
 from orchestrator.model_router import MCP_PROFILES, ModelRoute, ModelRouter
-from shared.constants import IntentType, ModelName
 
 
 @pytest.fixture

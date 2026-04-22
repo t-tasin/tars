@@ -64,22 +64,28 @@ class JobScraperExecutor(BaseExecutor):
         tasks: list[asyncio.Task[list[dict]]] = []
 
         if "jobspy" in sources:
-            tasks.append(asyncio.create_task(
-                self._scrape_jobspy(search_criteria),
-                name="jobspy",
-            ))
+            tasks.append(
+                asyncio.create_task(
+                    self._scrape_jobspy(search_criteria),
+                    name="jobspy",
+                )
+            )
 
         if "greenhouse" in sources:
-            tasks.append(asyncio.create_task(
-                self._scrape_greenhouse(search_criteria, greenhouse_companies),
-                name="greenhouse",
-            ))
+            tasks.append(
+                asyncio.create_task(
+                    self._scrape_greenhouse(search_criteria, greenhouse_companies),
+                    name="greenhouse",
+                )
+            )
 
         if "google_jobs" in sources and serpapi_key:
-            tasks.append(asyncio.create_task(
-                self._scrape_google_jobs(search_criteria, serpapi_key),
-                name="google_jobs",
-            ))
+            tasks.append(
+                asyncio.create_task(
+                    self._scrape_google_jobs(search_criteria, serpapi_key),
+                    name="google_jobs",
+                )
+            )
 
         # Gather with timeout
         all_results: list[dict] = []
@@ -165,16 +171,20 @@ class JobScraperExecutor(BaseExecutor):
 
         results: list[dict] = []
         for _, row in df.iterrows():
-            results.append({
-                "source": "jobspy",
-                "external_id": f"jobspy-{row.get('id', '')}",
-                "title": str(row.get("title", "")),
-                "company": str(row.get("company_name", row.get("company", ""))),
-                "location": str(row.get("location", "")),
-                "salary_range": _format_salary(row.get("min_amount"), row.get("max_amount"), row.get("interval", "")),
-                "description": str(row.get("description", "")),
-                "url": str(row.get("job_url", row.get("link", ""))),
-            })
+            results.append(
+                {
+                    "source": "jobspy",
+                    "external_id": f"jobspy-{row.get('id', '')}",
+                    "title": str(row.get("title", "")),
+                    "company": str(row.get("company_name", row.get("company", ""))),
+                    "location": str(row.get("location", "")),
+                    "salary_range": _format_salary(
+                        row.get("min_amount"), row.get("max_amount"), row.get("interval", "")
+                    ),
+                    "description": str(row.get("description", "")),
+                    "url": str(row.get("job_url", row.get("link", ""))),
+                }
+            )
 
         log.info("jobspy_scrape_done", count=len(results))
         return results
@@ -187,10 +197,26 @@ class JobScraperExecutor(BaseExecutor):
         """Poll Greenhouse boards for matching jobs."""
         if companies is None:
             companies = [
-                "anthropic", "openai", "google", "stripe", "notion", "figma",
-                "vercel", "linear", "databricks", "scale", "cohere", "mistral",
-                "meta", "apple", "netflix", "airbnb", "coinbase", "rippling",
-                "retool", "supabase",
+                "anthropic",
+                "openai",
+                "google",
+                "stripe",
+                "notion",
+                "figma",
+                "vercel",
+                "linear",
+                "databricks",
+                "scale",
+                "cohere",
+                "mistral",
+                "meta",
+                "apple",
+                "netflix",
+                "airbnb",
+                "coinbase",
+                "rippling",
+                "retool",
+                "supabase",
             ]
 
         keywords = [
@@ -228,16 +254,18 @@ class JobScraperExecutor(BaseExecutor):
                     if job.get("location"):
                         location_name = job["location"].get("name", "")
 
-                    results.append({
-                        "source": "greenhouse",
-                        "external_id": f"gh-{slug}-{job.get('id', '')}",
-                        "title": title,
-                        "company": slug.replace("-", " ").title(),
-                        "location": location_name,
-                        "salary_range": "",
-                        "description": description[:3000],
-                        "url": job.get("absolute_url", ""),
-                    })
+                    results.append(
+                        {
+                            "source": "greenhouse",
+                            "external_id": f"gh-{slug}-{job.get('id', '')}",
+                            "title": title,
+                            "company": slug.replace("-", " ").title(),
+                            "location": location_name,
+                            "salary_range": "",
+                            "description": description[:3000],
+                            "url": job.get("absolute_url", ""),
+                        }
+                    )
 
         log.info("greenhouse_scrape_done", count=len(results))
         return results
@@ -268,16 +296,18 @@ class JobScraperExecutor(BaseExecutor):
         results: list[dict] = []
         for job in data.get("jobs_results", []):
             job_id = job.get("job_id", "")
-            results.append({
-                "source": "google_jobs",
-                "external_id": f"gjobs-{job_id}" if job_id else "",
-                "title": job.get("title", ""),
-                "company": job.get("company_name", ""),
-                "location": job.get("location", ""),
-                "salary_range": "",
-                "description": job.get("description", ""),
-                "url": job.get("share_link", ""),
-            })
+            results.append(
+                {
+                    "source": "google_jobs",
+                    "external_id": f"gjobs-{job_id}" if job_id else "",
+                    "title": job.get("title", ""),
+                    "company": job.get("company_name", ""),
+                    "location": job.get("location", ""),
+                    "salary_range": "",
+                    "description": job.get("description", ""),
+                    "url": job.get("share_link", ""),
+                }
+            )
 
         log.info("google_jobs_scrape_done", count=len(results))
         return results
@@ -302,6 +332,7 @@ def _deduplicate(listings: list[dict]) -> list[dict]:
 
 def _dedup_key(title: str, company: str) -> str:
     """Normalized key for deduplication."""
+
     def clean(s: str) -> str:
         s = s.lower().strip()
         s = re.sub(r"\b(inc|llc|ltd|corp|co)\b\.?", "", s)

@@ -7,7 +7,6 @@ from collections.abc import AsyncGenerator
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.api.auth import verify_api_key
-from src.config import Settings, get_settings
 from src.db.session import async_session_factory
 
 

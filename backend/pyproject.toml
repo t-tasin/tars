@@ -40,6 +40,7 @@ dependencies = [
     "psutil>=6.0",
     "python-jobspy>=1.1.0",
     "python-multipart>=0.0.9",
+    "prometheus-fastapi-instrumentator>=7.0",
 ]
 
 [project.optional-dependencies]
@@ -61,6 +62,23 @@ line-length = 120
 
 [tool.ruff.lint]
 select = ["E", "F", "I", "N", "W", "UP"]
+
+[tool.ruff.lint.per-file-ignores]
+# Auto-generated migrations keep the raw SQL / column-spec lines long
+"alembic/versions/*" = ["E501"]
+# Test fixtures intentionally contain long literals and module-level mock installs
+"tests/*" = ["E501", "F841", "N806", "E402"]
+# Agent prompt strings intentionally long
+"src/agents/briefing.py" = ["E501"]
+"src/agents/daily_life.py" = ["E501"]
+"src/agents/email_classifier.py" = ["E501"]
+"src/agents/workout_tracker.py" = ["E501"]
+# Scheduler cron specs + job descriptions hit the limit
+"src/scheduler/jobs.py" = ["E501"]
+# Job-board scrapers embed long URL / regex literals
+"src/integrations/job_boards/*" = ["E501"]
+# wardrobe.py uses the sys.modules router-registration hack before the last import
+"src/api/wardrobe.py" = ["E402"]
 
 [tool.pytest.ini_options]
 asyncio_mode = "auto"

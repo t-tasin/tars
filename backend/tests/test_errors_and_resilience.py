@@ -2,9 +2,7 @@
 
 from __future__ import annotations
 
-import asyncio
 import time
-from unittest.mock import AsyncMock
 
 import pytest
 
@@ -30,7 +28,6 @@ from utils.resilience import (
     get_service_health_registry,
     retry_with_backoff,
 )
-
 
 # ---------------------------------------------------------------------------
 # Exception hierarchy tests

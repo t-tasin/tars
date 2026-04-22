@@ -122,12 +122,14 @@ async def test_search_sends_correct_params(adapter):
     mock_resp = httpx.Response(200, json={"jobs_results": []}, request=httpx.Request("GET", "https://test"))
 
     with patch("httpx.AsyncClient.get", new_callable=AsyncMock, return_value=mock_resp) as mock_get:
-        await adapter.search({
-            "query": "backend engineer",
-            "location": "New York",
-            "date_posted": "3days",
-            "page": 2,
-        })
+        await adapter.search(
+            {
+                "query": "backend engineer",
+                "location": "New York",
+                "date_posted": "3days",
+                "page": 2,
+            }
+        )
 
         call_kwargs = mock_get.call_args
         params = call_kwargs.kwargs.get("params", call_kwargs.args[1] if len(call_kwargs.args) > 1 else {})

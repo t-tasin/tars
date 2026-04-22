@@ -8,11 +8,11 @@ from typing import Any
 from uuid import UUID
 
 import structlog
+from shared.constants import ModelName
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from db.models import ModelUsage
-from shared.constants import ModelName
 
 log = structlog.get_logger()
 
@@ -92,7 +92,8 @@ class UsageTracker:
     # ------------------------------------------------------------------
 
     async def get_daily_summary(
-        self, date: dt.date | None = None,
+        self,
+        date: dt.date | None = None,
     ) -> dict[str, dict[str, int | str]]:
         """Get usage summary for a given day.
 
@@ -105,7 +106,7 @@ class UsageTracker:
             }
         """
         target = date or dt.date.today()
-        start = dt.datetime.combine(target, dt.time.min, tzinfo=dt.timezone.utc)
+        start = dt.datetime.combine(target, dt.time.min, tzinfo=dt.UTC)
         end = start + dt.timedelta(days=1)
 
         stmt = (
@@ -150,7 +151,7 @@ class UsageTracker:
         """
         today = dt.date.today()
         monday = today - dt.timedelta(days=today.weekday())
-        week_start = dt.datetime.combine(monday, dt.time.min, tzinfo=dt.timezone.utc)
+        week_start = dt.datetime.combine(monday, dt.time.min, tzinfo=dt.UTC)
         week_end = week_start + dt.timedelta(days=7)
 
         stmt = (
@@ -191,7 +192,9 @@ class UsageTracker:
         }
 
     async def get_top_agents_by_usage(
-        self, date: dt.date | None = None, limit: int = 5,
+        self,
+        date: dt.date | None = None,
+        limit: int = 5,
     ) -> list[dict[str, int | str]]:
         """Get top agents by AI call count for a given day.
 
@@ -200,7 +203,7 @@ class UsageTracker:
             [{"agent_type": "briefing", "calls": 12, "total_tokens": 5400, "estimated_cost": "0.002"}, ...]
         """
         target = date or dt.date.today()
-        start = dt.datetime.combine(target, dt.time.min, tzinfo=dt.timezone.utc)
+        start = dt.datetime.combine(target, dt.time.min, tzinfo=dt.UTC)
         end = start + dt.timedelta(days=1)
 
         stmt = (
@@ -208,7 +211,8 @@ class UsageTracker:
                 ModelUsage.agent_type,
                 func.count().label("calls"),
                 func.coalesce(
-                    func.sum(ModelUsage.tokens_input + ModelUsage.tokens_output), 0,
+                    func.sum(ModelUsage.tokens_input + ModelUsage.tokens_output),
+                    0,
                 ).label("total_tokens"),
                 func.coalesce(func.sum(ModelUsage.estimated_cost), 0).label("estimated_cost"),
             )
@@ -245,7 +249,8 @@ class UsageTracker:
         # Daily summary
         total_daily_calls = sum(m.get("calls", 0) for m in daily.values())  # type: ignore[union-attr]
         total_daily_cost = sum(
-            Decimal(str(m.get("estimated_cost", "0"))) for m in daily.values()  # type: ignore[union-attr]
+            Decimal(str(m.get("estimated_cost", "0")))
+            for m in daily.values()  # type: ignore[union-attr]
         )
         claude_daily = daily.get(ModelName.CLAUDE_CODE, {})
         claude_daily_calls = claude_daily.get("calls", 0) if claude_daily else 0
@@ -261,13 +266,9 @@ class UsageTracker:
 
         # Weekly summary
         lines.append("")
+        lines.append(f"This week: {weekly['total_calls']} calls, ${weekly['total_estimated_cost']}")
         lines.append(
-            f"This week: {weekly['total_calls']} calls, "
-            f"${weekly['total_estimated_cost']}"
-        )
-        lines.append(
-            f"  Claude: {weekly['claude_calls']}/{weekly['claude_weekly_limit']} "
-            f"({weekly['claude_limit_pct']}%)"
+            f"  Claude: {weekly['claude_calls']}/{weekly['claude_weekly_limit']} ({weekly['claude_limit_pct']}%)"
         )
 
         # Top agents
@@ -275,10 +276,7 @@ class UsageTracker:
             lines.append("")
             lines.append("Top agents today:")
             for agent in top_agents[:5]:
-                lines.append(
-                    f"  {agent['agent_type']}: {agent['calls']} calls, "
-                    f"{agent['total_tokens']} tokens"
-                )
+                lines.append(f"  {agent['agent_type']}: {agent['calls']} calls, {agent['total_tokens']} tokens")
 
         # Budget alert
         if budget_alert:
@@ -300,10 +298,10 @@ class UsageTracker:
         """
         today = dt.date.today()
         monday = today - dt.timedelta(days=today.weekday())
-        week_start = dt.datetime.combine(monday, dt.time.min, tzinfo=dt.timezone.utc)
+        week_start = dt.datetime.combine(monday, dt.time.min, tzinfo=dt.UTC)
 
         # Today's Claude calls
-        today_start = dt.datetime.combine(today, dt.time.min, tzinfo=dt.timezone.utc)
+        today_start = dt.datetime.combine(today, dt.time.min, tzinfo=dt.UTC)
         today_end = today_start + dt.timedelta(days=1)
 
         daily_stmt = (
@@ -334,9 +332,7 @@ class UsageTracker:
         alerts: list[str] = []
 
         if weekly_calls >= CLAUDE_WEEKLY_LIMIT:
-            alerts.append(
-                f"Claude weekly limit REACHED: {weekly_calls}/{CLAUDE_WEEKLY_LIMIT} calls."
-            )
+            alerts.append(f"Claude weekly limit REACHED: {weekly_calls}/{CLAUDE_WEEKLY_LIMIT} calls.")
         elif weekly_calls >= int(CLAUDE_WEEKLY_LIMIT * BUDGET_ALERT_PCT):
             alerts.append(
                 f"Claude weekly budget warning: {weekly_calls}/{CLAUDE_WEEKLY_LIMIT} calls "
@@ -344,9 +340,7 @@ class UsageTracker:
             )
 
         if daily_calls >= CLAUDE_DAILY_LIMIT:
-            alerts.append(
-                f"Claude daily limit REACHED: {daily_calls}/{CLAUDE_DAILY_LIMIT} calls."
-            )
+            alerts.append(f"Claude daily limit REACHED: {daily_calls}/{CLAUDE_DAILY_LIMIT} calls.")
         elif daily_calls >= int(CLAUDE_DAILY_LIMIT * BUDGET_ALERT_PCT):
             alerts.append(
                 f"Claude daily budget warning: {daily_calls}/{CLAUDE_DAILY_LIMIT} calls "
@@ -373,8 +367,7 @@ def _estimate_cost(model: str, tokens_input: int, tokens_output: int) -> Decimal
         return Decimal("0")
 
     input_rate, output_rate = rates
-    cost = (
-        input_rate * Decimal(tokens_input) / Decimal("1000000")
-        + output_rate * Decimal(tokens_output) / Decimal("1000000")
+    cost = input_rate * Decimal(tokens_input) / Decimal("1000000") + output_rate * Decimal(tokens_output) / Decimal(
+        "1000000"
     )
     return cost.quantize(Decimal("0.000001"))

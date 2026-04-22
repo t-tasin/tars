@@ -61,15 +61,17 @@ class TestEnsureJobTrackingDatabase:
         """If a child database named 'Job Tracker' exists, return its ID."""
         client = _make_notion_client()
 
-        client._client.blocks.children.list = AsyncMock(return_value={
-            "results": [
-                {
-                    "type": "child_database",
-                    "id": "existing-db-id",
-                    "child_database": {"title": "T.A.R.S. Job Tracker"},
-                },
-            ],
-        })
+        client._client.blocks.children.list = AsyncMock(
+            return_value={
+                "results": [
+                    {
+                        "type": "child_database",
+                        "id": "existing-db-id",
+                        "child_database": {"title": "T.A.R.S. Job Tracker"},
+                    },
+                ],
+            }
+        )
 
         db_id = await client.ensure_job_tracking_database("parent-page-id")
         assert db_id == "existing-db-id"

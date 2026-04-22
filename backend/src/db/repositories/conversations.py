@@ -29,18 +29,12 @@ class ConversationRepository:
 
     async def get_by_id(self, conversation_id: uuid.UUID) -> Conversation | None:
         """Fetch a conversation by primary key."""
-        result = await self._session.execute(
-            select(Conversation).where(Conversation.id == conversation_id)
-        )
+        result = await self._session.execute(select(Conversation).where(Conversation.id == conversation_id))
         return result.scalar_one_or_none()
 
     async def get_recent(self, limit: int = 20) -> list[Conversation]:
         """Fetch the most recent conversations."""
-        result = await self._session.execute(
-            select(Conversation)
-            .order_by(Conversation.created_at.desc())
-            .limit(limit)
-        )
+        result = await self._session.execute(select(Conversation).order_by(Conversation.created_at.desc()).limit(limit))
         return list(result.scalars().all())
 
     async def add_message(
@@ -69,11 +63,7 @@ class ConversationRepository:
         limit: int | None = None,
     ) -> list[Message]:
         """Fetch messages for a conversation, ordered by creation time."""
-        stmt = (
-            select(Message)
-            .where(Message.conversation_id == conversation_id)
-            .order_by(Message.created_at.asc())
-        )
+        stmt = select(Message).where(Message.conversation_id == conversation_id).order_by(Message.created_at.asc())
         if limit is not None:
             stmt = stmt.limit(limit)
         result = await self._session.execute(stmt)

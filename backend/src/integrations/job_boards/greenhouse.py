@@ -12,7 +12,6 @@ import asyncio
 import re
 import time
 from html.parser import HTMLParser
-from typing import Any
 
 import httpx
 import structlog
@@ -24,16 +23,42 @@ log = structlog.get_logger(__name__)
 _GREENHOUSE_API = "https://boards-api.greenhouse.io/v1/boards"
 
 _DEFAULT_COMPANIES: list[str] = [
-    "anthropic", "openai", "google", "stripe", "notion", "figma",
-    "vercel", "linear", "databricks", "scale", "cohere", "mistral",
-    "meta", "apple", "netflix", "airbnb", "coinbase", "rippling",
-    "retool", "supabase",
+    "anthropic",
+    "openai",
+    "google",
+    "stripe",
+    "notion",
+    "figma",
+    "vercel",
+    "linear",
+    "databricks",
+    "scale",
+    "cohere",
+    "mistral",
+    "meta",
+    "apple",
+    "netflix",
+    "airbnb",
+    "coinbase",
+    "rippling",
+    "retool",
+    "supabase",
 ]
 
 _DEFAULT_KEYWORDS: list[str] = [
-    "software engineer", "ml", "ai", "machine learning", "research",
-    "backend", "fullstack", "full stack", "python", "typescript",
-    "data engineer", "platform engineer", "infrastructure",
+    "software engineer",
+    "ml",
+    "ai",
+    "machine learning",
+    "research",
+    "backend",
+    "fullstack",
+    "full stack",
+    "python",
+    "typescript",
+    "data engineer",
+    "platform engineer",
+    "infrastructure",
 ]
 
 _RATE_LIMIT_DELAY = 0.5  # seconds between company requests
@@ -115,16 +140,18 @@ class GreenhouseAdapter(JobBoardAdapter):
             if job.get("location"):
                 location_name = job["location"].get("name", "")
 
-            results.append({
-                "id": f"gh-{slug}-{job.get('id', '')}",
-                "title": title,
-                "company": slug.replace("-", " ").title(),
-                "location": location_name,
-                "salary": "",
-                "description": description[:3000],
-                "url": job.get("absolute_url", ""),
-                "updated_at": job.get("updated_at", ""),
-            })
+            results.append(
+                {
+                    "id": f"gh-{slug}-{job.get('id', '')}",
+                    "title": title,
+                    "company": slug.replace("-", " ").title(),
+                    "location": location_name,
+                    "salary": "",
+                    "description": description[:3000],
+                    "url": job.get("absolute_url", ""),
+                    "updated_at": job.get("updated_at", ""),
+                }
+            )
 
         log.debug(
             "greenhouse_company_fetched",

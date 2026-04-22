@@ -5,10 +5,10 @@ from __future__ import annotations
 from uuid import UUID, uuid4
 
 import pytest
+from shared.constants import ContentType
 
 from agents.base import AgentResult
 from orchestrator.response_formatter import ResponseFormatter
-from shared.constants import ContentType
 
 
 @pytest.fixture

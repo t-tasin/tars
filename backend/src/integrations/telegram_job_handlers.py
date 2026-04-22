@@ -11,7 +11,7 @@ and is wired into the scheduler after the 2 AM scan completes.
 
 from __future__ import annotations
 
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from typing import Any
 from uuid import UUID
 
@@ -41,16 +41,12 @@ async def send_job_digest(
 
     if not jobs:
         await gateway.send_message(
-            text=(
-                "<b>T.A.R.S. Daily Job Digest</b>\n\n"
-                "No new matches found today. The next scan runs at 2:00 AM."
-            ),
+            text=("<b>T.A.R.S. Daily Job Digest</b>\n\nNo new matches found today. The next scan runs at 2:00 AM."),
         )
         return
 
-    today = datetime.now(timezone.utc).strftime("%B %d, %Y")
+    today = datetime.now(UTC).strftime("%B %d, %Y")
     total = scan_stats.get("total_scraped", len(jobs)) if scan_stats else len(jobs)
-    sources = scan_stats.get("sources", "multiple sources") if scan_stats else "multiple sources"
 
     header = (
         f"<b>T.A.R.S. Daily Job Digest \u2014 {today}</b>\n"
@@ -87,13 +83,15 @@ async def send_job_digest(
 
         text = "\n".join(lines)
 
-        keyboard = InlineKeyboardMarkup([
+        keyboard = InlineKeyboardMarkup(
             [
-                InlineKeyboardButton("\u2705 Apply", callback_data=f"job_apply_{job_id}"),
-                InlineKeyboardButton("\u23ed Skip", callback_data=f"job_skip_{job_id}"),
-                InlineKeyboardButton("\U0001f4cb Details", callback_data=f"job_details_{job_id}"),
-            ],
-        ])
+                [
+                    InlineKeyboardButton("\u2705 Apply", callback_data=f"job_apply_{job_id}"),
+                    InlineKeyboardButton("\u23ed Skip", callback_data=f"job_skip_{job_id}"),
+                    InlineKeyboardButton("\U0001f4cb Details", callback_data=f"job_details_{job_id}"),
+                ],
+            ]
+        )
 
         await gateway.send_message(text=text, reply_markup=keyboard)
 
@@ -118,18 +116,19 @@ async def handle_job_apply(job_id: str) -> dict[str, Any]:
 
     async with get_db_session() as session:
         from sqlalchemy import select
-        result = await session.execute(
-            select(JobListing).where(JobListing.id == UUID(job_id))
-        )
+
+        result = await session.execute(select(JobListing).where(JobListing.id == UUID(job_id)))
         job = result.scalar_one_or_none()
 
         if job is None:
             return {"success": False, "message": f"Job {job_id} not found"}
 
-        apply_method = job.apply_method or classify_apply_method({
-            "url": job.url,
-            "source": job.source,
-        })
+        apply_method = job.apply_method or classify_apply_method(
+            {
+                "url": job.url,
+                "source": job.source,
+            }
+        )
 
         # Store apply method if not already set
         if not job.apply_method:
@@ -151,15 +150,15 @@ async def handle_job_apply(job_id: str) -> dict[str, Any]:
 
 async def handle_job_skip(job_id: str) -> dict[str, Any]:
     """Handle the Skip button tap. Marks job as skipped in DB + Notion."""
+    from shared.constants import JobStatus
+
     from db.models import JobListing
     from db.session import get_db_session
-    from shared.constants import JobStatus
 
     async with get_db_session() as session:
         from sqlalchemy import select
-        result = await session.execute(
-            select(JobListing).where(JobListing.id == UUID(job_id))
-        )
+
+        result = await session.execute(select(JobListing).where(JobListing.id == UUID(job_id)))
         job = result.scalar_one_or_none()
 
         if job is None:
@@ -172,6 +171,7 @@ async def handle_job_skip(job_id: str) -> dict[str, Any]:
             try:
                 from config import get_settings
                 from integrations.notion_client import NotionClient
+
                 settings = get_settings()
                 notion = NotionClient(token=settings.notion_token)
                 await notion.update_job_status_notion(job.notion_page_id, "Skipped")
@@ -193,9 +193,8 @@ async def handle_job_details(job_id: str) -> dict[str, Any]:
 
     async with get_db_session() as session:
         from sqlalchemy import select
-        result = await session.execute(
-            select(JobListing).where(JobListing.id == UUID(job_id))
-        )
+
+        result = await session.execute(select(JobListing).where(JobListing.id == UUID(job_id)))
         job = result.scalar_one_or_none()
 
         if job is None:
@@ -279,16 +278,13 @@ async def send_job_details_message(
 
 async def send_jobs_status(gateway: TelegramGateway) -> None:
     """Send pipeline stats: count by status."""
+    from sqlalchemy import func, select
+
     from db.models import JobListing
     from db.session import get_db_session
-    from sqlalchemy import func, select
-    from shared.constants import JobStatus
 
     async with get_db_session() as session:
-        result = await session.execute(
-            select(JobListing.status, func.count(JobListing.id))
-            .group_by(JobListing.status)
-        )
+        result = await session.execute(select(JobListing.status, func.count(JobListing.id)).group_by(JobListing.status))
         counts = {str(row[0]): row[1] for row in result.all()}
 
     total = sum(counts.values())

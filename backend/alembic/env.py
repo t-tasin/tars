@@ -4,13 +4,14 @@ import asyncio
 import os
 from logging.config import fileConfig
 
-from alembic import context
+import sqlalchemy.sql.sqltypes as _sqltypes
 from sqlalchemy import pool
 from sqlalchemy.engine import Connection
 from sqlalchemy.ext.asyncio import async_engine_from_config
-import sqlalchemy.sql.sqltypes as _sqltypes
 
+from alembic import context
 from src.db.models import Base
+
 
 # Prevent SQLAlchemy from auto-creating PostgreSQL enum types during
 # op.create_table() in migrations.  Migrations handle enum DDL explicitly;
@@ -22,8 +23,10 @@ from src.db.models import Base
 def _on_table_create(self, target, bind, **kw):  # noqa: ARG001
     pass
 
+
 def _on_metadata_create(self, target, bind, **kw):  # noqa: ARG001
     pass
+
 
 _sqltypes.Enum._on_table_create = _on_table_create
 _sqltypes.Enum._on_metadata_create = _on_metadata_create

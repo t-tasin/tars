@@ -74,9 +74,7 @@ class ConfigRepository:
 
             {"time": "05:50", "sections": [...]}
         """
-        result = await self._session.execute(
-            select(Config).where(Config.namespace == namespace)
-        )
+        result = await self._session.execute(select(Config).where(Config.namespace == namespace))
         rows = result.scalars().all()
         return {row.key: row.value.get("v", row.value) for row in rows}
 

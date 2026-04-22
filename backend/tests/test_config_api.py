@@ -9,7 +9,6 @@ from unittest.mock import AsyncMock, MagicMock
 
 import pytest
 
-
 # ---------------------------------------------------------------------------
 # Expected values for regression testing
 # ---------------------------------------------------------------------------
@@ -17,14 +16,22 @@ import pytest
 EXPECTED_NAMESPACES = {"morning_briefing", "email_contacts", "notifications", "general"}
 
 EXPECTED_BRIEFING_SECTIONS = [
-    "weather", "schedule", "email_digest", "tasks_due", "job_matches",
-    "system_health", "health_summary", "finance_summary", "proactive_suggestions",
+    "weather",
+    "schedule",
+    "email_digest",
+    "tasks_due",
+    "job_matches",
+    "system_health",
+    "health_summary",
+    "finance_summary",
+    "proactive_suggestions",
 ]
 
 
 # ---------------------------------------------------------------------------
 # Load DEFAULT_CONFIG from source without triggering full import chain
 # ---------------------------------------------------------------------------
+
 
 def _load_default_config() -> dict[tuple[str, str], Any]:
     """Extract DEFAULT_CONFIG from config_api.py source using ast.literal_eval."""
@@ -46,6 +53,7 @@ def _load_default_config() -> dict[tuple[str, str], Any]:
 # ---------------------------------------------------------------------------
 # Tests: seed logic (unit, with mocked session)
 # ---------------------------------------------------------------------------
+
 
 class TestSeedLogic:
     """Test the seed algorithm against a mock async session."""
@@ -104,6 +112,7 @@ class TestSeedLogic:
 # ---------------------------------------------------------------------------
 # Tests: DEFAULT_CONFIG completeness
 # ---------------------------------------------------------------------------
+
 
 class TestDefaultConfig:
     @pytest.fixture(autouse=True)

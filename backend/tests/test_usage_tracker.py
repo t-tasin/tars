@@ -8,6 +8,7 @@ from unittest.mock import AsyncMock, MagicMock
 from uuid import uuid4
 
 import pytest
+from shared.constants import ModelName
 
 from models.usage_tracker import (
     BUDGET_ALERT_PCT,
@@ -16,8 +17,6 @@ from models.usage_tracker import (
     UsageTracker,
     _estimate_cost,
 )
-from shared.constants import ModelName
-
 
 # ---------------------------------------------------------------------------
 # Fixtures

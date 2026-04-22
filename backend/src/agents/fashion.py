@@ -105,7 +105,10 @@ class FashionAgent(BaseAgent):
         recent_task = self._fetch_recently_worn(days=7)
 
         weather, events, wardrobe_items, recent_worn = await asyncio.gather(
-            weather_task, calendar_task, wardrobe_task, recent_task,
+            weather_task,
+            calendar_task,
+            wardrobe_task,
+            recent_task,
             return_exceptions=True,
         )
 
@@ -185,26 +188,32 @@ class FashionAgent(BaseAgent):
 
         # 6. Store suggestion in wardrobe_outfits table
         outfit_id = await self._store_outfit(
-            today, suggestion, weather, events,
+            today,
+            suggestion,
+            weather,
+            events,
         )
 
         # 7. Resolve item details for the response
         suggested_items = _resolve_suggested_items(
-            suggestion.get("items", []), wardrobe_items,
+            suggestion.get("items", []),
+            wardrobe_items,
         )
 
         return AgentResult(
             success=True,
             text=suggestion.get("suggestion", "Here's your outfit for today."),
             content_type="card",
-            cards=[{
-                "type": "outfit",
-                "outfit_id": str(outfit_id),
-                "date": today.isoformat(),
-                "items": suggested_items,
-                "reasoning": suggestion.get("reasoning", ""),
-                "weather": weather,
-            }],
+            cards=[
+                {
+                    "type": "outfit",
+                    "outfit_id": str(outfit_id),
+                    "date": today.isoformat(),
+                    "items": suggested_items,
+                    "reasoning": suggestion.get("reasoning", ""),
+                    "weather": weather,
+                }
+            ],
             data={
                 "outfit_id": str(outfit_id),
                 "suggestion": suggestion,
@@ -238,6 +247,7 @@ class FashionAgent(BaseAgent):
 
         # Decode base64 image data
         import base64
+
         try:
             image_bytes = base64.b64decode(image_data)
         except Exception:
@@ -284,6 +294,7 @@ class FashionAgent(BaseAgent):
 
         # 2. Compute image hash for dedup
         import hashlib
+
         image_hash = hashlib.sha256(image_bytes).hexdigest()
 
         # 3. Store wardrobe item in DB
@@ -302,11 +313,13 @@ class FashionAgent(BaseAgent):
             success=True,
             text=f"Cataloged: {description}",
             content_type="card",
-            cards=[{
-                "type": "wardrobe_item",
-                "item_id": str(item_id),
-                "analysis": analysis,
-            }],
+            cards=[
+                {
+                    "type": "wardrobe_item",
+                    "item_id": str(item_id),
+                    "analysis": analysis,
+                }
+            ],
             data={
                 "wardrobe_item_id": str(item_id),
                 "analysis": analysis,
@@ -454,8 +467,7 @@ class FashionAgent(BaseAgent):
 
         async with get_db_session() as session:
             result = await session.execute(
-                select(WardrobeOutfit.items)
-                .where(
+                select(WardrobeOutfit.items).where(
                     WardrobeOutfit.outfit_date >= since,
                     WardrobeOutfit.was_worn == True,  # noqa: E712
                 )
@@ -536,18 +548,16 @@ class FashionAgent(BaseAgent):
         return item_id
 
     async def _update_item_image_path(
-        self, item_id: uuid.UUID, image_path: str,
+        self,
+        item_id: uuid.UUID,
+        image_path: str,
     ) -> None:
         """Update the image_path for a wardrobe item after image dispatch."""
         from db.models import WardrobeItem
         from db.session import get_db_session
 
         async with get_db_session() as session:
-            await session.execute(
-                update(WardrobeItem)
-                .where(WardrobeItem.id == item_id)
-                .values(image_path=image_path)
-            )
+            await session.execute(update(WardrobeItem).where(WardrobeItem.id == item_id).values(image_path=image_path))
 
     async def _dispatch_image_save(
         self,
@@ -562,16 +572,19 @@ class FashionAgent(BaseAgent):
         """
         try:
             import redis.asyncio as aioredis
+
             from config import get_settings
 
             settings = get_settings()
             r = aioredis.from_url(settings.redis_url)
 
-            job_payload = json.dumps({
-                "job_type": "save_wardrobe_image",
-                "item_id": str(item_id),
-                "image_path": image_path,
-            })
+            job_payload = json.dumps(
+                {
+                    "job_type": "save_wardrobe_image",
+                    "item_id": str(item_id),
+                    "image_path": image_path,
+                }
+            )
             # Store image bytes separately with TTL
             await r.setex(f"wardrobe_image:{item_id}", 3600, image_bytes)
             await r.lpush("tars:jobs", job_payload)
@@ -701,11 +714,13 @@ def _build_wardrobe_summary(items: list[dict[str, Any]]) -> dict[str, Any]:
 
     for item in items:
         item_type = item.get("item_type", "unknown")
-        by_type.setdefault(item_type, []).append({
-            "sub_type": item.get("sub_type"),
-            "color": item.get("color"),
-            "formality": item.get("formality"),
-        })
+        by_type.setdefault(item_type, []).append(
+            {
+                "sub_type": item.get("sub_type"),
+                "color": item.get("color"),
+                "formality": item.get("formality"),
+            }
+        )
 
         colors.add(item.get("color", "unknown"))
 

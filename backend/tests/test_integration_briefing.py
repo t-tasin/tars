@@ -9,29 +9,26 @@ from __future__ import annotations
 
 import uuid
 from contextlib import asynccontextmanager
-from datetime import date, datetime, timezone
+from datetime import date
 from typing import Any
 from unittest.mock import AsyncMock, MagicMock, patch
 
-import pytest
-
-from agents.base import AgentContext, AgentResult
+import db.session as _db_session_mod  # already replaced by conftest
+from agents.base import AgentContext
 from agents.briefing import BriefingAgent
 from db.models import Briefing, ModelUsage
-from models.gemini_client import GeminiResponse
-
-import db.session as _db_session_mod  # already replaced by conftest
-
 
 # ---------------------------------------------------------------------------
 # Helpers
 # ---------------------------------------------------------------------------
+
 
 def _db_session_factory(session: Any):
     """Return an async context manager that yields the given test session.
 
     Mirrors the real get_db_session behavior: commit on clean exit.
     """
+
     @asynccontextmanager
     async def _get_db_session():
         try:
@@ -40,6 +37,7 @@ def _db_session_factory(session: Any):
         except Exception:
             await session.rollback()
             raise
+
     return _get_db_session
 
 
@@ -84,6 +82,7 @@ def _build_briefing_agent(
 # 1. BriefingAgent integration: full execute() flow
 # ---------------------------------------------------------------------------
 
+
 class TestBriefingAgentPipeline:
     """Test the BriefingAgent.execute() pipeline with mocked externals."""
 
@@ -125,9 +124,18 @@ class TestBriefingAgentPipeline:
         # 4. Payload contains all expected sections
         payload = result.data["payload"]
         expected_sections = [
-            "greeting", "date", "weather", "outfit", "schedule",
-            "email_digest", "system_health", "tasks_due_today",
-            "job_matches", "health", "finance", "proactive_suggestions",
+            "greeting",
+            "date",
+            "weather",
+            "outfit",
+            "schedule",
+            "email_digest",
+            "system_health",
+            "tasks_due_today",
+            "job_matches",
+            "health",
+            "finance",
+            "proactive_suggestions",
         ]
         for section in expected_sections:
             assert section in payload, f"Missing section: {section}"
@@ -208,6 +216,7 @@ class TestBriefingAgentPipeline:
 # 2. Orchestrator-level integration: /briefing → full pipeline
 # ---------------------------------------------------------------------------
 
+
 class TestOrchestratorBriefingPipeline:
     """Test the orchestrator routing /briefing through the full pipeline."""
 
@@ -226,10 +235,12 @@ class TestOrchestratorBriefingPipeline:
 
         # Clear lru_cache so our mock takes effect
         import config as config_mod
+
         config_mod.get_settings.cache_clear()
 
         with patch("config.get_settings", return_value=settings):
             from orchestrator.engine import Orchestrator
+
             orch = Orchestrator()
 
         orch.gemini_client = mock_gemini
@@ -283,8 +294,9 @@ class TestOrchestratorBriefingPipeline:
 
     async def test_intent_classifier_routes_briefing(self) -> None:
         """Verify /briefing is classified as the briefing intent."""
-        from orchestrator.intent_classifier import IntentClassifier
         from shared.constants import IntentType
+
+        from orchestrator.intent_classifier import IntentClassifier
 
         classifier = IntentClassifier()
         intent = classifier.classify("/briefing", source="ios")
@@ -292,9 +304,10 @@ class TestOrchestratorBriefingPipeline:
 
     async def test_model_router_routes_briefing_to_gemini_pro(self) -> None:
         """Verify briefing intent routes to Gemini Pro on node1."""
+        from shared.constants import IntentType, ModelName
+
         from orchestrator.intent_classifier import Intent
         from orchestrator.model_router import ModelRouter
-        from shared.constants import IntentType, ModelName
 
         router = ModelRouter()
         intent = Intent(agent=IntentType.BRIEFING)
@@ -308,6 +321,7 @@ class TestOrchestratorBriefingPipeline:
 # ---------------------------------------------------------------------------
 # 3. Payload structure validation
 # ---------------------------------------------------------------------------
+
 
 class TestBriefingPayloadStructure:
     """Validate the payload built by _build_payload."""
@@ -328,9 +342,17 @@ class TestBriefingPayloadStructure:
         assert payload["date"] == date.today().isoformat()
 
         required_keys = [
-            "weather", "outfit", "schedule", "leave_home_by",
-            "email_digest", "system_health", "tasks_due_today",
-            "job_matches", "health", "finance", "proactive_suggestions",
+            "weather",
+            "outfit",
+            "schedule",
+            "leave_home_by",
+            "email_digest",
+            "system_health",
+            "tasks_due_today",
+            "job_matches",
+            "health",
+            "finance",
+            "proactive_suggestions",
         ]
         for key in required_keys:
             assert key in payload, f"Missing key: {key}"
@@ -375,11 +397,14 @@ class TestBriefingPayloadStructure:
 # Query helpers (work with both real DB and in-memory session)
 # ---------------------------------------------------------------------------
 
+
 def _select_briefing_by_id(briefing_id: str) -> Any:
     from sqlalchemy import select
+
     return select(Briefing).where(Briefing.id == uuid.UUID(briefing_id))
 
 
 def _select_all(model_class: type) -> Any:
     from sqlalchemy import select
+
     return select(model_class)

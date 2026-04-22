@@ -2,13 +2,12 @@
 
 from __future__ import annotations
 
-from unittest.mock import AsyncMock, patch
+from unittest.mock import AsyncMock
 
 import httpx
 import pytest
 
 from integrations.grafana_client import GrafanaClient
-
 
 # ---------------------------------------------------------------------------
 # Unconfigured (graceful degradation)
@@ -61,7 +60,6 @@ class TestGrafanaUnconfigured:
 
 
 class TestGrafanaConfigured:
-
     def setup_method(self) -> None:
         self.client = GrafanaClient(
             grafana_url="http://grafana:3000",
@@ -103,7 +101,13 @@ class TestGrafanaConfigured:
         mock_resp = httpx.Response(
             200,
             json=[
-                {"title": "High CPU", "provenance": "firing", "labels": {"severity": "critical"}, "folderUID": "f1", "uid": "r1"},
+                {
+                    "title": "High CPU",
+                    "provenance": "firing",
+                    "labels": {"severity": "critical"},
+                    "folderUID": "f1",
+                    "uid": "r1",
+                },
             ],
             request=httpx.Request("GET", "http://grafana:3000/api/v1/provisioning/alert-rules"),
         )

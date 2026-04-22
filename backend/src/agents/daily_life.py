@@ -10,7 +10,8 @@ approval system (tier 2, HC-01).
 from __future__ import annotations
 
 import json
-from datetime import date, datetime, timedelta, time as dt_time
+from datetime import date, datetime, timedelta
+from datetime import time as dt_time
 from typing import Any
 
 import structlog
@@ -29,27 +30,66 @@ _SYSTEM_PROMPT = (
 )
 
 # Sub-intents this agent handles.
-_SCHEDULE_KEYWORDS = frozenset({
-    "schedule", "book", "plan", "set up", "add to calendar",
-    "calendar event", "create event", "block time", "block off",
-})
-_SHOW_SCHEDULE_KEYWORDS = frozenset({
-    "show schedule", "my schedule", "today's schedule", "what's on",
-    "calendar today", "events today", "what do i have",
-    "/schedule", "upcoming events", "what's happening",
-})
-_REMINDER_KEYWORDS = frozenset({
-    "remind me", "reminder", "don't forget", "remember to",
-    "add task", "todo", "to-do", "to do",
-})
-_FREE_TIME_KEYWORDS = frozenset({
-    "free time", "open slots", "availability", "when am i free",
-    "find time", "gaps in schedule", "available time",
-})
-_GROCERY_KEYWORDS = frozenset({
-    "grocery", "groceries", "shopping list", "add to list",
-    "buy", "pick up",
-})
+_SCHEDULE_KEYWORDS = frozenset(
+    {
+        "schedule",
+        "book",
+        "plan",
+        "set up",
+        "add to calendar",
+        "calendar event",
+        "create event",
+        "block time",
+        "block off",
+    }
+)
+_SHOW_SCHEDULE_KEYWORDS = frozenset(
+    {
+        "show schedule",
+        "my schedule",
+        "today's schedule",
+        "what's on",
+        "calendar today",
+        "events today",
+        "what do i have",
+        "/schedule",
+        "upcoming events",
+        "what's happening",
+    }
+)
+_REMINDER_KEYWORDS = frozenset(
+    {
+        "remind me",
+        "reminder",
+        "don't forget",
+        "remember to",
+        "add task",
+        "todo",
+        "to-do",
+        "to do",
+    }
+)
+_FREE_TIME_KEYWORDS = frozenset(
+    {
+        "free time",
+        "open slots",
+        "availability",
+        "when am i free",
+        "find time",
+        "gaps in schedule",
+        "available time",
+    }
+)
+_GROCERY_KEYWORDS = frozenset(
+    {
+        "grocery",
+        "groceries",
+        "shopping list",
+        "add to list",
+        "buy",
+        "pick up",
+    }
+)
 
 
 class DailyLifeAgent(BaseAgent):
@@ -110,10 +150,10 @@ class DailyLifeAgent(BaseAgent):
             success=False,
             text=(
                 "I'm not sure what you'd like me to do. Try something like:\n"
-                "- \"schedule gym Thursday 6pm\"\n"
-                "- \"show schedule\"\n"
-                "- \"remind me to call dentist\"\n"
-                "- \"find free time this week\""
+                '- "schedule gym Thursday 6pm"\n'
+                '- "show schedule"\n'
+                '- "remind me to call dentist"\n'
+                '- "find free time this week"'
             ),
             error="unrecognised_sub_intent",
         )
@@ -154,12 +194,14 @@ class DailyLifeAgent(BaseAgent):
             if location:
                 line += f" ({location})"
             lines.append(line)
-            cards.append({
-                "type": "event",
-                "title": title,
-                "time": time_str,
-                "location": location or "",
-            })
+            cards.append(
+                {
+                    "type": "event",
+                    "title": title,
+                    "time": time_str,
+                    "location": location or "",
+                }
+            )
 
         return AgentResult(
             success=True,
@@ -180,7 +222,7 @@ class DailyLifeAgent(BaseAgent):
         if not parsed:
             return AgentResult(
                 success=False,
-                text="I couldn't understand that scheduling request. Try something like \"schedule gym Thursday 6pm\".",
+                text='I couldn\'t understand that scheduling request. Try something like "schedule gym Thursday 6pm".',
                 error="parse_failed",
             )
 
@@ -193,7 +235,7 @@ class DailyLifeAgent(BaseAgent):
         if not title or not start_str:
             return AgentResult(
                 success=False,
-                text="I need at least an event title and time. Try: \"schedule gym Thursday 6pm\".",
+                text='I need at least an event title and time. Try: "schedule gym Thursday 6pm".',
                 error="incomplete_request",
             )
 
@@ -204,7 +246,7 @@ class DailyLifeAgent(BaseAgent):
         except ValueError:
             return AgentResult(
                 success=False,
-                text=f"I had trouble parsing the date/time \"{start_str}\". Could you rephrase?",
+                text=f'I had trouble parsing the date/time "{start_str}". Could you rephrase?',
                 error="invalid_datetime",
             )
 
@@ -250,7 +292,7 @@ class DailyLifeAgent(BaseAgent):
         if not parsed or not parsed.get("task"):
             return AgentResult(
                 success=False,
-                text="I couldn't understand that reminder. Try: \"remind me to call the dentist tomorrow\".",
+                text='I couldn\'t understand that reminder. Try: "remind me to call the dentist tomorrow".',
                 error="parse_failed",
             )
 
@@ -332,7 +374,7 @@ class DailyLifeAgent(BaseAgent):
         if not items:
             return AgentResult(
                 success=False,
-                text="I couldn't identify any items to add. Try: \"add milk and eggs to grocery list\".",
+                text='I couldn\'t identify any items to add. Try: "add milk and eggs to grocery list".',
                 error="parse_failed",
             )
 
@@ -371,7 +413,7 @@ class DailyLifeAgent(BaseAgent):
         today = date.today()
         prompt = (
             f"Today is {today.strftime('%A, %B %-d, %Y')} (ISO: {today.isoformat()}).\n"
-            f"Parse this scheduling request into JSON:\n\"{message}\"\n\n"
+            f'Parse this scheduling request into JSON:\n"{message}"\n\n'
             "Return a JSON object with these fields:\n"
             "- title: string (event name)\n"
             "- start: string (ISO 8601 datetime with timezone offset, e.g. 2025-03-13T18:00:00-04:00)\n"
@@ -416,11 +458,11 @@ class DailyLifeAgent(BaseAgent):
         today = date.today()
         prompt = (
             f"Today is {today.strftime('%A, %B %-d, %Y')} (ISO: {today.isoformat()}).\n"
-            f"Parse this reminder/task request into JSON:\n\"{message}\"\n\n"
+            f'Parse this reminder/task request into JSON:\n"{message}"\n\n'
             "Return a JSON object with:\n"
             "- task: string (what to remember/do)\n"
             "- due_date: string (ISO date, or null if no date mentioned)\n"
-            "- priority: string (\"high\", \"normal\", or \"low\")\n\n"
+            '- priority: string ("high", "normal", or "low")\n\n'
             "Return ONLY valid JSON."
         )
 
@@ -454,8 +496,8 @@ class DailyLifeAgent(BaseAgent):
             return _basic_grocery_parse(message)
 
         prompt = (
-            f"Extract grocery/shopping items from this message:\n\"{message}\"\n\n"
-            "Return a JSON array of item strings. Example: [\"milk\", \"eggs\", \"bread\"]\n"
+            f'Extract grocery/shopping items from this message:\n"{message}"\n\n'
+            'Return a JSON array of item strings. Example: ["milk", "eggs", "bread"]\n'
             "Return ONLY a JSON array."
         )
 
@@ -527,14 +569,14 @@ class DailyLifeAgent(BaseAgent):
             )
             return AgentResult(
                 success=True,
-                text=f"Done! \"{title}\" has been added to your calendar.",
+                text=f'Done! "{title}" has been added to your calendar.',
                 data={"event": event},
             )
         except Exception:
             log.error("daily_life_event_create_failed", exc_info=True)
             return AgentResult(
                 success=False,
-                text=f"I couldn't create the event \"{title}\". Please try again.",
+                text=f'I couldn\'t create the event "{title}". Please try again.',
                 error="event_creation_failed",
             )
 
@@ -743,10 +785,12 @@ def _find_free_slots(
                 ev_end = datetime.fromisoformat(ev["end"])
                 # Check if event overlaps this day
                 if ev_start < day_end and ev_end > day_start:
-                    day_events.append((
-                        max(ev_start, day_start),
-                        min(ev_end, day_end),
-                    ))
+                    day_events.append(
+                        (
+                            max(ev_start, day_start),
+                            min(ev_end, day_end),
+                        )
+                    )
             except (ValueError, KeyError, TypeError):
                 continue
 
@@ -758,24 +802,28 @@ def _find_free_slots(
             if ev_start > cursor:
                 gap_minutes = (ev_start - cursor).total_seconds() / 60
                 if gap_minutes >= min_gap_minutes:
-                    gaps.append({
-                        "day": current_date.strftime("%A, %B %-d"),
-                        "start": cursor.strftime("%-I:%M %p"),
-                        "end": ev_start.strftime("%-I:%M %p"),
-                        "duration": _format_duration(int(gap_minutes)),
-                    })
+                    gaps.append(
+                        {
+                            "day": current_date.strftime("%A, %B %-d"),
+                            "start": cursor.strftime("%-I:%M %p"),
+                            "end": ev_start.strftime("%-I:%M %p"),
+                            "duration": _format_duration(int(gap_minutes)),
+                        }
+                    )
             cursor = max(cursor, ev_end)
 
         # Gap after last event
         if cursor < day_end:
             gap_minutes = (day_end - cursor).total_seconds() / 60
             if gap_minutes >= min_gap_minutes:
-                gaps.append({
-                    "day": current_date.strftime("%A, %B %-d"),
-                    "start": cursor.strftime("%-I:%M %p"),
-                    "end": day_end.strftime("%-I:%M %p"),
-                    "duration": _format_duration(int(gap_minutes)),
-                })
+                gaps.append(
+                    {
+                        "day": current_date.strftime("%A, %B %-d"),
+                        "start": cursor.strftime("%-I:%M %p"),
+                        "end": day_end.strftime("%-I:%M %p"),
+                        "duration": _format_duration(int(gap_minutes)),
+                    }
+                )
 
     return gaps
 

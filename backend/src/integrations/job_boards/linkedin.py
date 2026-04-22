@@ -53,15 +53,17 @@ class LinkedInAdapter(JobBoardAdapter):
 
         results: list[dict] = []
         for job in data.get("jobs_results", []):
-            results.append({
-                "id": f"linkedin-{job.get('job_id', '')}",
-                "title": job.get("title", ""),
-                "company": job.get("company_name", ""),
-                "location": job.get("location", ""),
-                "salary": job.get("salary", ""),
-                "description": job.get("description", ""),
-                "url": job.get("link", job.get("apply_link", "")),
-            })
+            results.append(
+                {
+                    "id": f"linkedin-{job.get('job_id', '')}",
+                    "title": job.get("title", ""),
+                    "company": job.get("company_name", ""),
+                    "location": job.get("location", ""),
+                    "salary": job.get("salary", ""),
+                    "description": job.get("description", ""),
+                    "url": job.get("link", job.get("apply_link", "")),
+                }
+            )
 
         log.info("linkedin_search_completed", returned=len(results))
         return results

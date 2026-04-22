@@ -3,21 +3,19 @@
 from __future__ import annotations
 
 import uuid
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 from typing import Any
 from unittest.mock import AsyncMock, MagicMock, patch
 
-import pytest
 from fastapi import FastAPI
 from fastapi.testclient import TestClient
 
 from src.api.approvals import router
-from shared.constants import ApprovalStatus, RiskTier
-
 
 # ---------------------------------------------------------------------------
 # App setup
 # ---------------------------------------------------------------------------
+
 
 def _build_app() -> FastAPI:
     app = FastAPI()
@@ -32,6 +30,7 @@ _HEADERS = {"Authorization": "Bearer test-api-key"}
 # Helpers
 # ---------------------------------------------------------------------------
 
+
 def _make_approval_dict(
     *,
     approval_id: str | None = None,
@@ -41,7 +40,7 @@ def _make_approval_dict(
     title: str = "Send email to Prof. Smith",
 ) -> dict[str, Any]:
     aid = approval_id or str(uuid.uuid4())
-    now = datetime.now(timezone.utc)
+    now = datetime.now(UTC)
     return {
         "id": aid,
         "task_id": None,
@@ -133,7 +132,8 @@ class TestApproveAction:
         )
         approval_id = uuid.uuid4()
         result = _make_approval_dict(
-            approval_id=str(approval_id), status="approved",
+            approval_id=str(approval_id),
+            status="approved",
         )
         mock_mgr.approve = AsyncMock(return_value=result)
 
@@ -236,7 +236,8 @@ class TestRejectAction:
         )
         approval_id = uuid.uuid4()
         result = _make_approval_dict(
-            approval_id=str(approval_id), status="rejected",
+            approval_id=str(approval_id),
+            status="rejected",
         )
         mock_mgr.reject = AsyncMock(return_value=result)
 
@@ -290,7 +291,8 @@ class TestEditAndApproveAction:
         )
         approval_id = uuid.uuid4()
         result = _make_approval_dict(
-            approval_id=str(approval_id), status="edited",
+            approval_id=str(approval_id),
+            status="edited",
         )
         mock_mgr.edit_and_approve = AsyncMock(return_value=result)
 

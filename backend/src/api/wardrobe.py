@@ -9,7 +9,7 @@ from typing import Annotated, Any
 
 import structlog
 from fastapi import APIRouter, Depends, File, HTTPException, Query, UploadFile
-from sqlalchemy import select, func
+from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.api.schemas import (
@@ -119,11 +119,13 @@ async def upload_wardrobe_item(
         user_message="Catalog this clothing item",
         intent_type="fashion",
         config={"action": "catalog"},
-        attachments=[{
-            "type": "image",
-            "data": base64.b64encode(image_bytes).decode(),
-            "mime_type": file.content_type or "image/jpeg",
-        }],
+        attachments=[
+            {
+                "type": "image",
+                "data": base64.b64encode(image_bytes).decode(),
+                "mime_type": file.content_type or "image/jpeg",
+            }
+        ],
     )
 
     result = await agent.execute(context)
@@ -272,7 +274,9 @@ async def list_wardrobe(
         for row in rows
     ]
 
-    log.info("wardrobe_listed", total=total, returned=len(items), filters={"item_type": item_type, "formality": formality})
+    log.info(
+        "wardrobe_listed", total=total, returned=len(items), filters={"item_type": item_type, "formality": formality}
+    )
 
     return WardrobeListResponse(items=items, total=total)
 

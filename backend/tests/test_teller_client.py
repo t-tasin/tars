@@ -12,7 +12,6 @@ import pytest
 
 from integrations.teller_client import TellerClient, _normalize_transaction
 
-
 # ---------------------------------------------------------------------------
 # Test data builders
 # ---------------------------------------------------------------------------
@@ -211,7 +210,9 @@ class TestTellerClientGetAccounts:
         assert accounts[0]["name"] == "Checking"
         assert accounts[1]["name"] == "Savings"
         mock_http.request.assert_called_once_with(
-            "GET", "/accounts", params=None,
+            "GET",
+            "/accounts",
+            params=None,
         )
 
 
@@ -275,7 +276,7 @@ class TestTellerClientGetTransactions:
         mock_http.request = AsyncMock(
             side_effect=[
                 _mock_response(accounts_data),  # get_accounts
-                _mock_response(txn_data),        # transactions page 1
+                _mock_response(txn_data),  # transactions page 1
             ],
         )
         client._client = mock_http
@@ -336,22 +337,16 @@ class TestTellerClientGetTransactions:
         accounts_data = [_make_teller_account()]
 
         # Page 1: exactly 250 transactions
-        page1 = [
-            _make_teller_transaction(txn_id=f"txn_{i:04d}")
-            for i in range(250)
-        ]
+        page1 = [_make_teller_transaction(txn_id=f"txn_{i:04d}") for i in range(250)]
         # Page 2: 10 transactions (final page)
-        page2 = [
-            _make_teller_transaction(txn_id=f"txn_{i:04d}")
-            for i in range(250, 260)
-        ]
+        page2 = [_make_teller_transaction(txn_id=f"txn_{i:04d}") for i in range(250, 260)]
 
         mock_http = AsyncMock(spec=httpx.AsyncClient)
         mock_http.request = AsyncMock(
             side_effect=[
                 _mock_response(accounts_data),  # get_accounts
-                _mock_response(page1),           # page 1
-                _mock_response(page2),           # page 2
+                _mock_response(page1),  # page 1
+                _mock_response(page2),  # page 2
             ],
         )
         client._client = mock_http
@@ -438,9 +433,10 @@ class TestTellerClientSyncDaily:
         mock_result.fetchall.return_value = [("fake-uuid",)]  # 1 row inserted
         mock_session.execute = AsyncMock(return_value=mock_result)
 
-        with patch("db.session.get_db_session") as mock_get_db, \
-             patch("sqlalchemy.dialects.postgresql.insert") as mock_pg_insert:
-
+        with (
+            patch("db.session.get_db_session") as mock_get_db,
+            patch("sqlalchemy.dialects.postgresql.insert") as mock_pg_insert,
+        ):
             # Make get_db_session an async context manager yielding our mock session
             mock_get_db.return_value.__aenter__ = AsyncMock(return_value=mock_session)
             mock_get_db.return_value.__aexit__ = AsyncMock(return_value=False)
@@ -519,6 +515,7 @@ class TestTellerClientErrorHandling:
         client._client = mock_http
 
         from utils.errors import IntegrationError
+
         with pytest.raises(IntegrationError, match="401"):
             await client.get_accounts()
 
@@ -532,6 +529,7 @@ class TestTellerClientErrorHandling:
         assert client._cb.is_open
 
         from utils.errors import IntegrationError
+
         with pytest.raises(IntegrationError, match="circuit breaker"):
             await client.get_accounts()
 
@@ -551,6 +549,7 @@ class TestTellerClientErrorHandling:
         client._client = mock_http
 
         from utils.errors import IntegrationError
+
         with pytest.raises(IntegrationError):
             await client.get_accounts()
 
@@ -579,6 +578,7 @@ class TestHC04Compliance:
     def test_no_write_methods_in_source(self) -> None:
         """Ensure TellerClient only uses GET requests (read-only)."""
         import inspect
+
         from integrations import teller_client
 
         source = inspect.getsource(teller_client)
@@ -597,7 +597,8 @@ class TestHC04Compliance:
             # Only check non-test, non-comment, non-docstring references
             # Filter out our own test method names and string literals
             lines = [
-                line for line in source.split("\n")
+                line
+                for line in source.split("\n")
                 if endpoint in line
                 and not line.strip().startswith("#")
                 and not line.strip().startswith('"')

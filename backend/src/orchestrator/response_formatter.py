@@ -6,8 +6,9 @@ import re
 from typing import Any
 from uuid import UUID
 
-from agents.base import AgentResult
 from shared.constants import ContentType
+
+from agents.base import AgentResult
 
 
 class ResponseFormatter:
@@ -180,10 +181,7 @@ class ResponseFormatter:
 
         approval = payload.get("approval")
         if approval:
-            parts.append(
-                f"Approval required: {approval['title']}. "
-                f"Please approve or reject this action."
-            )
+            parts.append(f"Approval required: {approval['title']}. Please approve or reject this action.")
 
         return " ".join(parts) if parts else "No response."
 
@@ -220,10 +218,10 @@ _EXTRA_SPACES_RE = re.compile(r" {2,}")
 def _strip_for_speech(text: str) -> str:
     """Remove markdown, URLs, and special characters for TTS."""
     text = _MD_LINK_RE.sub(r"\1", text)  # [link text](url) → link text
-    text = _URL_RE.sub("", text)          # drop bare URLs
-    text = _MD_BOLD_RE.sub(r"\1", text)   # **bold** / *bold* → bold
-    text = _MD_HEADER_RE.sub("", text)    # ## header → header
-    text = _MD_BULLET_RE.sub("", text)    # - item → item
-    text = _MD_CODE_RE.sub(r"\1", text)   # `code` → code
+    text = _URL_RE.sub("", text)  # drop bare URLs
+    text = _MD_BOLD_RE.sub(r"\1", text)  # **bold** / *bold* → bold
+    text = _MD_HEADER_RE.sub("", text)  # ## header → header
+    text = _MD_BULLET_RE.sub("", text)  # - item → item
+    text = _MD_CODE_RE.sub(r"\1", text)  # `code` → code
     text = _EXTRA_SPACES_RE.sub(" ", text)
     return text.strip()

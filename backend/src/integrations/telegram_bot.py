@@ -76,12 +76,16 @@ class TelegramGateway:
         formatted = f"{header}\n\n{narrative}"
 
         # Inline keyboard with "Full Details" button
-        keyboard = InlineKeyboardMarkup([
-            [InlineKeyboardButton(
-                "\U0001f4cb Full Details",
-                callback_data=f"briefing_detail:{briefing_id}",
-            )],
-        ])
+        keyboard = InlineKeyboardMarkup(
+            [
+                [
+                    InlineKeyboardButton(
+                        "\U0001f4cb Full Details",
+                        callback_data=f"briefing_detail:{briefing_id}",
+                    )
+                ],
+            ]
+        )
 
         await self.send_message(formatted, reply_markup=keyboard)
 

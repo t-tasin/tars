@@ -9,7 +9,6 @@ It NEVER initiates financial transactions.
 
 from __future__ import annotations
 
-import calendar
 import json
 from datetime import date
 from decimal import Decimal
@@ -33,10 +32,20 @@ _FINANCE_SYSTEM_PROMPT = (
     "Never suggest making transactions or moving money — read-only analysis only."
 )
 
-_ESCALATION_KEYWORDS = frozenset({
-    "analyze", "deep dive", "compare", "why", "explain spending",
-    "trend", "unusual", "anomaly", "breakdown", "investigate",
-})
+_ESCALATION_KEYWORDS = frozenset(
+    {
+        "analyze",
+        "deep dive",
+        "compare",
+        "why",
+        "explain spending",
+        "trend",
+        "unusual",
+        "anomaly",
+        "breakdown",
+        "investigate",
+    }
+)
 
 
 class FinanceAgent(BaseAgent):
@@ -86,7 +95,13 @@ class FinanceAgent(BaseAgent):
             anomalies_raw = await detector.scan_recent(session, lookback_days=1)
 
             await self._persist_summary(
-                session, period, start_date, end_date, summary, trends, subscriptions,
+                session,
+                period,
+                start_date,
+                end_date,
+                summary,
+                trends,
+                subscriptions,
             )
             budget_status = await self._build_budget_status(session)
 
@@ -113,7 +128,13 @@ class FinanceAgent(BaseAgent):
             insights = await self._generate_gemini_insights(summary, trends, period, gemini)
 
         text = _format_summary_text(
-            summary, insights, trends, period, start_date, end_date, anomalies_raw,
+            summary,
+            insights,
+            trends,
+            period,
+            start_date,
+            end_date,
+            anomalies_raw,
         )
         if budget_status:
             text += _format_budget_alerts(budget_status)
@@ -210,10 +231,7 @@ class FinanceAgent(BaseAgent):
             .group_by(Transaction.category)
             .order_by(func.sum(Transaction.amount).desc())
         )
-        by_category = {
-            row[0]: {"amount": float(row[1]), "count": row[2]}
-            for row in cat_result.all()
-        }
+        by_category = {row[0]: {"amount": float(row[1]), "count": row[2]} for row in cat_result.all()}
 
         # Top merchants
         merchant_result = await session.execute(
@@ -232,10 +250,7 @@ class FinanceAgent(BaseAgent):
             .order_by(func.sum(Transaction.amount).desc())
             .limit(5)
         )
-        top_merchants = [
-            {"name": row[0], "amount": float(row[1]), "count": row[2]}
-            for row in merchant_result.all()
-        ]
+        top_merchants = [{"name": row[0], "amount": float(row[1]), "count": row[2]} for row in merchant_result.all()]
 
         return {
             "total_spent": total_spent,
@@ -545,10 +560,7 @@ class FinanceAgent(BaseAgent):
         )
 
         if trends:
-            prompt += (
-                f"Compare against the previous period: total spending changed by "
-                f"{trends['total_change_pct']}%. "
-            )
+            prompt += f"Compare against the previous period: total spending changed by {trends['total_change_pct']}%. "
             if trends.get("top_increase"):
                 prompt += (
                     f"Biggest increase: {trends['top_increase']['category']} "
@@ -561,10 +573,7 @@ class FinanceAgent(BaseAgent):
                 )
             prompt += "\n"
 
-        prompt += (
-            f"Keep it under 100 words. Be direct.\n\n"
-            f"Data:\n{json.dumps(data_for_prompt, indent=2)}"
-        )
+        prompt += f"Keep it under 100 words. Be direct.\n\nData:\n{json.dumps(data_for_prompt, indent=2)}"
 
         try:
             response = await gemini.generate(
@@ -620,16 +629,12 @@ def _build_alerts(
         alerts.append(f"High monthly spending: ${total_spent:.2f}")
 
     if trends and trends.get("total_change_pct", 0) > 25:
-        alerts.append(
-            f"Spending up {trends['total_change_pct']}% vs previous {period}"
-        )
+        alerts.append(f"Spending up {trends['total_change_pct']}% vs previous {period}")
 
     if trends and trends.get("top_increase"):
         inc = trends["top_increase"]
         if inc["change_pct"] > 50:
-            alerts.append(
-                f"{inc['category']} spending surged +{inc['change_pct']}% vs previous {period}"
-            )
+            alerts.append(f"{inc['category']} spending surged +{inc['change_pct']}% vs previous {period}")
 
     return alerts
 
@@ -647,11 +652,7 @@ def _fallback_insights(
         return f"No transactions recorded for this {period}."
 
     avg = total / count
-    top_cat = (
-        max(summary["by_category"].items(), key=lambda x: x[1]["amount"])[0]
-        if summary["by_category"]
-        else "N/A"
-    )
+    top_cat = max(summary["by_category"].items(), key=lambda x: x[1]["amount"])[0] if summary["by_category"] else "N/A"
 
     parts = [f"${total:.2f} spent across {count} transactions. Average: ${avg:.2f}. Top category: {top_cat}."]
 

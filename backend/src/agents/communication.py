@@ -29,12 +29,14 @@ _PROFESSOR_PATTERNS: list[re.Pattern[str]] = [
     re.compile(r"\.edu\s*$", re.IGNORECASE),
 ]
 
-_PROFESSOR_RELATIONSHIP_TYPES = frozenset({
-    "professor",
-    "advisor",
-    "faculty",
-    "mentor",
-})
+_PROFESSOR_RELATIONSHIP_TYPES = frozenset(
+    {
+        "professor",
+        "advisor",
+        "faculty",
+        "mentor",
+    }
+)
 
 _SYSTEM_PROMPT = (
     "You are T.A.R.S., a personal AI assistant drafting an email on behalf of Tasin. "
@@ -85,7 +87,7 @@ class CommunicationAgent(BaseAgent):
             return AgentResult(
                 success=False,
                 text=(
-                    f"I found a reference to \"{recipient_hint}\" but couldn't find "
+                    f'I found a reference to "{recipient_hint}" but couldn\'t find '
                     "their email address. Could you provide it?"
                 ),
                 error="no_email",
@@ -316,9 +318,7 @@ class CommunicationAgent(BaseAgent):
         if past_emails:
             parts.append("## Recent correspondence (most recent first)")
             for email in past_emails:
-                parts.append(
-                    f"- [{email['date']}] Subject: {email['subject']} — {email['snippet'][:150]}"
-                )
+                parts.append(f"- [{email['date']}] Subject: {email['subject']} — {email['snippet'][:150]}")
             parts.append("")
 
         if subject_hint:
@@ -330,14 +330,16 @@ class CommunicationAgent(BaseAgent):
         # Tone preferences
         default_tone = "professional yet warm"
         tone = tone_prefs.get("email_tone", default_tone)
-        formality = tone_prefs.get("formality", "formal" if relationship_type in _PROFESSOR_RELATIONSHIP_TYPES else "professional")
+        formality = tone_prefs.get(
+            "formality", "formal" if relationship_type in _PROFESSOR_RELATIONSHIP_TYPES else "professional"
+        )
         parts.append(f"## Tone\n- Style: {tone}\n- Formality: {formality}\n")
 
         parts.append(
             "## Instructions\n"
             "Draft the email body. Do NOT include the subject line — only the body.\n"
             "Use an appropriate greeting and sign-off.\n"
-            "Sign off as \"Tasin\" (or \"Best, Tasin\" for formal emails).\n"
+            'Sign off as "Tasin" (or "Best, Tasin" for formal emails).\n'
             "Keep it concise — say what needs to be said, nothing more."
         )
 
@@ -435,13 +437,13 @@ def _generate_subject(intent: str, recipient_name: str, body: str) -> str:
     Keeps it short — the user can always edit via the approval preview.
     """
     intent_subjects: dict[str, str] = {
-        "follow_up": f"Following up",
-        "thank_you": f"Thank you",
-        "introduction": f"Introduction",
-        "apology": f"Apologies",
-        "scheduling": f"Meeting request",
-        "inquiry": f"Quick question",
-        "reply": f"Re:",
+        "follow_up": "Following up",
+        "thank_you": "Thank you",
+        "introduction": "Introduction",
+        "apology": "Apologies",
+        "scheduling": "Meeting request",
+        "inquiry": "Quick question",
+        "reply": "Re:",
     }
 
     if intent and intent in intent_subjects:

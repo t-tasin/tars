@@ -9,6 +9,7 @@ gTTS and pyttsx3 are imported lazily inside sync methods so that the module
 remains importable in environments where these packages are not installed
 (e.g. CI test runners).
 """
+
 from __future__ import annotations
 
 import asyncio
@@ -121,7 +122,8 @@ class TTSOutput:
         """Connect to HomePod by IP, fall back to network scan."""
         try:
             atvs = await pyatv_module.scan(
-                hosts=[self._homepod_host], timeout=5,
+                hosts=[self._homepod_host],
+                timeout=5,
             )
             if atvs:
                 device = await pyatv_module.connect(atvs[0])
@@ -189,10 +191,7 @@ class TTSOutput:
         duration = 0.2
         frequency = 880
         num_samples = int(sample_rate * duration)
-        samples = [
-            int(16000 * math.sin(2 * math.pi * frequency * i / sample_rate))
-            for i in range(num_samples)
-        ]
+        samples = [int(16000 * math.sin(2 * math.pi * frequency * i / sample_rate)) for i in range(num_samples)]
         pcm_data = struct.pack(f"<{num_samples}h", *samples)
 
         _, tmp_str = tempfile.mkstemp(suffix=".wav")

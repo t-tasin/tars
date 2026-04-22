@@ -27,38 +27,41 @@ class MockDataFrame:
 
 class _DictRow(dict):
     """Dict subclass that supports .get() like a pandas Series."""
+
     pass
 
 
 @pytest.fixture
 def mock_df():
     """Build a mock DataFrame matching JobSpy output."""
-    return MockDataFrame([
-        {
-            "id": "abc123",
-            "title": "Software Engineer",
-            "company_name": "Acme Corp",
-            "location": "San Francisco, CA",
-            "min_amount": 150000,
-            "max_amount": 200000,
-            "interval": "yearly",
-            "description": "Build cool stuff",
-            "job_url": "https://acme.com/jobs/1",
-            "site": "indeed",
-        },
-        {
-            "id": "def456",
-            "title": "ML Engineer",
-            "company_name": "Beta Inc",
-            "location": "Remote",
-            "min_amount": None,
-            "max_amount": None,
-            "interval": "",
-            "description": "Train models",
-            "job_url": "https://beta.com/jobs/2",
-            "site": "glassdoor",
-        },
-    ])
+    return MockDataFrame(
+        [
+            {
+                "id": "abc123",
+                "title": "Software Engineer",
+                "company_name": "Acme Corp",
+                "location": "San Francisco, CA",
+                "min_amount": 150000,
+                "max_amount": 200000,
+                "interval": "yearly",
+                "description": "Build cool stuff",
+                "job_url": "https://acme.com/jobs/1",
+                "site": "indeed",
+            },
+            {
+                "id": "def456",
+                "title": "ML Engineer",
+                "company_name": "Beta Inc",
+                "location": "Remote",
+                "min_amount": None,
+                "max_amount": None,
+                "interval": "",
+                "description": "Train models",
+                "job_url": "https://beta.com/jobs/2",
+                "site": "glassdoor",
+            },
+        ]
+    )
 
 
 @pytest.mark.asyncio
@@ -121,12 +124,14 @@ async def test_search_passes_criteria(adapter, mock_df):
         "integrations.job_boards.jobspy_scraper._run_jobspy",
         return_value=mock_df,
     ) as mock_run:
-        await adapter.search({
-            "query": "backend engineer",
-            "location": "New York",
-            "results_wanted": 50,
-            "hours_old": 24,
-        })
+        await adapter.search(
+            {
+                "query": "backend engineer",
+                "location": "New York",
+                "results_wanted": 50,
+                "hours_old": 24,
+            }
+        )
 
         mock_run.assert_called_once_with(
             search_term="backend engineer",

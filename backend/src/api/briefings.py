@@ -94,7 +94,7 @@ async def get_schedule(
     log.info("schedule_fetched", date=target_date.isoformat(), days=days, event_count=len(events))
 
     # Compute leave-home-by from the briefing agent helpers
-    from src.agents.briefing import _compute_leave_home_by, _build_commute_note
+    from src.agents.briefing import _build_commute_note, _compute_leave_home_by
 
     return ScheduleResponse(
         date=target_date.isoformat(),

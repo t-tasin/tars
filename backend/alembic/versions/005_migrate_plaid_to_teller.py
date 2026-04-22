@@ -14,9 +14,10 @@ Create Date: 2026-03-11
 
 from __future__ import annotations
 
-from alembic import op
 import sqlalchemy as sa
 from sqlalchemy.dialects.postgresql import JSONB, TIMESTAMP
+
+from alembic import op
 
 # revision identifiers, used by Alembic.
 revision: str = "005_migrate_plaid_to_teller"
@@ -89,9 +90,17 @@ def upgrade() -> None:
     # ==================================================================
     # 5. Add columns to finance_summaries
     # ==================================================================
-    op.add_column("finance_summaries", sa.Column("top_merchants", JSONB, server_default=sa.text("'[]'::jsonb"), nullable=False))
-    op.add_column("finance_summaries", sa.Column("vs_previous_period", JSONB, server_default=sa.text("'{}'::jsonb"), nullable=False))
-    op.add_column("finance_summaries", sa.Column("subscription_charges", JSONB, server_default=sa.text("'[]'::jsonb"), nullable=False))
+    op.add_column(
+        "finance_summaries", sa.Column("top_merchants", JSONB, server_default=sa.text("'[]'::jsonb"), nullable=False)
+    )
+    op.add_column(
+        "finance_summaries",
+        sa.Column("vs_previous_period", JSONB, server_default=sa.text("'{}'::jsonb"), nullable=False),
+    )
+    op.add_column(
+        "finance_summaries",
+        sa.Column("subscription_charges", JSONB, server_default=sa.text("'[]'::jsonb"), nullable=False),
+    )
 
 
 def downgrade() -> None:

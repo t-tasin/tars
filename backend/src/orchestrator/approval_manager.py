@@ -6,16 +6,16 @@ The manager handles the full lifecycle: create → decide → execute → audit.
 
 from __future__ import annotations
 
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 from typing import Any
 from uuid import UUID
 
 import structlog
+from shared.constants import TIER_MAP, ApprovalStatus, RiskTier
 from sqlalchemy import func, select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from db.models import Approval, AuditLog
-from shared.constants import ApprovalStatus, RiskTier, TIER_MAP
 
 log = structlog.get_logger("approval_manager")
 
@@ -29,7 +29,6 @@ from utils.errors import (  # noqa: E402
     ApprovalExpiredError,
     ApprovalNotFoundError,
 )
-
 
 # ---------------------------------------------------------------------------
 # Manager
@@ -80,7 +79,7 @@ class ApprovalManager:
             Serialised approval suitable for WebSocket / APNs push.
         """
         risk_tier = TIER_MAP.get(action_type, RiskTier.TIER2_APPROVAL)
-        now = datetime.now(timezone.utc)
+        now = datetime.now(UTC)
 
         approval = Approval(
             task_id=task_id,
@@ -137,7 +136,7 @@ class ApprovalManager:
 
         approval.status = ApprovalStatus.APPROVED
         approval.decision_source = source
-        approval.decided_at = datetime.now(timezone.utc)
+        approval.decided_at = datetime.now(UTC)
 
         await self._audit(
             session,
@@ -164,7 +163,7 @@ class ApprovalManager:
 
         approval.status = ApprovalStatus.REJECTED
         approval.decision_source = source
-        approval.decided_at = datetime.now(timezone.utc)
+        approval.decided_at = datetime.now(UTC)
 
         await self._audit(
             session,
@@ -191,7 +190,7 @@ class ApprovalManager:
 
         approval.status = ApprovalStatus.EDITED
         approval.decision_source = source
-        approval.decided_at = datetime.now(timezone.utc)
+        approval.decided_at = datetime.now(UTC)
         approval.edited_payload = edited_payload
 
         await self._audit(
@@ -229,7 +228,7 @@ class ApprovalManager:
             )
 
         approval.status = ApprovalStatus.EXECUTED
-        approval.executed_at = datetime.now(timezone.utc)
+        approval.executed_at = datetime.now(UTC)
 
         await self._audit(
             session,
@@ -261,14 +260,10 @@ class ApprovalManager:
         """
         base = select(Approval).where(Approval.status == ApprovalStatus.PENDING)
 
-        count_result = await session.execute(
-            select(func.count()).select_from(base.subquery())
-        )
+        count_result = await session.execute(select(func.count()).select_from(base.subquery()))
         total = count_result.scalar_one()
 
-        rows_result = await session.execute(
-            base.order_by(Approval.created_at.desc()).limit(limit).offset(offset)
-        )
+        rows_result = await session.execute(base.order_by(Approval.created_at.desc()).limit(limit).offset(offset))
         approvals = list(rows_result.scalars().all())
 
         return [self._to_dict(a) for a in approvals], total
@@ -287,7 +282,7 @@ class ApprovalManager:
         int
             Number of approvals expired.
         """
-        now = datetime.now(timezone.utc)
+        now = datetime.now(UTC)
 
         stmt = (
             update(Approval)
@@ -321,9 +316,7 @@ class ApprovalManager:
 
     async def _get_by_id(self, session: AsyncSession, approval_id: UUID) -> Approval:
         """Fetch an approval by ID or raise :class:`ApprovalNotFoundError`."""
-        result = await session.execute(
-            select(Approval).where(Approval.id == approval_id)
-        )
+        result = await session.execute(select(Approval).where(Approval.id == approval_id))
         approval = result.scalar_one_or_none()
         if approval is None:
             raise ApprovalNotFoundError(f"Approval {approval_id} not found")
@@ -334,13 +327,11 @@ class ApprovalManager:
         approval = await self._get_by_id(session, approval_id)
 
         if approval.status != ApprovalStatus.PENDING:
-            raise ApprovalAlreadyDecidedError(
-                f"Approval {approval_id} already has status {approval.status}"
-            )
+            raise ApprovalAlreadyDecidedError(f"Approval {approval_id} already has status {approval.status}")
 
-        now = datetime.now(timezone.utc)
+        now = datetime.now(UTC)
         if approval.expires_at.tzinfo is None:
-            expires_at = approval.expires_at.replace(tzinfo=timezone.utc)
+            expires_at = approval.expires_at.replace(tzinfo=UTC)
         else:
             expires_at = approval.expires_at
 

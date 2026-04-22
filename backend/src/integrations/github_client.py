@@ -40,7 +40,8 @@ class GitHubClient:
     # ------------------------------------------------------------------
 
     async def get_notifications(
-        self, unread_only: bool = True,
+        self,
+        unread_only: bool = True,
     ) -> list[dict[str, Any]]:
         """Fetch GitHub notifications.
 
@@ -69,7 +70,9 @@ class GitHubClient:
         ]
 
     async def get_prs(
-        self, repo: str, state: str = "open",
+        self,
+        repo: str,
+        state: str = "open",
     ) -> list[dict[str, Any]]:
         """List pull requests for a repository.
 
@@ -95,7 +98,7 @@ class GitHubClient:
                 "state": pr.get("state", ""),
                 "author": pr.get("user", {}).get("login", ""),
                 "draft": pr.get("draft", False),
-                "labels": [l["name"] for l in pr.get("labels", [])],
+                "labels": [label["name"] for label in pr.get("labels", [])],
                 "created_at": pr.get("created_at", ""),
                 "updated_at": pr.get("updated_at", ""),
                 "url": pr.get("html_url", ""),
@@ -104,7 +107,9 @@ class GitHubClient:
         ]
 
     async def get_issues(
-        self, repo: str, state: str = "open",
+        self,
+        repo: str,
+        state: str = "open",
     ) -> list[dict[str, Any]]:
         """List issues for a repository (excludes pull requests).
 
@@ -130,7 +135,7 @@ class GitHubClient:
                 "title": issue.get("title", ""),
                 "state": issue.get("state", ""),
                 "author": issue.get("user", {}).get("login", ""),
-                "labels": [l["name"] for l in issue.get("labels", [])],
+                "labels": [label["name"] for label in issue.get("labels", [])],
                 "created_at": issue.get("created_at", ""),
                 "updated_at": issue.get("updated_at", ""),
                 "url": issue.get("html_url", ""),
@@ -159,7 +164,9 @@ class GitHubClient:
         service=_SERVICE_NAME,
     )
     async def _get(
-        self, path: str, params: dict[str, Any] | None = None,
+        self,
+        path: str,
+        params: dict[str, Any] | None = None,
     ) -> Any:
         """Issue a GET request and return parsed JSON.
 
@@ -190,7 +197,9 @@ class GitHubClient:
         service=_SERVICE_NAME,
     )
     async def _patch(
-        self, path: str, json: dict[str, Any] | None = None,
+        self,
+        path: str,
+        json: dict[str, Any] | None = None,
     ) -> None:
         """Issue a PATCH request (used for marking notifications read).
 

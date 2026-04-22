@@ -28,11 +28,7 @@ class AuditLogRepository:
 
     async def get_recent(self, limit: int = 50) -> list[AuditLog]:
         """Fetch the most recent audit log entries."""
-        result = await self._session.execute(
-            select(AuditLog)
-            .order_by(AuditLog.created_at.desc())
-            .limit(limit)
-        )
+        result = await self._session.execute(select(AuditLog).order_by(AuditLog.created_at.desc()).limit(limit))
         return list(result.scalars().all())
 
     async def get_by_action(
@@ -56,9 +52,6 @@ class AuditLogRepository:
     ) -> list[AuditLog]:
         """Fetch audit entries for a specific target entity."""
         result = await self._session.execute(
-            select(AuditLog)
-            .where(AuditLog.target == target)
-            .order_by(AuditLog.created_at.desc())
-            .limit(limit)
+            select(AuditLog).where(AuditLog.target == target).order_by(AuditLog.created_at.desc()).limit(limit)
         )
         return list(result.scalars().all())

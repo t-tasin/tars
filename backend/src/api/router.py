@@ -10,6 +10,7 @@ from src.api.budgets import router as budgets_router
 from src.api.config_api import router as config_router
 from src.api.contacts_sync import router as contacts_router
 from src.api.deploy import router as deploy_router
+from src.api.device_tokens import router as device_tokens_router
 from src.api.finance import router as finance_router
 from src.api.health import router as health_router
 from src.api.health_data import router as health_data_router
@@ -18,7 +19,6 @@ from src.api.messages import router as messages_router
 from src.api.wardrobe import router as wardrobe_router
 from src.api.websocket import router as websocket_router
 from src.api.workout import router as workout_router
-from src.api.device_tokens import router as device_tokens_router
 
 router = APIRouter()
 

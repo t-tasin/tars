@@ -72,25 +72,6 @@ async def _check_redis() -> dict[str, Any]:
         return {"status": "disconnected", "latency_ms": latency_ms, "error": str(exc)}
 
 
-async def _check_chromadb() -> dict[str, Any]:
-    """Attempt an HTTP health check against ChromaDB on Node 2."""
-    start = time.monotonic()
-    try:
-        import httpx
-
-        settings = get_settings()
-        async with httpx.AsyncClient(timeout=2) as client:
-            resp = await client.get(f"{settings.chromadb_url}/api/v1/heartbeat")
-            latency_ms = int((time.monotonic() - start) * 1000)
-            if resp.status_code == 200:
-                return {"status": "connected", "latency_ms": latency_ms}
-            return {"status": "disconnected", "latency_ms": latency_ms}
-    except Exception as exc:
-        latency_ms = int((time.monotonic() - start) * 1000)
-        log.warning("health_chromadb_error", error=str(exc))
-        return {"status": "disconnected", "latency_ms": latency_ms, "error": str(exc)}
-
-
 # ---------------------------------------------------------------------------
 # Endpoint
 # ---------------------------------------------------------------------------
@@ -101,14 +82,13 @@ async def health_check() -> HealthResponse:
     """Return system health status for T.A.R.S. and all dependencies.
 
     Includes:
-    - Infrastructure: PostgreSQL, Redis, ChromaDB (with latency)
+    - Infrastructure: PostgreSQL, Redis (with latency)
     - Integrations: circuit breaker status per service
     - AI models: availability derived from recent call success
     - System resources: CPU, memory, uptime
     """
     postgres_info = await _check_postgres()
     redis_info = await _check_redis()
-    chromadb_info = await _check_chromadb()
 
     cpu_percent = psutil.cpu_percent(interval=None)
     mem = psutil.virtual_memory()
@@ -116,12 +96,11 @@ async def health_check() -> HealthResponse:
     # Determine overall status from infrastructure
     postgres_status = postgres_info["status"]
     redis_status = redis_info["status"]
-    chromadb_status = chromadb_info["status"]
 
     overall = "green"
     if postgres_status == "disconnected":
         overall = "red"
-    elif redis_status == "disconnected" or chromadb_status == "disconnected":
+    elif redis_status == "disconnected":
         overall = "yellow"
 
     # Integration services health from circuit breaker registry
@@ -165,7 +144,6 @@ async def health_check() -> HealthResponse:
             "infrastructure": {
                 "postgres": postgres_info,
                 "redis": redis_info,
-                "chromadb": chromadb_info,
             },
             "services": services,
         },

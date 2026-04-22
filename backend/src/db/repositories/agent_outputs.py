@@ -30,9 +30,7 @@ class AgentOutputRepository:
     async def get_by_task(self, task_id: uuid.UUID) -> list[AgentOutput]:
         """Fetch all outputs for a specific agent task."""
         result = await self._session.execute(
-            select(AgentOutput)
-            .where(AgentOutput.task_id == task_id)
-            .order_by(AgentOutput.created_at.desc())
+            select(AgentOutput).where(AgentOutput.task_id == task_id).order_by(AgentOutput.created_at.desc())
         )
         return list(result.scalars().all())
 

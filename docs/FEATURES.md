@@ -33,23 +33,23 @@ Claude Code: this doc is the source of truth. Check before picking up work. Upda
 
 | ID | Feature | Status | Owner | Evidence | Last Touched | Blockers | Notes |
 |----|---------|--------|-------|----------|--------------|----------|-------|
-| P0-01 | Baseline test suite green (983 → 993/993) | PLANNED | Claude | — | 2026-04-21 | 2 failing tests + 1 import error | `test_telegram_handlers` import, `test_briefing_agent::test_execute_with_gemini_composes_narrative`, `test_gemini_client::test_generate_returns_gemini_response` |
+| P0-01 | Baseline test suite green (backend 991 + worker 20) | BUILT | Claude | phase-0-green branch | 2026-04-21 | — | Gemini model asserts bumped 2.0→2.5, telegram sys.modules shims removed, test_telegram_handlers patches now match src-prefixed imports |
 | P0-02 | Create `docs/journal/` daily log convention | PLANNED | Tasin | — | 2026-04-21 | — | First entry will be 2026-04-21.md |
-| P0-03 | Coverage report baseline | PLANNED | Claude | — | 2026-04-21 | depends P0-01 | `pytest --cov=src --cov-report=html` |
-| P0-04 | Prometheus + Grafana on Node 1 | PLANNED | Claude | — | 2026-04-21 | — | Add to deploy/node1/docker-compose.yml |
-| P0-05 | `fastapi-instrumentator` wired | PLANNED | Claude | — | 2026-04-21 | depends P0-04 | /metrics endpoint |
+| P0-03 | Coverage report baseline | BUILT | Claude | phase-0-green branch | 2026-04-21 | — | Backend 66% (9322 stmts / 3202 miss), worker 36% (601 / 386). htmlcov/ gitignored. |
+| P0-04 | Prometheus + Grafana on Node 1 | BUILT | Claude | phase-0-green branch | 2026-04-21 | — | prometheus v2.55 @9090 scrapes host.docker.internal:8000/metrics every 15s; grafana 11.3 @3000 w/ Prometheus datasource auto-provisioned. Node 1 smoke pending. |
+| P0-05 | `fastapi-instrumentator` wired | BUILT | Claude | phase-0-green branch | 2026-04-21 | — | prometheus-fastapi-instrumentator>=7.0 added to backend/pyproject.toml; /metrics exposed from src/main.py before router mount; 2 route-inspection tests (no lifespan). Full suite 993 passed. |
 | P0-06 | Power meter reading capture | PLANNED | Tasin | — | 2026-04-21 | — | Need Kill-A-Watt or similar |
 | P0-07 | Branch protection rules on main | PLANNED | Tasin | — | 2026-04-21 | — | Require PR + CI green + 1 review |
 | P0-08 | GitHub Projects board | PLANNED | Tasin | — | 2026-04-21 | — | Columns per phase |
 | P0-09 | Archive old CLAUDE.md, adopt new | PLANNED | Tasin | — | 2026-04-21 | — | mv CLAUDE.md.new CLAUDE.md |
-| P0-10 | Delete ChromaDB stack, worker references | PLANNED | Claude | — | 2026-04-21 | — | docker-compose, health_monitor, config.py, api/health.py |
+| P0-10 | Delete ChromaDB stack, worker references | BUILT | Claude | phase-0-green branch | 2026-04-21 | — | Stripped backend config + health_monitor + api/health, worker config, node2 compose, env templates. `grep -rn chroma` clean across backend/worker/deploy/env.example. |
 | P0-11 | Run tars-probe on both nodes, capture baseline | BUILT | Tasin | logs collected 2026-04-21 | 2026-04-21 | — | i7-6700, 16GB DDR4-2133, Quadro M620 2GB, NVMe 256GB |
 | P0-12 | Update architecture/model_tiers/tech_stack docs to match real hardware | BUILT | Claude | this session | 2026-04-21 | depends P0-11 | 16GB not 32GB; i7-6700 not 7700T; GPU exists |
-| P0-13 | Move Redis + Qdrant to Node 1 in deploy/node1/docker-compose.yml | PLANNED | Claude | — | 2026-04-21 | depends P0-11 | Free Node 2 RAM for inference |
+| P0-13 | Move Redis to Node 1 in deploy/node1/docker-compose.yml | BUILT | Claude | phase-0-green branch | 2026-04-21 | Qdrant still deferred to Phase 3 | redis:7-alpine service added to node1 compose; removed from node2 compose (worker now expects external REDIS_URL). Backend default redis_url → redis://localhost:6379/0 (colocated). Both composes validate. |
 | P0-14 | Install lm-sensors on both nodes, baseline thermals | PLANNED | Tasin | — | 2026-04-21 | — | `sudo apt install lm-sensors && sudo sensors-detect --auto` |
 | P0-15 | Install CUDA toolkit on Node 2 (for Quadro M620) | TESTED | Tasin | runfile 12.2.2 + driver 535.288.01 + g++-12 host; sm_50 smoke kernel printed `gpu alive` 2026-04-22 | 2026-04-22 | — | CUDA 12.2 @ /usr/local/cuda-12.2; driver held; `CUDAHOSTCXX=/usr/bin/g++-12` in ~/.bashrc; llama.cpp/whisper.cpp builds must pass `-DCMAKE_CUDA_HOST_COMPILER=/usr/bin/g++-12 -DCMAKE_CUDA_ARCHITECTURES=50` |
 | P0-16 | Storage cleanup Node 2 (36GB used vs Node 1 17GB) | PLANNED | Tasin | — | 2026-04-21 | — | `docker system prune -af` after audit |
-| P0-17 | Wire Node 2 worker to point at Node 1 Redis (10.0.1.1:6379) | PLANNED | Claude | — | 2026-04-21 | depends P0-13 | Update worker config |
+| P0-17 | Wire Node 2 worker to point at Node 1 Redis (100.94.4.103:6379) | BUILT | Claude | phase-0-green branch | 2026-04-21 | — | worker/src/config.py redis_url default → redis://100.94.4.103:6379/0 (Node 1 tailscale IP). node2 compose already resolves REDIS_URL via env override. 20 worker tests pass. |
 
 ---
 

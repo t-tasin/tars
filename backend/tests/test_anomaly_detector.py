@@ -8,8 +8,7 @@ from unittest.mock import AsyncMock, MagicMock
 
 import pytest
 
-from agents.anomaly_detector import Anomaly, AnomalyDetector, _merchant_name
-
+from agents.anomaly_detector import AnomalyDetector, _merchant_name
 
 # ---------------------------------------------------------------------------
 # Helpers

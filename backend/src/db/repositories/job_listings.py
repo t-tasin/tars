@@ -3,15 +3,14 @@
 from __future__ import annotations
 
 import uuid
-from datetime import datetime, timezone
 from typing import Any
 
 import structlog
+from shared.constants import JobStatus
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from db.models import JobListing
-from shared.constants import JobStatus
 
 log = structlog.get_logger()
 
@@ -31,18 +30,12 @@ class JobListingRepository:
 
     async def get_by_id(self, job_id: uuid.UUID) -> JobListing | None:
         """Fetch a job listing by primary key."""
-        result = await self._session.execute(
-            select(JobListing).where(JobListing.id == job_id)
-        )
+        result = await self._session.execute(select(JobListing).where(JobListing.id == job_id))
         return result.scalar_one_or_none()
 
     async def get_recent(self, limit: int = 25) -> list[JobListing]:
         """Fetch most recently scraped job listings."""
-        result = await self._session.execute(
-            select(JobListing)
-            .order_by(JobListing.scraped_at.desc())
-            .limit(limit)
-        )
+        result = await self._session.execute(select(JobListing).order_by(JobListing.scraped_at.desc()).limit(limit))
         return list(result.scalars().all())
 
     async def get_by_status(
@@ -94,8 +87,6 @@ class JobListingRepository:
     async def get_saved_count(self) -> int:
         """Return count of saved job listings."""
         result = await self._session.execute(
-            select(func.count())
-            .select_from(JobListing)
-            .where(JobListing.status == JobStatus.SAVED)
+            select(func.count()).select_from(JobListing).where(JobListing.status == JobStatus.SAVED)
         )
         return result.scalar_one()

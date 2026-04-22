@@ -2,11 +2,12 @@
 
 from __future__ import annotations
 
-from unittest.mock import AsyncMock, MagicMock, patch
+from unittest.mock import AsyncMock, MagicMock
 
 import pytest
+from shared.constants import EmailTier, ModelName
 
-from agents.base import AgentContext, AgentResult
+from agents.base import AgentContext
 from agents.email_classifier import (
     EmailClassifierAgent,
     _build_few_shot_block,
@@ -15,8 +16,6 @@ from agents.email_classifier import (
     _find_contact,
     _parse_tier,
 )
-from shared.constants import EmailTier, ModelName
-
 
 # ---------------------------------------------------------------------------
 # Helpers
@@ -398,13 +397,15 @@ class TestEmailClassifierAgent:
         assert result.data["total"] == 1
 
     async def test_classification_data_structure(self, agent: EmailClassifierAgent):
-        emails = [_make_email(
-            message_id="msg-42",
-            from_address="test@example.com",
-            from_name="Test User",
-            subject="Test Subject",
-            snippet="Test snippet",
-        )]
+        emails = [
+            _make_email(
+                message_id="msg-42",
+                from_address="test@example.com",
+                from_name="Test User",
+                subject="Test Subject",
+                snippet="Test snippet",
+            )
+        ]
         gemini = _mock_gemini_client(classify_return="actionable")
         context = _make_context(
             gmail_clients={"personal": _mock_gmail_client(emails)},

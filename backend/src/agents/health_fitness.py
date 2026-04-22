@@ -11,11 +11,10 @@ from __future__ import annotations
 
 import json
 from datetime import date, timedelta
-from decimal import Decimal
 from typing import Any
 
 import structlog
-from sqlalchemy import func, select
+from sqlalchemy import select
 
 from agents.base import AgentContext, AgentResult, BaseAgent
 from models.gemini_client import GeminiClient
@@ -105,11 +104,13 @@ class HealthFitnessAgent(BaseAgent):
             success=True,
             text=insights or self._build_fallback_text(summary),
             content_type="card",
-            cards=[{
-                "type": "health_summary",
-                "title": f"Health & Fitness — Last {days} Days",
-                "data": summary,
-            }],
+            cards=[
+                {
+                    "type": "health_summary",
+                    "title": f"Health & Fitness — Last {days} Days",
+                    "data": summary,
+                }
+            ],
             data={"summary": summary},
         )
 
@@ -125,12 +126,14 @@ class HealthFitnessAgent(BaseAgent):
         """Build a structured summary from raw health_data rows."""
         by_type: dict[str, list[dict[str, Any]]] = {}
         for data_type, recorded_date, value, unit, metadata in rows:
-            by_type.setdefault(data_type, []).append({
-                "date": recorded_date.isoformat(),
-                "value": float(value),
-                "unit": unit,
-                "metadata": metadata or {},
-            })
+            by_type.setdefault(data_type, []).append(
+                {
+                    "date": recorded_date.isoformat(),
+                    "value": float(value),
+                    "unit": unit,
+                    "metadata": metadata or {},
+                }
+            )
 
         summary: dict[str, Any] = {"period_days": days, "metrics": {}}
 
@@ -164,7 +167,8 @@ class HealthFitnessAgent(BaseAgent):
         summary["sleep_quality"] = self._assess_sleep(summary["metrics"].get("sleep"))
         summary["activity_level"] = self._assess_activity(summary["metrics"])
         summary["workout_frequency"] = self._assess_workout_frequency(
-            summary["metrics"].get("exercise_minutes"), days,
+            summary["metrics"].get("exercise_minutes"),
+            days,
         )
 
         return summary
@@ -222,9 +226,10 @@ class HealthFitnessAgent(BaseAgent):
         """Check today's and tomorrow's calendar for gym-friendly time slots."""
         # Suppress gym suggestions when workout tracker has an active split
         try:
+            from sqlalchemy import select as sa_select
+
             from db.models import WorkoutSplit
             from db.session import get_db_session
-            from sqlalchemy import select as sa_select
 
             async with get_db_session() as session:
                 result = await session.execute(
@@ -251,12 +256,8 @@ class HealthFitnessAgent(BaseAgent):
             tomorrow_events = await caldav.get_events(tomorrow)
 
             # Check if gym/workout is already scheduled
-            has_gym_today = any(
-                _is_gym_event(e) for e in today_events
-            )
-            has_gym_tomorrow = any(
-                _is_gym_event(e) for e in tomorrow_events
-            )
+            has_gym_today = any(_is_gym_event(e) for e in today_events)
+            has_gym_tomorrow = any(_is_gym_event(e) for e in tomorrow_events)
 
             # Find free slots for gym (looking for 1+ hour gaps)
             today_slots = _find_free_slots(today_events) if not has_gym_today else []
@@ -353,17 +354,13 @@ class HealthFitnessAgent(BaseAgent):
 
         wf = summary.get("workout_frequency", {})
         if wf.get("days_with_exercise"):
-            parts.append(
-                f"Workouts: {wf['days_with_exercise']}/{wf['total_days']} days"
-            )
+            parts.append(f"Workouts: {wf['days_with_exercise']}/{wf['total_days']} days")
 
         cal = summary.get("calendar_context", {})
         if cal.get("has_gym_today"):
             parts.append("Gym is on your calendar today.")
         elif cal.get("today_free_slots"):
-            parts.append(
-                f"Free slot today: {cal['today_free_slots'][0]} — good time for a workout."
-            )
+            parts.append(f"Free slot today: {cal['today_free_slots'][0]} — good time for a workout.")
 
         return "\n".join(parts) if parts else "Health data synced. Check back for insights."
 

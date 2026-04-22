@@ -5,10 +5,10 @@ from __future__ import annotations
 import asyncio
 from datetime import date, datetime, timedelta
 from typing import Any
+from zoneinfo import ZoneInfo
 
 import caldav
 import structlog
-from zoneinfo import ZoneInfo
 
 from utils.resilience import get_service_health_registry
 
@@ -62,7 +62,10 @@ class CalDAVClient:
 
         for cal in calendars:
             raw_events = await asyncio.to_thread(
-                self._search_events_sync, cal, start_date, end_date,
+                self._search_events_sync,
+                cal,
+                start_date,
+                end_date,
             )
             cal_name = str(cal.name) if cal.name else "Unknown"
             for ev in raw_events:

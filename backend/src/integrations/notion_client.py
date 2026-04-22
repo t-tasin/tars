@@ -467,8 +467,4 @@ def _extract_title(properties: dict[str, Any]) -> str:
 
 def _extract_plain_text(rich_text_array: list[dict[str, Any]]) -> str:
     """Concatenate plain_text segments from a Notion rich_text array."""
-    return "".join(
-        segment.get("plain_text", "")
-        for segment in rich_text_array
-        if isinstance(segment, dict)
-    )
+    return "".join(segment.get("plain_text", "") for segment in rich_text_array if isinstance(segment, dict))

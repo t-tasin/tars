@@ -21,7 +21,6 @@ Workflow (complex — pipeline):
 
 from __future__ import annotations
 
-import asyncio
 import json
 import re
 import time
@@ -38,8 +37,18 @@ log = structlog.get_logger()
 
 # Keywords that indicate a complex task requiring the multi-agent pipeline.
 _COMPLEX_KEYWORDS = (
-    "refactor", "implement", "add feature", "build", "create", "migrate",
-    "redesign", "rewrite", "add oauth", "add auth", "add api", "new endpoint",
+    "refactor",
+    "implement",
+    "add feature",
+    "build",
+    "create",
+    "migrate",
+    "redesign",
+    "rewrite",
+    "add oauth",
+    "add auth",
+    "add api",
+    "new endpoint",
 )
 
 
@@ -47,6 +56,7 @@ def _is_complex_task(description: str) -> bool:
     """Return True if the task description suggests a complex coding job."""
     lower = description.lower()
     return any(kw in lower for kw in _COMPLEX_KEYWORDS)
+
 
 # How long to wait for a code execution job to complete (seconds).
 _JOB_TIMEOUT = 300
@@ -205,10 +215,7 @@ class CodingAgent(BaseAgent):
                 "claude_explanation": claude_output,
             }
 
-            approval_title = (
-                f"Push code to {branch}" if has_push_action
-                else f"Create PR for: {task[:80]}"
-            )
+            approval_title = f"Push code to {branch}" if has_push_action else f"Create PR for: {task[:80]}"
 
             log.info(
                 "coding_job_approval_required",
@@ -402,12 +409,8 @@ class CodingAgent(BaseAgent):
 # ---------------------------------------------------------------------------
 
 # Patterns for extracting a GitHub repo reference from natural language.
-_GITHUB_URL_RE = re.compile(
-    r"(?:https?://)?github\.com/([A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+)"
-)
-_REPO_SHORTHAND_RE = re.compile(
-    r"\b([A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+)\b"
-)
+_GITHUB_URL_RE = re.compile(r"(?:https?://)?github\.com/([A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+)")
+_REPO_SHORTHAND_RE = re.compile(r"\b([A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+)\b")
 _BRANCH_RE = re.compile(
     r"\b(?:branch|on)\s+['\"]?([A-Za-z0-9_./-]+)['\"]?",
     re.IGNORECASE,
@@ -426,7 +429,7 @@ def _parse_coding_request(message: str) -> dict[str, str]:
         repo_slug = url_match.group(1).rstrip("/").removesuffix(".git")
         repo_url = f"https://github.com/{repo_slug}.git"
         # Remove the URL from the task description
-        task = message[:url_match.start()] + message[url_match.end():]
+        task = message[: url_match.start()] + message[url_match.end() :]
     else:
         # Try shorthand (owner/repo)
         shorthand_match = _REPO_SHORTHAND_RE.search(message)
@@ -435,13 +438,13 @@ def _parse_coding_request(message: str) -> dict[str, str]:
             # Avoid false positives — must look like a real repo slug
             if "/" in slug and not slug.startswith("/"):
                 repo_url = f"https://github.com/{slug}.git"
-                task = message[:shorthand_match.start()] + message[shorthand_match.end():]
+                task = message[: shorthand_match.start()] + message[shorthand_match.end() :]
 
     # Extract branch
     branch_match = _BRANCH_RE.search(message)
     if branch_match:
         branch = branch_match.group(1)
-        task = task[:branch_match.start()] + task[branch_match.end():]
+        task = task[: branch_match.start()] + task[branch_match.end() :]
 
     # Clean up the task description
     task = re.sub(r"\s+", " ", task).strip()

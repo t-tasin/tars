@@ -3,6 +3,7 @@
 Runs transcription in asyncio.to_thread() to avoid blocking the event loop.
 Whisper model is loaded lazily on first use with thread-safe locking.
 """
+
 from __future__ import annotations
 
 import asyncio

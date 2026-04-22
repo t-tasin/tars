@@ -78,9 +78,7 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
     except Exception:
         log.exception("telegram_message_handler_error")
         try:
-            await update.message.reply_text(
-                "Sorry, something went wrong processing your message."
-            )
+            await update.message.reply_text("Sorry, something went wrong processing your message.")
         except Exception:
             log.exception("telegram_error_reply_failed")
 
@@ -194,13 +192,13 @@ async def _handle_approval_callback(
 async def _handle_job_callback(query: Any, action: str, job_id: str) -> None:
     """Process job apply / skip / details callbacks."""
     try:
+        from src.integrations.notification_service import get_notification_service
         from src.integrations.telegram_job_handlers import (
             handle_job_apply,
             handle_job_details,
             handle_job_skip,
             send_job_details_message,
         )
-        from src.integrations.notification_service import get_notification_service
 
         if action == "apply":
             result = await handle_job_apply(job_id)
@@ -212,16 +210,14 @@ async def _handle_job_callback(query: Any, action: str, job_id: str) -> None:
                 )
             else:
                 await query.edit_message_text(
-                    text=(query.message.text or "")
-                    + f"\n\n{result.get('message', 'Job not found.')}",
+                    text=(query.message.text or "") + f"\n\n{result.get('message', 'Job not found.')}",
                     parse_mode=None,
                 )
 
         elif action == "skip":
             result = await handle_job_skip(job_id)
             await query.edit_message_text(
-                text=(query.message.text or "")
-                + f"\n\n{result.get('message', 'Skipped.')}",
+                text=(query.message.text or "") + f"\n\n{result.get('message', 'Skipped.')}",
                 parse_mode=None,
             )
 
@@ -245,8 +241,7 @@ async def _handle_job_callback(query: Any, action: str, job_id: str) -> None:
                     )
             else:
                 await query.edit_message_text(
-                    text=(query.message.text or "")
-                    + f"\n\n{details.get('message', 'Job not found.')}",
+                    text=(query.message.text or "") + f"\n\n{details.get('message', 'Job not found.')}",
                     parse_mode=None,
                 )
 
@@ -298,14 +293,10 @@ def create_telegram_application(bot_token: str, chat_id: str) -> Application:
     application = Application.builder().token(bot_token).build()
 
     # Text messages (non-command) -> orchestrator
-    application.add_handler(
-        MessageHandler(filters.TEXT & ~filters.COMMAND, handle_message)
-    )
+    application.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_message))
 
     # Command messages -> also through orchestrator
-    application.add_handler(
-        MessageHandler(filters.COMMAND, handle_message)
-    )
+    application.add_handler(MessageHandler(filters.COMMAND, handle_message))
 
     # Inline keyboard callbacks
     application.add_handler(CallbackQueryHandler(handle_callback))

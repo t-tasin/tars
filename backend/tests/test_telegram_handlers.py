@@ -9,7 +9,6 @@ import pytest
 
 import integrations.telegram_handlers as mod
 
-
 # ---------------------------------------------------------------------------
 # Fixtures
 # ---------------------------------------------------------------------------
@@ -62,12 +61,10 @@ async def test_routes_message_through_orchestrator():
         return_value={"response": {"text": "It's sunny!", "content_type": "text"}}
     )
 
-    with patch("orchestrator.engine.get_orchestrator", return_value=mock_orchestrator):
+    with patch("src.orchestrator.engine.get_orchestrator", return_value=mock_orchestrator):
         await mod.handle_message(update, MagicMock())
 
-    mock_orchestrator.process_message.assert_awaited_once_with(
-        text="What's the weather?", source="telegram"
-    )
+    mock_orchestrator.process_message.assert_awaited_once_with(text="What's the weather?", source="telegram")
     update.message.reply_text.assert_awaited_once_with("It's sunny!")
 
 
@@ -102,8 +99,10 @@ async def test_approve_callback():
     mock_session.__aenter__ = AsyncMock(return_value=mock_session)
     mock_session.__aexit__ = AsyncMock(return_value=False)
 
-    with patch("orchestrator.engine.get_orchestrator", return_value=mock_orchestrator), \
-         patch("db.session.get_db_session", return_value=mock_session):
+    with (
+        patch("src.orchestrator.engine.get_orchestrator", return_value=mock_orchestrator),
+        patch("src.db.session.get_db_session", return_value=mock_session),
+    ):
         await mod.handle_callback(update, MagicMock())
 
     update.callback_query.answer.assert_awaited_once()
@@ -129,8 +128,10 @@ async def test_reject_callback():
     mock_session.__aenter__ = AsyncMock(return_value=mock_session)
     mock_session.__aexit__ = AsyncMock(return_value=False)
 
-    with patch("orchestrator.engine.get_orchestrator", return_value=mock_orchestrator), \
-         patch("db.session.get_db_session", return_value=mock_session):
+    with (
+        patch("src.orchestrator.engine.get_orchestrator", return_value=mock_orchestrator),
+        patch("src.db.session.get_db_session", return_value=mock_session),
+    ):
         await mod.handle_callback(update, MagicMock())
 
     update.callback_query.answer.assert_awaited_once()
@@ -151,11 +152,13 @@ async def test_job_skip_callback():
 
     mock_skip = AsyncMock(return_value={"success": True, "message": "Skipped: Engineer at Acme"})
 
-    with patch("integrations.telegram_job_handlers.handle_job_skip", mock_skip), \
-         patch("integrations.telegram_job_handlers.handle_job_apply", AsyncMock()), \
-         patch("integrations.telegram_job_handlers.handle_job_details", AsyncMock()), \
-         patch("integrations.telegram_job_handlers.send_job_details_message", AsyncMock()), \
-         patch("integrations.notification_service.get_notification_service", MagicMock()):
+    with (
+        patch("src.integrations.telegram_job_handlers.handle_job_skip", mock_skip),
+        patch("src.integrations.telegram_job_handlers.handle_job_apply", AsyncMock()),
+        patch("src.integrations.telegram_job_handlers.handle_job_details", AsyncMock()),
+        patch("src.integrations.telegram_job_handlers.send_job_details_message", AsyncMock()),
+        patch("src.integrations.notification_service.get_notification_service", MagicMock()),
+    ):
         await mod.handle_callback(update, MagicMock())
 
     update.callback_query.answer.assert_awaited_once()

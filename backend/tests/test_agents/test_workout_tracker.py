@@ -1,11 +1,11 @@
 """Tests for the Workout Tracker agent."""
+
 from __future__ import annotations
 
 from decimal import Decimal
 from unittest.mock import MagicMock
 
 from agents.workout_tracker import WorkoutTrackerAgent
-
 
 # ---------------------------------------------------------------------------
 # Progressive overload logic
