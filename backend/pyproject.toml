@@ -40,6 +40,7 @@ dependencies = [
     "psutil>=6.0",
     "python-jobspy>=1.1.0",
     "python-multipart>=0.0.9",
+    "prometheus-fastapi-instrumentator>=7.0",
 ]
 
 [project.optional-dependencies]
