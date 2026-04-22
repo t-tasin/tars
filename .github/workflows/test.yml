@@ -59,11 +59,15 @@ jobs:
           pip install -e ".[dev]"
 
       - name: Run Alembic migrations
+        env:
+          PYTHONPATH: ${{ github.workspace }}/backend/src:${{ github.workspace }}
         run: |
           cd backend
           alembic upgrade head
 
       - name: Run tests
+        env:
+          PYTHONPATH: ${{ github.workspace }}/backend/src:${{ github.workspace }}
         run: |
           cd backend
           python -m pytest tests/ -v --tb=short
