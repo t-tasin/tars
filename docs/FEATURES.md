@@ -35,7 +35,7 @@ Claude Code: this doc is the source of truth. Check before picking up work. Upda
 |----|---------|--------|-------|----------|--------------|----------|-------|
 | P0-01 | Baseline test suite green (backend 991 + worker 20) | BUILT | Claude | phase-0-green branch | 2026-04-21 | — | Gemini model asserts bumped 2.0→2.5, telegram sys.modules shims removed, test_telegram_handlers patches now match src-prefixed imports |
 | P0-02 | Create `docs/journal/` daily log convention | PLANNED | Tasin | — | 2026-04-21 | — | First entry will be 2026-04-21.md |
-| P0-03 | Coverage report baseline | PLANNED | Claude | — | 2026-04-21 | depends P0-01 | `pytest --cov=src --cov-report=html` |
+| P0-03 | Coverage report baseline | BUILT | Claude | phase-0-green branch | 2026-04-21 | — | Backend 66% (9322 stmts / 3202 miss), worker 36% (601 / 386). htmlcov/ gitignored. |
 | P0-04 | Prometheus + Grafana on Node 1 | PLANNED | Claude | — | 2026-04-21 | — | Add to deploy/node1/docker-compose.yml |
 | P0-05 | `fastapi-instrumentator` wired | PLANNED | Claude | — | 2026-04-21 | depends P0-04 | /metrics endpoint |
 | P0-06 | Power meter reading capture | PLANNED | Tasin | — | 2026-04-21 | — | Need Kill-A-Watt or similar |

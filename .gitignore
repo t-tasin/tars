@@ -51,3 +51,6 @@ ios/TARS/DerivedData/
 credentials.json
 token.json
 backend/.coverage
+backend/htmlcov/
+worker/.coverage
+worker/htmlcov/
