@@ -42,7 +42,7 @@ Claude Code: this doc is the source of truth. Check before picking up work. Upda
 | P0-07 | Branch protection rules on main | PLANNED | Tasin | — | 2026-04-21 | — | Require PR + CI green + 1 review |
 | P0-08 | GitHub Projects board | PLANNED | Tasin | — | 2026-04-21 | — | Columns per phase |
 | P0-09 | Archive old CLAUDE.md, adopt new | PLANNED | Tasin | — | 2026-04-21 | — | mv CLAUDE.md.new CLAUDE.md |
-| P0-10 | Delete ChromaDB stack, worker references | PLANNED | Claude | — | 2026-04-21 | — | docker-compose, health_monitor, config.py, api/health.py |
+| P0-10 | Delete ChromaDB stack, worker references | BUILT | Claude | phase-0-green branch | 2026-04-21 | — | Stripped backend config + health_monitor + api/health, worker config, node2 compose, env templates. `grep -rn chroma` clean across backend/worker/deploy/env.example. |
 | P0-11 | Run tars-probe on both nodes, capture baseline | BUILT | Tasin | logs collected 2026-04-21 | 2026-04-21 | — | i7-6700, 16GB DDR4-2133, Quadro M620 2GB, NVMe 256GB |
 | P0-12 | Update architecture/model_tiers/tech_stack docs to match real hardware | BUILT | Claude | this session | 2026-04-21 | depends P0-11 | 16GB not 32GB; i7-6700 not 7700T; GPU exists |
 | P0-13 | Move Redis + Qdrant to Node 1 in deploy/node1/docker-compose.yml | PLANNED | Claude | — | 2026-04-21 | depends P0-11 | Free Node 2 RAM for inference |

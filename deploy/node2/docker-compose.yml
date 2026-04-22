@@ -21,39 +21,12 @@ services:
     networks:
       - tars-net
 
-  chromadb:
-    image: chromadb/chroma:0.5.23
-    container_name: tars-chromadb
-    restart: unless-stopped
-    ports:
-      - "8200:8000"
-    volumes:
-      - chroma-data:/chroma/chroma
-    environment:
-      ANONYMIZED_TELEMETRY: "false"
-      CHROMA_SERVER_AUTHN_PROVIDER: chromadb.auth.token_authn.TokenAuthenticationServerProvider
-      CHROMA_SERVER_AUTHN_CREDENTIALS: ${CHROMA_AUTH_TOKEN}
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8000/api/v1/heartbeat"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-      start_period: 15s
-    deploy:
-      resources:
-        limits:
-          memory: 2G
-    networks:
-      - tars-net
-
   tars-worker:
     image: ghcr.io/t-tasin/tars-worker:latest
     container_name: tars-worker
     restart: unless-stopped
     environment:
       REDIS_URL: redis://redis:6379/0
-      CHROMADB_URL: http://chromadb:8000
-      CHROMA_AUTH_TOKEN: ${CHROMA_AUTH_TOKEN}
       NODE_ROLE: muscle
       LOG_LEVEL: ${LOG_LEVEL:-INFO}
     volumes:
@@ -61,8 +34,6 @@ services:
       - /var/run/docker.sock:/var/run/docker.sock
     depends_on:
       redis:
-        condition: service_healthy
-      chromadb:
         condition: service_healthy
     deploy:
       resources:
@@ -74,8 +45,6 @@ services:
 
 volumes:
   redis-data:
-    driver: local
-  chroma-data:
     driver: local
   worker-data:
     driver: local

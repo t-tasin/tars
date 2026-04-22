@@ -1,10 +1,10 @@
 """System health monitor agent for T.A.R.S.
 
 Runs every 5 minutes via scheduler. Performs local health checks on
-T.A.R.S. infrastructure (PostgreSQL, Redis, ChromaDB, disk, memory,
-Docker containers) and AtlasDesk services (via Grafana/Loki).
-Zero AI tokens for routine checks — Claude is only invoked when an
-anomaly is detected that requires diagnostic reasoning.
+T.A.R.S. infrastructure (PostgreSQL, Redis, disk, memory, Docker
+containers) and AtlasDesk services (via Grafana/Loki). Zero AI tokens
+for routine checks — Claude is only invoked when an anomaly is
+detected that requires diagnostic reasoning.
 """
 
 from __future__ import annotations
@@ -49,7 +49,6 @@ class HealthMonitorAgent(BaseAgent):
         results = await asyncio.gather(
             self._check_postgres(),
             self._check_redis(settings.redis_url),
-            self._check_chromadb(settings.chromadb_url, settings.chroma_auth_token),
             self._check_grafana(settings),
             self._check_loki_errors(settings),
             self._check_disk_usage(),
@@ -62,7 +61,7 @@ class HealthMonitorAgent(BaseAgent):
 
         checks: list[dict[str, Any]] = []
         check_names = [
-            "postgresql", "redis", "chromadb", "grafana", "loki_errors",
+            "postgresql", "redis", "grafana", "loki_errors",
             "disk", "memory", "pg_pool", "redis_memory", "docker",
         ]
 
@@ -188,39 +187,6 @@ class HealthMonitorAgent(BaseAgent):
             log.error("health_check_redis_failed", error=str(exc))
             return {
                 "target": "redis",
-                "status": HealthStatus.RED,
-                "response_time_ms": ms,
-                "details": {"connected": False, "error": str(exc)},
-            }
-
-    async def _check_chromadb(
-        self, chromadb_url: str, auth_token: str,
-    ) -> dict[str, Any]:
-        """Check ChromaDB health endpoint."""
-        start = time.monotonic()
-        try:
-            async with httpx.AsyncClient(timeout=5.0) as client:
-                headers: dict[str, str] = {}
-                if auth_token:
-                    headers["Authorization"] = f"Bearer {auth_token}"
-
-                resp = await client.get(
-                    f"{chromadb_url}/api/v1/heartbeat",
-                    headers=headers,
-                )
-                resp.raise_for_status()
-                ms = int((time.monotonic() - start) * 1000)
-                return {
-                    "target": "chromadb",
-                    "status": _status_from_ms(ms),
-                    "response_time_ms": ms,
-                    "details": {"connected": True, "heartbeat": resp.json()},
-                }
-        except Exception as exc:
-            ms = int((time.monotonic() - start) * 1000)
-            log.error("health_check_chromadb_failed", error=str(exc))
-            return {
-                "target": "chromadb",
                 "status": HealthStatus.RED,
                 "response_time_ms": ms,
                 "details": {"connected": False, "error": str(exc)},

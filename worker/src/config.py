@@ -12,10 +12,6 @@ class WorkerSettings(BaseSettings):
     # --- Redis ---
     redis_url: str = "redis://100.119.114.125:6379/0"
 
-    # --- ChromaDB ---
-    chromadb_url: str = "http://100.119.114.125:8200"
-    chroma_auth_token: str = ""
-
     # --- System ---
     node_role: str = "muscle"
     log_level: str = "INFO"

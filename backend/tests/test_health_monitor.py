@@ -52,8 +52,6 @@ def _patch_new_checks(stack: ExitStack, agent: HealthMonitorAgent) -> None:
 def _mock_settings() -> MagicMock:
     s = MagicMock()
     s.redis_url = "redis://localhost:6379/0"
-    s.chromadb_url = "http://localhost:8200"
-    s.chroma_auth_token = "test"
     s.grafana_url = ""
     s.grafana_api_key = ""
     s.loki_url = ""
@@ -97,13 +95,11 @@ class TestHealthMonitorAgent:
             stack.enter_context(patch("agents.health_monitor.get_settings", return_value=_mock_settings()))
             mock_pg = stack.enter_context(patch.object(self.agent, "_check_postgres"))
             mock_redis = stack.enter_context(patch.object(self.agent, "_check_redis"))
-            mock_chroma = stack.enter_context(patch.object(self.agent, "_check_chromadb"))
             stack.enter_context(patch.object(self.agent, "_store_results", new_callable=AsyncMock))
             _patch_new_checks(stack, self.agent)
 
             mock_pg.return_value = _green("postgresql")
             mock_redis.return_value = _green("redis")
-            mock_chroma.return_value = _green("chromadb")
 
             result = await self.agent.execute(_make_context())
 
@@ -119,7 +115,6 @@ class TestHealthMonitorAgent:
             stack.enter_context(patch("agents.health_monitor.get_settings", return_value=_mock_settings()))
             mock_pg = stack.enter_context(patch.object(self.agent, "_check_postgres"))
             mock_redis = stack.enter_context(patch.object(self.agent, "_check_redis"))
-            mock_chroma = stack.enter_context(patch.object(self.agent, "_check_chromadb"))
             stack.enter_context(patch.object(self.agent, "_store_results", new_callable=AsyncMock))
             mock_alert = stack.enter_context(patch.object(self.agent, "_send_alerts", new_callable=AsyncMock))
             mock_claude = stack.enter_context(patch.object(self.agent, "_escalate_to_claude", new_callable=AsyncMock))
@@ -132,8 +127,7 @@ class TestHealthMonitorAgent:
                 "response_time_ms": None,
                 "details": {"connected": False, "error": "Connection refused"},
             }
-            mock_chroma.return_value = _green("chromadb")
-            mock_claude.return_value = "Redis is unreachable. Check if the service is running on Node 2."
+            mock_claude.return_value = "Redis is unreachable. Check if the service is running on Node 1."
 
             result = await self.agent.execute(_make_context())
 
@@ -153,7 +147,6 @@ class TestHealthMonitorAgent:
             stack.enter_context(patch("agents.health_monitor.get_settings", return_value=_mock_settings()))
             mock_pg = stack.enter_context(patch.object(self.agent, "_check_postgres"))
             mock_redis = stack.enter_context(patch.object(self.agent, "_check_redis"))
-            mock_chroma = stack.enter_context(patch.object(self.agent, "_check_chromadb"))
             stack.enter_context(patch.object(self.agent, "_store_results", new_callable=AsyncMock))
             mock_alert = stack.enter_context(patch.object(self.agent, "_send_alerts", new_callable=AsyncMock))
             mock_claude = stack.enter_context(patch.object(self.agent, "_escalate_to_claude", new_callable=AsyncMock))
@@ -166,7 +159,6 @@ class TestHealthMonitorAgent:
                 "details": {"connected": True},
             }
             mock_redis.return_value = _green("redis")
-            mock_chroma.return_value = _green("chromadb")
 
             result = await self.agent.execute(_make_context())
 
@@ -184,14 +176,12 @@ class TestHealthMonitorAgent:
             stack.enter_context(patch("agents.health_monitor.get_settings", return_value=_mock_settings()))
             stack.enter_context(patch.object(self.agent, "_check_postgres", side_effect=RuntimeError("boom")))
             mock_redis = stack.enter_context(patch.object(self.agent, "_check_redis"))
-            mock_chroma = stack.enter_context(patch.object(self.agent, "_check_chromadb"))
             stack.enter_context(patch.object(self.agent, "_store_results", new_callable=AsyncMock))
             stack.enter_context(patch.object(self.agent, "_send_alerts", new_callable=AsyncMock))
             stack.enter_context(patch.object(self.agent, "_escalate_to_claude", new_callable=AsyncMock, return_value=None))
             _patch_new_checks(stack, self.agent)
 
             mock_redis.return_value = _green("redis")
-            mock_chroma.return_value = _green("chromadb")
 
             result = await self.agent.execute(_make_context())
 
@@ -206,13 +196,11 @@ class TestHealthMonitorAgent:
             stack.enter_context(patch("agents.health_monitor.get_settings", return_value=_mock_settings()))
             mock_pg = stack.enter_context(patch.object(self.agent, "_check_postgres"))
             mock_redis = stack.enter_context(patch.object(self.agent, "_check_redis"))
-            mock_chroma = stack.enter_context(patch.object(self.agent, "_check_chromadb"))
             stack.enter_context(patch.object(self.agent, "_store_results", new_callable=AsyncMock))
             _patch_new_checks(stack, self.agent)
 
             mock_pg.return_value = _green("postgresql")
             mock_redis.return_value = _green("redis")
-            mock_chroma.return_value = _green("chromadb")
 
             result = await self.agent.execute(_make_context())
 
@@ -231,7 +219,6 @@ class TestHealthMonitorAgent:
             stack.enter_context(patch("agents.health_monitor.get_settings", return_value=_mock_settings()))
             stack.enter_context(patch.object(self.agent, "_check_postgres", return_value=_green("postgresql")))
             stack.enter_context(patch.object(self.agent, "_check_redis", return_value=_green("redis")))
-            stack.enter_context(patch.object(self.agent, "_check_chromadb", return_value=_green("chromadb")))
             stack.enter_context(patch.object(self.agent, "_store_results", new_callable=AsyncMock))
             mock_alert = stack.enter_context(patch.object(self.agent, "_send_alerts", new_callable=AsyncMock))
 
@@ -264,7 +251,6 @@ class TestHealthMonitorAgent:
             stack.enter_context(patch("agents.health_monitor.get_settings", return_value=_mock_settings()))
             stack.enter_context(patch.object(self.agent, "_check_postgres", return_value=_green("postgresql")))
             stack.enter_context(patch.object(self.agent, "_check_redis", return_value=_green("redis")))
-            stack.enter_context(patch.object(self.agent, "_check_chromadb", return_value=_green("chromadb")))
             stack.enter_context(patch.object(self.agent, "_store_results", new_callable=AsyncMock))
             mock_alert = stack.enter_context(patch.object(self.agent, "_send_alerts", new_callable=AsyncMock))
 

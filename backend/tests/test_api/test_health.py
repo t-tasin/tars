@@ -3,9 +3,8 @@
 from __future__ import annotations
 
 from typing import Any
-from unittest.mock import AsyncMock, MagicMock, patch
+from unittest.mock import MagicMock, patch
 
-import pytest
 from fastapi import FastAPI
 from fastapi.testclient import TestClient
 
@@ -53,15 +52,13 @@ def _mock_registry(statuses: dict[str, Any] | None = None) -> MagicMock:
 class TestHealthEndpoint:
     @patch("src.api.health.get_service_health_registry")
     @patch("src.api.health.psutil")
-    @patch("src.api.health._check_chromadb")
     @patch("src.api.health._check_redis")
     @patch("src.api.health._check_postgres")
     def test_all_healthy(
-        self, mock_pg, mock_redis, mock_chroma, mock_psutil_mod, mock_registry_fn,
+        self, mock_pg, mock_redis, mock_psutil_mod, mock_registry_fn,
     ):
         mock_pg.return_value = {"status": "connected", "latency_ms": 2}
         mock_redis.return_value = {"status": "connected", "latency_ms": 3}
-        mock_chroma.return_value = {"status": "connected", "latency_ms": 5}
 
         psutil_mock = _mock_psutil()
         mock_psutil_mod.cpu_percent = psutil_mock.cpu_percent
@@ -78,20 +75,17 @@ class TestHealthEndpoint:
         assert data["tars"]["status"] == "green"
         assert data["tars"]["infrastructure"]["postgres"]["status"] == "connected"
         assert data["tars"]["infrastructure"]["redis"]["status"] == "connected"
-        assert data["tars"]["infrastructure"]["chromadb"]["status"] == "connected"
         assert "node1" in data["tars"]
 
     @patch("src.api.health.get_service_health_registry")
     @patch("src.api.health.psutil")
-    @patch("src.api.health._check_chromadb")
     @patch("src.api.health._check_redis")
     @patch("src.api.health._check_postgres")
     def test_postgres_down_returns_red(
-        self, mock_pg, mock_redis, mock_chroma, mock_psutil_mod, mock_registry_fn,
+        self, mock_pg, mock_redis, mock_psutil_mod, mock_registry_fn,
     ):
         mock_pg.return_value = {"status": "disconnected", "latency_ms": 0, "error": "refused"}
         mock_redis.return_value = {"status": "connected", "latency_ms": 3}
-        mock_chroma.return_value = {"status": "connected", "latency_ms": 5}
 
         psutil_mock = _mock_psutil()
         mock_psutil_mod.cpu_percent = psutil_mock.cpu_percent
@@ -109,15 +103,13 @@ class TestHealthEndpoint:
 
     @patch("src.api.health.get_service_health_registry")
     @patch("src.api.health.psutil")
-    @patch("src.api.health._check_chromadb")
     @patch("src.api.health._check_redis")
     @patch("src.api.health._check_postgres")
     def test_redis_down_returns_yellow(
-        self, mock_pg, mock_redis, mock_chroma, mock_psutil_mod, mock_registry_fn,
+        self, mock_pg, mock_redis, mock_psutil_mod, mock_registry_fn,
     ):
         mock_pg.return_value = {"status": "connected", "latency_ms": 2}
         mock_redis.return_value = {"status": "disconnected", "latency_ms": 0}
-        mock_chroma.return_value = {"status": "connected", "latency_ms": 5}
 
         psutil_mock = _mock_psutil()
         mock_psutil_mod.cpu_percent = psutil_mock.cpu_percent
@@ -135,15 +127,13 @@ class TestHealthEndpoint:
 
     @patch("src.api.health.get_service_health_registry")
     @patch("src.api.health.psutil")
-    @patch("src.api.health._check_chromadb")
     @patch("src.api.health._check_redis")
     @patch("src.api.health._check_postgres")
     def test_circuit_breaker_open_degrades_to_yellow(
-        self, mock_pg, mock_redis, mock_chroma, mock_psutil_mod, mock_registry_fn,
+        self, mock_pg, mock_redis, mock_psutil_mod, mock_registry_fn,
     ):
         mock_pg.return_value = {"status": "connected", "latency_ms": 2}
         mock_redis.return_value = {"status": "connected", "latency_ms": 3}
-        mock_chroma.return_value = {"status": "connected", "latency_ms": 5}
 
         psutil_mock = _mock_psutil()
         mock_psutil_mod.cpu_percent = psutil_mock.cpu_percent
@@ -168,16 +158,14 @@ class TestHealthEndpoint:
 
     @patch("src.api.health.get_service_health_registry")
     @patch("src.api.health.psutil")
-    @patch("src.api.health._check_chromadb")
     @patch("src.api.health._check_redis")
     @patch("src.api.health._check_postgres")
     def test_no_auth_required(
-        self, mock_pg, mock_redis, mock_chroma, mock_psutil_mod, mock_registry_fn,
+        self, mock_pg, mock_redis, mock_psutil_mod, mock_registry_fn,
     ):
         """Health endpoint should work without authentication."""
         mock_pg.return_value = {"status": "connected", "latency_ms": 2}
         mock_redis.return_value = {"status": "connected", "latency_ms": 3}
-        mock_chroma.return_value = {"status": "connected", "latency_ms": 5}
 
         psutil_mock = _mock_psutil()
         mock_psutil_mod.cpu_percent = psutil_mock.cpu_percent
@@ -193,15 +181,13 @@ class TestHealthEndpoint:
 
     @patch("src.api.health.get_service_health_registry")
     @patch("src.api.health.psutil")
-    @patch("src.api.health._check_chromadb")
     @patch("src.api.health._check_redis")
     @patch("src.api.health._check_postgres")
     def test_system_resources_included(
-        self, mock_pg, mock_redis, mock_chroma, mock_psutil_mod, mock_registry_fn,
+        self, mock_pg, mock_redis, mock_psutil_mod, mock_registry_fn,
     ):
         mock_pg.return_value = {"status": "connected", "latency_ms": 2}
         mock_redis.return_value = {"status": "connected", "latency_ms": 3}
-        mock_chroma.return_value = {"status": "connected", "latency_ms": 5}
 
         psutil_mock = _mock_psutil(cpu=42.5, mem_percent=65.0)
         mock_psutil_mod.cpu_percent = psutil_mock.cpu_percent
