@@ -4,7 +4,7 @@
 >
 > **States:** `PLANNED` → `IN_PROGRESS` → `BUILT` → `TESTED` → `SHIPPED`
 >
-> **Last updated:** 2026-04-21 (Tasin + Claude session)
+> **Last updated:** 2026-04-22 (Phase 1 session — queue unified)
 
 ---
 
@@ -57,13 +57,13 @@ Claude Code: this doc is the source of truth. Check before picking up work. Upda
 
 | ID | Feature | Status | Owner | Evidence | Last Touched | Blockers | Notes |
 |----|---------|--------|-------|----------|--------------|----------|-------|
-| P1-01 | `integrations/job_queue.py` w/ JobQueue class | PLANNED | Claude | — | 2026-04-21 | — | Enqueue via ZADD, await via pubsub |
-| P1-02 | Refactor `agents/coding.py` to use JobQueue | PLANNED | Claude | — | 2026-04-21 | depends P1-01 | Remove `_QUEUE_KEY = "tars:jobs:code"` |
-| P1-03 | Refactor `agents/fashion.py` to use JobQueue | PLANNED | Claude | — | 2026-04-21 | depends P1-01 | Remove LPUSH to "tars:jobs" |
-| P1-04 | E2E test: distributed job round-trip | PLANNED | Claude | — | 2026-04-21 | depends P1-01..3 | testcontainers redis + worker |
-| P1-05 | Remove ChromaDB from `backend/src` | PLANNED | Claude | — | 2026-04-21 | — | health_monitor, api/health, config.py |
-| P1-06 | Remove ChromaDB from `deploy/node2/docker-compose.yml` | PLANNED | Claude | — | 2026-04-21 | — | Replace with Qdrant (done in P3) |
-| P1-07 | Tag release `v0.1-distributed-real` | PLANNED | Tasin | — | 2026-04-21 | depends P1-01..6 | — |
+| P1-01 | `integrations/job_queue.py` w/ JobQueue class | BUILT | Claude | bd4937d, test_job_queue.py 10/10 | 2026-04-22 | — | ZADD on tars:jobs:queue, pubsub await on tars:jobs:results, subscribe-before-enqueue |
+| P1-02 | Refactor `agents/coding.py` to use JobQueue | BUILT | Claude | bd4937d, test_coding_agent.py 8/8 | 2026-04-22 | — | `_QUEUE_KEY="tars:jobs:code"` removed; result read from message["result"] |
+| P1-03 | Refactor `agents/fashion.py` to use JobQueue | BUILT | Claude | bd4937d, test_fashion.py::TestFashionImageDispatch 2/2 | 2026-04-22 | — | LPUSH to "tars:jobs" ripped; worker gained `save_image` task_type for image persistence |
+| P1-04 | E2E test: distributed job round-trip | BUILT | Claude | bd4937d, test_queue_e2e.py 3/3 | 2026-04-22 | — | fakeredis.FakeServer shared between backend JobQueue + worker JobProcessor; covers happy path, unknown-type failure, priority ordering |
+| P1-05 | Remove ChromaDB from `backend/src` | BUILT | Claude | bd4937d (audit clean after P0-10), env.example + README cleanup | 2026-04-22 | — | No ChromaDB imports in backend/src; `CHROMA_AUTH_TOKEN` stripped from .env.example |
+| P1-06 | Remove ChromaDB from `deploy/node2/docker-compose.yml` | BUILT | Claude | bd4937d (audit clean after P0-10) | 2026-04-22 | — | deploy/ clean; Qdrant added in P3 |
+| P1-07 | Tag release `v0.1-distributed-real` | PLANNED | Tasin | — | 2026-04-22 | depends P1-01..6 PR #2 merge | Tasin cuts tag after PR #2 lands on main |
 
 ---
 
