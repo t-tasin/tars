@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
 
 class JobBoardAdapter(ABC):
@@ -24,5 +24,5 @@ class JobBoardAdapter(ABC):
             "salary_range": raw_job.get("salary", ""),
             "description": raw_job.get("description", ""),
             "url": raw_job.get("url", ""),
-            "scraped_at": datetime.now(timezone.utc),
+            "scraped_at": datetime.now(UTC),
         }

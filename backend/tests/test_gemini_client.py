@@ -2,14 +2,11 @@
 
 from __future__ import annotations
 
-import asyncio
-from dataclasses import dataclass
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
 from models.gemini_client import GeminiClient, GeminiResponse
-
 
 # ---------------------------------------------------------------------------
 # Helpers to build fake SDK responses
@@ -266,9 +263,12 @@ async def test_token_counts_zero_when_no_metadata(client: GeminiClient, mock_gen
 
 def test_gemini_response_is_immutable():
     resp = GeminiResponse(
-        text="hi", model="gemini-2.0-flash",
-        tokens_input=10, tokens_output=5,
-        duration_ms=100, finish_reason="STOP",
+        text="hi",
+        model="gemini-2.0-flash",
+        tokens_input=10,
+        tokens_output=5,
+        duration_ms=100,
+        finish_reason="STOP",
     )
     with pytest.raises(AttributeError):
         resp.text = "bye"  # type: ignore[misc]

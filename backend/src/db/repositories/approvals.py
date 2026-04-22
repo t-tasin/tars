@@ -3,15 +3,15 @@
 from __future__ import annotations
 
 import uuid
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from typing import Any
 
 import structlog
-from sqlalchemy import func, select, update
+from shared.constants import ApprovalStatus
+from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from db.models import Approval
-from shared.constants import ApprovalStatus
 
 log = structlog.get_logger()
 
@@ -31,9 +31,7 @@ class ApprovalRepository:
 
     async def get_by_id(self, approval_id: uuid.UUID) -> Approval | None:
         """Fetch an approval by primary key."""
-        result = await self._session.execute(
-            select(Approval).where(Approval.id == approval_id)
-        )
+        result = await self._session.execute(select(Approval).where(Approval.id == approval_id))
         return result.scalar_one_or_none()
 
     async def get_pending(
@@ -44,14 +42,10 @@ class ApprovalRepository:
         """Return pending approvals and total pending count."""
         base = select(Approval).where(Approval.status == ApprovalStatus.PENDING)
 
-        count_result = await self._session.execute(
-            select(func.count()).select_from(base.subquery())
-        )
+        count_result = await self._session.execute(select(func.count()).select_from(base.subquery()))
         total = count_result.scalar_one()
 
-        rows_result = await self._session.execute(
-            base.order_by(Approval.created_at.asc()).limit(limit).offset(offset)
-        )
+        rows_result = await self._session.execute(base.order_by(Approval.created_at.asc()).limit(limit).offset(offset))
         return list(rows_result.scalars().all()), total
 
     async def update_status(
@@ -73,7 +67,7 @@ class ApprovalRepository:
 
     async def get_expired(self) -> list[Approval]:
         """Return pending approvals that have passed their expiry time."""
-        now = datetime.now(timezone.utc)
+        now = datetime.now(UTC)
         result = await self._session.execute(
             select(Approval).where(
                 Approval.status == ApprovalStatus.PENDING,

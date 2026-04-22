@@ -41,7 +41,9 @@ class AnomalyDetector:
     """Detects unusual individual transactions."""
 
     async def scan_recent(
-        self, session: AsyncSession, lookback_days: int = 1,
+        self,
+        session: AsyncSession,
+        lookback_days: int = 1,
     ) -> list[Anomaly]:
         """Scan recent transactions for anomalies.
 
@@ -84,7 +86,9 @@ class AnomalyDetector:
         return anomalies
 
     async def check_transaction(
-        self, session: AsyncSession, txn: Any,
+        self,
+        session: AsyncSession,
+        txn: Any,
     ) -> Anomaly | None:
         """Run all anomaly rules against a single transaction.
 
@@ -99,7 +103,8 @@ class AnomalyDetector:
     # ------------------------------------------------------------------
 
     async def _fetch_aggregate_stats(
-        self, session: AsyncSession,
+        self,
+        session: AsyncSession,
     ) -> dict[str, Any]:
         """Pre-fetch all aggregates needed for anomaly rules.
 
@@ -112,17 +117,14 @@ class AnomalyDetector:
         from db.models import Transaction
 
         lookback_90 = date.today() - timedelta(days=90)
-        merchant_col = func.coalesce(
-            Transaction.merchant_name, Transaction.counterparty_name, "Unknown"
-        )
+        merchant_col = func.coalesce(Transaction.merchant_name, Transaction.counterparty_name, "Unknown")
 
         # 1. Merchant transaction counts (all time, for new-merchant detection)
         merchant_count_result = await session.execute(
             select(
                 merchant_col.label("merchant"),
                 func.count().label("cnt"),
-            )
-            .group_by(merchant_col)
+            ).group_by(merchant_col)
         )
         merchant_counts = {row.merchant: row.cnt for row in merchant_count_result.all()}
 
@@ -163,8 +165,7 @@ class AnomalyDetector:
             )
         )
         category_month_totals = {
-            (row.category, int(row.yr), int(row.mo)): float(row.total)
-            for row in cat_month_result.all()
+            (row.category, int(row.yr), int(row.mo)): float(row.total) for row in cat_month_result.all()
         }
 
         # 4. Recurring merchant averages (for off-pattern detection)
@@ -180,9 +181,7 @@ class AnomalyDetector:
             )
             .group_by(merchant_col)
         )
-        recurring_merchant_avgs = {
-            row.merchant: float(row.avg_amt) for row in recurring_avg_result.all()
-        }
+        recurring_merchant_avgs = {row.merchant: float(row.avg_amt) for row in recurring_avg_result.all()}
 
         return {
             "merchant_counts": merchant_counts,
@@ -192,7 +191,9 @@ class AnomalyDetector:
         }
 
     def _check_transaction_with_stats(
-        self, txn: Any, stats: dict[str, Any],
+        self,
+        txn: Any,
+        stats: dict[str, Any],
     ) -> Anomaly | None:
         """Run all anomaly rules using pre-fetched stats.
 
@@ -210,52 +211,54 @@ class AnomalyDetector:
         # seen for it (the current one), so it's "new".
         merchant_count = stats["merchant_counts"].get(merchant, 0)
         if merchant_count <= 1:
-            candidates.append(Anomaly(
-                transaction_id=txn_id,
-                merchant=merchant,
-                amount=amount,
-                date=txn_date,
-                reason="new_merchant",
-                details=(
-                    f"New charge of ${amount:.2f} at {merchant} "
-                    f"— first time seeing this merchant"
-                ),
-                severity="info",
-            ))
+            candidates.append(
+                Anomaly(
+                    transaction_id=txn_id,
+                    merchant=merchant,
+                    amount=amount,
+                    date=txn_date,
+                    reason="new_merchant",
+                    details=(f"New charge of ${amount:.2f} at {merchant} — first time seeing this merchant"),
+                    severity="info",
+                )
+            )
 
         # --- Rule 2: Off-pattern at recurring merchant ---
         if txn.is_recurring:
             usual_avg = stats["recurring_merchant_avgs"].get(merchant)
             if usual_avg and amount > usual_avg * _OFF_PATTERN_MULTIPLIER:
-                candidates.append(Anomaly(
-                    transaction_id=txn_id,
-                    merchant=merchant,
-                    amount=amount,
-                    date=txn_date,
-                    reason="off_pattern",
-                    details=(
-                        f"${amount:.2f} at {merchant} is {amount / usual_avg:.1f}x "
-                        f"the usual ${usual_avg:.2f}"
-                    ),
-                    severity="warning",
-                ))
+                candidates.append(
+                    Anomaly(
+                        transaction_id=txn_id,
+                        merchant=merchant,
+                        amount=amount,
+                        date=txn_date,
+                        reason="off_pattern",
+                        details=(
+                            f"${amount:.2f} at {merchant} is {amount / usual_avg:.1f}x the usual ${usual_avg:.2f}"
+                        ),
+                        severity="warning",
+                    )
+                )
 
         # --- Rule 3: Large transaction (>2x category average) ---
         if txn.category:
             cat_avg = stats["category_avgs"].get(txn.category)
             if cat_avg and amount > cat_avg * _LARGE_TXN_MULTIPLIER:
-                candidates.append(Anomaly(
-                    transaction_id=txn_id,
-                    merchant=merchant,
-                    amount=amount,
-                    date=txn_date,
-                    reason="large_transaction",
-                    details=(
-                        f"${amount:.2f} at {merchant} is {amount / cat_avg:.1f}x "
-                        f"the average for {txn.category} (${cat_avg:.2f})"
-                    ),
-                    severity="warning",
-                ))
+                candidates.append(
+                    Anomaly(
+                        transaction_id=txn_id,
+                        merchant=merchant,
+                        amount=amount,
+                        date=txn_date,
+                        reason="large_transaction",
+                        details=(
+                            f"${amount:.2f} at {merchant} is {amount / cat_avg:.1f}x "
+                            f"the average for {txn.category} (${cat_avg:.2f})"
+                        ),
+                        severity="warning",
+                    )
+                )
 
         # --- Rule 4: Category spike (>50% of month's category spend) ---
         if txn.category:
@@ -265,19 +268,21 @@ class AnomalyDetector:
             month_total_excl = month_total - amount
             # Spike = this txn alone exceeds 50% of *other* spending in the category
             if month_total_excl > 0 and amount > month_total_excl * _CATEGORY_SPIKE_THRESHOLD:
-                candidates.append(Anomaly(
-                    transaction_id=txn_id,
-                    merchant=merchant,
-                    amount=amount,
-                    date=txn_date,
-                    reason="category_spike",
-                    details=(
-                        f"${amount:.2f} at {merchant} is "
-                        f"{amount / month_total * 100:.0f}% of this month's "
-                        f"{txn.category} spending (${month_total:.2f})"
-                    ),
-                    severity="warning",
-                ))
+                candidates.append(
+                    Anomaly(
+                        transaction_id=txn_id,
+                        merchant=merchant,
+                        amount=amount,
+                        date=txn_date,
+                        reason="category_spike",
+                        details=(
+                            f"${amount:.2f} at {merchant} is "
+                            f"{amount / month_total * 100:.0f}% of this month's "
+                            f"{txn.category} spending (${month_total:.2f})"
+                        ),
+                        severity="warning",
+                    )
+                )
 
         if not candidates:
             return None

@@ -88,6 +88,7 @@ class ImageProcessor(BaseExecutor):
 
         # Prefer API key from worker env config over payload (HC-05)
         from ..config import get_settings
+
         gemini_api_key = get_settings().gemini_api_key or payload.get("gemini_api_key", "")
 
         start = time.monotonic()
@@ -171,17 +172,19 @@ class ImageProcessor(BaseExecutor):
         url = f"{_GEMINI_API_BASE}/{_GEMINI_MODEL}:generateContent"
 
         request_body = {
-            "contents": [{
-                "parts": [
-                    {
-                        "inline_data": {
-                            "mime_type": mime_type,
-                            "data": image_b64,
+            "contents": [
+                {
+                    "parts": [
+                        {
+                            "inline_data": {
+                                "mime_type": mime_type,
+                                "data": image_b64,
+                            },
                         },
-                    },
-                    {"text": prompt},
-                ],
-            }],
+                        {"text": prompt},
+                    ],
+                }
+            ],
             "generationConfig": {
                 "temperature": 0.1,
                 "maxOutputTokens": 1024,
@@ -247,7 +250,7 @@ def _parse_json_response(text: str) -> dict[str, Any]:
     if cleaned.startswith("```"):
         lines = cleaned.split("\n")
         # Remove first line (```json) and last line (```)
-        lines = [l for l in lines if not l.strip().startswith("```")]
+        lines = [line for line in lines if not line.strip().startswith("```")]
         cleaned = "\n".join(lines).strip()
 
     try:

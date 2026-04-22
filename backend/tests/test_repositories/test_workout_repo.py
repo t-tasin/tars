@@ -1,10 +1,9 @@
 """Tests for the workout repository (unit tests with mock session)."""
+
 from __future__ import annotations
 
 import uuid
-from datetime import date, datetime, timezone
-from decimal import Decimal
-from unittest.mock import AsyncMock, MagicMock, patch
+from unittest.mock import AsyncMock, MagicMock
 
 import pytest
 

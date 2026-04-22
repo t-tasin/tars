@@ -2,12 +2,11 @@
 
 from __future__ import annotations
 
-import uuid
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from typing import Any
 
 import structlog
-from sqlalchemy import select, update
+from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from db.models import Contact
@@ -28,9 +27,7 @@ class ContactRepository:
         **kwargs: Any,
     ) -> Contact:
         """Insert or update a contact by ``apple_contact_id``."""
-        result = await self._session.execute(
-            select(Contact).where(Contact.apple_contact_id == apple_contact_id)
-        )
+        result = await self._session.execute(select(Contact).where(Contact.apple_contact_id == apple_contact_id))
         existing = result.scalar_one_or_none()
 
         if existing is not None:
@@ -38,14 +35,14 @@ class ContactRepository:
             for key, value in kwargs.items():
                 if hasattr(existing, key):
                     setattr(existing, key, value)
-            existing.synced_at = datetime.now(timezone.utc)
+            existing.synced_at = datetime.now(UTC)
             await self._session.flush()
             return existing
 
         contact = Contact(
             apple_contact_id=apple_contact_id,
             full_name=full_name,
-            synced_at=datetime.now(timezone.utc),
+            synced_at=datetime.now(UTC),
             **kwargs,
         )
         self._session.add(contact)
@@ -57,31 +54,20 @@ class ContactRepository:
 
         Uses the PostgreSQL ``@>`` containment operator.
         """
-        from sqlalchemy import cast, type_coerce
-        from sqlalchemy.dialects.postgresql import JSONB as PG_JSONB
 
-        stmt = select(Contact).where(
-            Contact.email_addresses.op("@>")(f'["{email}"]')
-        )
+        stmt = select(Contact).where(Contact.email_addresses.op("@>")(f'["{email}"]'))
         result = await self._session.execute(stmt)
         return list(result.scalars().all())
 
     async def get_all(self, limit: int = 500) -> list[Contact]:
         """Fetch all contacts, ordered by name."""
-        result = await self._session.execute(
-            select(Contact)
-            .order_by(Contact.full_name)
-            .limit(limit)
-        )
+        result = await self._session.execute(select(Contact).order_by(Contact.full_name).limit(limit))
         return list(result.scalars().all())
 
     async def search_by_name(self, query: str, limit: int = 20) -> list[Contact]:
         """Search contacts by name (case-insensitive ILIKE)."""
         result = await self._session.execute(
-            select(Contact)
-            .where(Contact.full_name.ilike(f"%{query}%"))
-            .order_by(Contact.full_name)
-            .limit(limit)
+            select(Contact).where(Contact.full_name.ilike(f"%{query}%")).order_by(Contact.full_name).limit(limit)
         )
         return list(result.scalars().all())
 

@@ -2,13 +2,11 @@
 
 from __future__ import annotations
 
-from typing import Any
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
 from integrations.notification_service import NotificationService
-
 
 # ---------------------------------------------------------------------------
 # Fixtures
@@ -49,7 +47,9 @@ def service(mock_telegram: AsyncMock, mock_ws: MagicMock) -> NotificationService
 
 @pytest.fixture()
 def service_with_apns(
-    mock_telegram: AsyncMock, mock_ws: MagicMock, mock_apns: AsyncMock,
+    mock_telegram: AsyncMock,
+    mock_ws: MagicMock,
+    mock_apns: AsyncMock,
 ) -> NotificationService:
     return NotificationService(
         telegram_gateway=mock_telegram,
@@ -65,7 +65,9 @@ def service_with_apns(
 
 @pytest.mark.asyncio()
 async def test_notify_info_sends_ws_and_telegram(
-    service: NotificationService, mock_ws: MagicMock, mock_telegram: AsyncMock,
+    service: NotificationService,
+    mock_ws: MagicMock,
+    mock_telegram: AsyncMock,
 ) -> None:
     await service.notify("Test Title", "Test body", priority="info")
 
@@ -81,7 +83,8 @@ async def test_notify_info_sends_ws_and_telegram(
 
 @pytest.mark.asyncio()
 async def test_notify_critical_sends_apns(
-    service_with_apns: NotificationService, mock_apns: AsyncMock,
+    service_with_apns: NotificationService,
+    mock_apns: AsyncMock,
 ) -> None:
     with patch.object(service_with_apns, "_get_active_device_tokens", return_value=["token1"]):
         await service_with_apns.notify("Alert", "Something bad", priority="critical")
@@ -92,7 +95,8 @@ async def test_notify_critical_sends_apns(
 
 @pytest.mark.asyncio()
 async def test_notify_info_skips_apns(
-    service_with_apns: NotificationService, mock_apns: AsyncMock,
+    service_with_apns: NotificationService,
+    mock_apns: AsyncMock,
 ) -> None:
     await service_with_apns.notify("Hello", "World", priority="info")
 
@@ -114,7 +118,9 @@ async def test_notify_no_apns_client(
 
 @pytest.mark.asyncio()
 async def test_notify_approval_sends_ws_and_telegram(
-    service: NotificationService, mock_ws: MagicMock, mock_telegram: AsyncMock,
+    service: NotificationService,
+    mock_ws: MagicMock,
+    mock_telegram: AsyncMock,
 ) -> None:
     approval = {
         "id": "abc-123",
@@ -140,7 +146,8 @@ async def test_notify_approval_sends_ws_and_telegram(
 
 @pytest.mark.asyncio()
 async def test_notify_approval_with_apns(
-    service_with_apns: NotificationService, mock_apns: AsyncMock,
+    service_with_apns: NotificationService,
+    mock_apns: AsyncMock,
 ) -> None:
     approval = {
         "id": "xyz-789",
@@ -164,7 +171,8 @@ async def test_notify_approval_with_apns(
 
 @pytest.mark.asyncio()
 async def test_notify_alert_prefixes_title(
-    service: NotificationService, mock_ws: MagicMock,
+    service: NotificationService,
+    mock_ws: MagicMock,
 ) -> None:
     await service.notify_alert("DB overloaded", "CPU at 95%", severity="critical")
 
@@ -179,7 +187,8 @@ async def test_notify_alert_prefixes_title(
 
 @pytest.mark.asyncio()
 async def test_notify_budget_alert(
-    service: NotificationService, mock_telegram: AsyncMock,
+    service: NotificationService,
+    mock_telegram: AsyncMock,
 ) -> None:
     alert = {"model": "claude_code", "current": 12, "limit": 15, "period": "daily"}
 
@@ -223,7 +232,9 @@ async def test_telegram_priority_emoji(
 
 @pytest.mark.asyncio()
 async def test_telegram_failure_does_not_crash(
-    service: NotificationService, mock_telegram: AsyncMock, mock_ws: MagicMock,
+    service: NotificationService,
+    mock_telegram: AsyncMock,
+    mock_ws: MagicMock,
 ) -> None:
     """If Telegram raises, WS should still succeed."""
     mock_telegram.send_message.side_effect = RuntimeError("Telegram down")
@@ -236,7 +247,9 @@ async def test_telegram_failure_does_not_crash(
 
 @pytest.mark.asyncio()
 async def test_ws_failure_does_not_crash(
-    service: NotificationService, mock_telegram: AsyncMock, mock_ws: MagicMock,
+    service: NotificationService,
+    mock_telegram: AsyncMock,
+    mock_ws: MagicMock,
 ) -> None:
     """If WS raises, Telegram should still succeed."""
     mock_ws.broadcast.side_effect = RuntimeError("WS down")

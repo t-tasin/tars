@@ -7,13 +7,14 @@ from uuid import UUID
 
 import structlog
 from fastapi import APIRouter, Depends, HTTPException, Query
+from shared.constants import ApprovalStatus
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.api.auth import verify_api_key
 from src.api.schemas import (
     ApprovalActionResponse,
-    ApprovalsListResponse,
     ApprovalDetail,
+    ApprovalsListResponse,
     ApproveRequest,
     EditAndApproveRequest,
     ErrorDetail,
@@ -27,7 +28,6 @@ from src.orchestrator.approval_manager import (
     ApprovalManager,
     ApprovalNotFoundError,
 )
-from shared.constants import ApprovalStatus
 
 log = structlog.get_logger()
 
@@ -40,6 +40,7 @@ _approval_manager = ApprovalManager()
 # ---------------------------------------------------------------------------
 # Helpers
 # ---------------------------------------------------------------------------
+
 
 def _to_detail(raw: dict[str, Any]) -> ApprovalDetail:
     """Convert ApprovalManager dict to ApprovalDetail schema."""
@@ -95,6 +96,7 @@ def _expired(approval_id: UUID) -> HTTPException:
 # Endpoints
 # ---------------------------------------------------------------------------
 
+
 @router.get(
     "/approvals",
     response_model=ApprovalsListResponse,
@@ -116,7 +118,9 @@ async def list_approvals(
         return ApprovalsListResponse(approvals=[], total=0, pending_count=0)
 
     approvals_raw, total = await _approval_manager.get_pending(
-        session, limit=limit, offset=offset,
+        session,
+        limit=limit,
+        offset=offset,
     )
 
     return ApprovalsListResponse(
@@ -145,7 +149,9 @@ async def approve_action(
     """Approve a pending action."""
     try:
         result = await _approval_manager.approve(
-            session, approval_id, source=body.source,
+            session,
+            approval_id,
+            source=body.source,
         )
     except ApprovalNotFoundError:
         raise _not_found(approval_id)
@@ -179,7 +185,10 @@ async def reject_action(
     """Reject a pending action."""
     try:
         result = await _approval_manager.reject(
-            session, approval_id, source=body.source, reason=body.reason,
+            session,
+            approval_id,
+            source=body.source,
+            reason=body.reason,
         )
     except ApprovalNotFoundError:
         raise _not_found(approval_id)

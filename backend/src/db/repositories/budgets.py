@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 from decimal import Decimal
-from typing import Any
 from uuid import UUID
 
 import structlog
@@ -35,24 +34,17 @@ class BudgetRepository:
 
     async def get_active(self) -> list[Budget]:
         """Fetch all active budgets."""
-        result = await self._session.execute(
-            select(Budget)
-            .where(Budget.active.is_(True))
-            .order_by(Budget.category)
-        )
+        result = await self._session.execute(select(Budget).where(Budget.active.is_(True)).order_by(Budget.category))
         return list(result.scalars().all())
 
     async def get_by_category(self, category: str) -> Budget | None:
         """Fetch the active budget for a given category (case-insensitive)."""
         result = await self._session.execute(
-            select(Budget)
-            .where(Budget.category == category.lower(), Budget.active.is_(True))
+            select(Budget).where(Budget.category == category.lower(), Budget.active.is_(True))
         )
         return result.scalar_one_or_none()
 
-    async def update_limit(
-        self, category: str, monthly_limit: Decimal
-    ) -> Budget | None:
+    async def update_limit(self, category: str, monthly_limit: Decimal) -> Budget | None:
         """Update the monthly limit for an active budget category."""
         budget = await self.get_by_category(category)
         if budget:

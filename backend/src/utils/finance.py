@@ -85,14 +85,16 @@ def compute_budget_statuses(
         projected = (spent / projection_days) * days_in_month if spent > 0 else 0.0
         on_track = projected <= limit
 
-        statuses.append({
-            "category": budget.category,
-            "monthly_limit": limit,
-            "spent": round(spent, 2),
-            "remaining": round(remaining, 2),
-            "percent_used": percent_used,
-            "days_remaining": days_remaining,
-            "on_track": on_track,
-        })
+        statuses.append(
+            {
+                "category": budget.category,
+                "monthly_limit": limit,
+                "spent": round(spent, 2),
+                "remaining": round(remaining, 2),
+                "percent_used": percent_used,
+                "days_remaining": days_remaining,
+                "on_track": on_track,
+            }
+        )
 
     return statuses

@@ -28,11 +28,7 @@ class FeedbackLogRepository:
 
     async def get_recent(self, limit: int = 50) -> list[FeedbackLog]:
         """Fetch the most recent feedback entries."""
-        result = await self._session.execute(
-            select(FeedbackLog)
-            .order_by(FeedbackLog.created_at.desc())
-            .limit(limit)
-        )
+        result = await self._session.execute(select(FeedbackLog).order_by(FeedbackLog.created_at.desc()).limit(limit))
         return list(result.scalars().all())
 
     async def get_by_agent(

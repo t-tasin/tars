@@ -5,11 +5,11 @@ from __future__ import annotations
 from typing import Any
 
 import structlog
+from shared.constants import HealthStatus
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from db.models import SystemHealthLog
-from shared.constants import HealthStatus
 
 log = structlog.get_logger()
 
@@ -46,13 +46,9 @@ class SystemHealthLogRepository:
             .subquery()
         )
 
-        stmt = (
-            select(SystemHealthLog)
-            .join(
-                subq,
-                (SystemHealthLog.target == subq.c.target)
-                & (SystemHealthLog.checked_at == subq.c.max_checked),
-            )
+        stmt = select(SystemHealthLog).join(
+            subq,
+            (SystemHealthLog.target == subq.c.target) & (SystemHealthLog.checked_at == subq.c.max_checked),
         )
         result = await self._session.execute(stmt)
         rows = result.scalars().all()
@@ -84,8 +80,6 @@ class SystemHealthLogRepository:
     async def get_recent(self, limit: int = 50) -> list[SystemHealthLog]:
         """Fetch the most recent health check records."""
         result = await self._session.execute(
-            select(SystemHealthLog)
-            .order_by(SystemHealthLog.checked_at.desc())
-            .limit(limit)
+            select(SystemHealthLog).order_by(SystemHealthLog.checked_at.desc()).limit(limit)
         )
         return list(result.scalars().all())

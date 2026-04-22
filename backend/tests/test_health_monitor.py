@@ -6,15 +6,15 @@ from contextlib import ExitStack
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
+from shared.constants import HealthStatus
 
 from agents.base import AgentContext
 from agents.health_monitor import HealthMonitorAgent, _status_from_ms
-from shared.constants import HealthStatus
-
 
 # ---------------------------------------------------------------------------
 # Helper
 # ---------------------------------------------------------------------------
+
 
 def _make_context() -> AgentContext:
     return AgentContext(
@@ -64,7 +64,6 @@ def _mock_settings() -> MagicMock:
 
 
 class TestStatusFromMs:
-
     def test_green(self) -> None:
         assert _status_from_ms(50) == HealthStatus.GREEN
 
@@ -81,7 +80,6 @@ class TestStatusFromMs:
 
 
 class TestHealthMonitorAgent:
-
     def setup_method(self) -> None:
         self.agent = HealthMonitorAgent()
 
@@ -178,7 +176,9 @@ class TestHealthMonitorAgent:
             mock_redis = stack.enter_context(patch.object(self.agent, "_check_redis"))
             stack.enter_context(patch.object(self.agent, "_store_results", new_callable=AsyncMock))
             stack.enter_context(patch.object(self.agent, "_send_alerts", new_callable=AsyncMock))
-            stack.enter_context(patch.object(self.agent, "_escalate_to_claude", new_callable=AsyncMock, return_value=None))
+            stack.enter_context(
+                patch.object(self.agent, "_escalate_to_claude", new_callable=AsyncMock, return_value=None)
+            )
             _patch_new_checks(stack, self.agent)
 
             mock_redis.return_value = _green("redis")

@@ -2,16 +2,15 @@
 
 Tier 1 (autonomous) — internal data writes only, no external side effects.
 """
+
 from __future__ import annotations
 
 import json
-from decimal import Decimal
 from typing import Any
 
 import structlog
 
 from agents.base import AgentContext, AgentResult, BaseAgent
-from db.models import WorkoutLog
 
 log = structlog.get_logger()
 
@@ -66,24 +65,24 @@ class WorkoutTrackerAgent(BaseAgent):
             for log_entry in today_session.logs:
                 if log_entry.exercise_id not in unique_exercises:
                     unique_exercises.add(log_entry.exercise_id)
-                    exercise_list.append(
-                        f"• {log_entry.target_reps} reps × {log_entry.target_weight}lbs"
-                    )
+                    exercise_list.append(f"• {log_entry.target_reps} reps × {log_entry.target_weight}lbs")
             return AgentResult(
                 success=True,
                 text=f"Today is {day} day. Tap Start when you're ready.\n" + "\n".join(exercise_list),
                 content_type="card",
-                cards=[{
-                    "type": "workout_session",
-                    "session_id": str(today_session.id),
-                    "day_name": day,
-                    "status": status,
-                }],
+                cards=[
+                    {
+                        "type": "workout_session",
+                        "session_id": str(today_session.id),
+                        "day_name": day,
+                        "status": status,
+                    }
+                ],
             )
 
         if status == "active":
             total_sets = len(today_session.logs)
-            logged_sets = sum(1 for l in today_session.logs if l.actual_reps is not None)
+            logged_sets = sum(1 for log in today_session.logs if log.actual_reps is not None)
             return AgentResult(
                 success=True,
                 text=f"{day.title()} day in progress. {logged_sets}/{total_sets} sets logged.",
@@ -115,12 +114,14 @@ class WorkoutTrackerAgent(BaseAgent):
                     "name": "Exercise",
                     "sets": [],
                 }
-            exercises_context[eid]["sets"].append({
-                "set_number": log_entry.set_number,
-                "target_reps": log_entry.target_reps,
-                "target_weight": float(log_entry.target_weight),
-                "logged": log_entry.actual_reps is not None,
-            })
+            exercises_context[eid]["sets"].append(
+                {
+                    "set_number": log_entry.set_number,
+                    "target_reps": log_entry.target_reps,
+                    "target_weight": float(log_entry.target_weight),
+                    "logged": log_entry.actual_reps is not None,
+                }
+            )
 
         prompt = (
             "Parse this gym voice log into structured data. "
@@ -129,9 +130,9 @@ class WorkoutTrackerAgent(BaseAgent):
             "- set_number (int)\n"
             "- actual_reps (int)\n"
             "- actual_weight (float)\n\n"
-            f"User said: \"{context.user_message}\"\n\n"
+            f'User said: "{context.user_message}"\n\n'
             f"Today's exercises: {json.dumps(list(exercises_context.values()), indent=2)}\n\n"
-            "Respond with ONLY valid JSON. If you can't parse it, respond with {\"error\": \"reason\"}."
+            'Respond with ONLY valid JSON. If you can\'t parse it, respond with {"error": "reason"}.'
         )
 
         try:

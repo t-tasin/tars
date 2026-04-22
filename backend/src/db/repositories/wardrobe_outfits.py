@@ -30,9 +30,7 @@ class WardrobeOutfitRepository:
     async def get_latest(self, limit: int = 5) -> list[WardrobeOutfit]:
         """Fetch the most recent outfit suggestions."""
         result = await self._session.execute(
-            select(WardrobeOutfit)
-            .order_by(WardrobeOutfit.outfit_date.desc())
-            .limit(limit)
+            select(WardrobeOutfit).order_by(WardrobeOutfit.outfit_date.desc()).limit(limit)
         )
         return list(result.scalars().all())
 

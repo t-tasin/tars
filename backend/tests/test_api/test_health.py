@@ -10,10 +10,10 @@ from fastapi.testclient import TestClient
 
 from src.api.health import router
 
-
 # ---------------------------------------------------------------------------
 # App setup
 # ---------------------------------------------------------------------------
+
 
 def _build_app() -> FastAPI:
     app = FastAPI()
@@ -24,6 +24,7 @@ def _build_app() -> FastAPI:
 # ---------------------------------------------------------------------------
 # Mock helpers
 # ---------------------------------------------------------------------------
+
 
 def _mock_psutil(cpu: float = 25.0, mem_percent: float = 55.0) -> MagicMock:
     mock = MagicMock()
@@ -55,7 +56,11 @@ class TestHealthEndpoint:
     @patch("src.api.health._check_redis")
     @patch("src.api.health._check_postgres")
     def test_all_healthy(
-        self, mock_pg, mock_redis, mock_psutil_mod, mock_registry_fn,
+        self,
+        mock_pg,
+        mock_redis,
+        mock_psutil_mod,
+        mock_registry_fn,
     ):
         mock_pg.return_value = {"status": "connected", "latency_ms": 2}
         mock_redis.return_value = {"status": "connected", "latency_ms": 3}
@@ -82,7 +87,11 @@ class TestHealthEndpoint:
     @patch("src.api.health._check_redis")
     @patch("src.api.health._check_postgres")
     def test_postgres_down_returns_red(
-        self, mock_pg, mock_redis, mock_psutil_mod, mock_registry_fn,
+        self,
+        mock_pg,
+        mock_redis,
+        mock_psutil_mod,
+        mock_registry_fn,
     ):
         mock_pg.return_value = {"status": "disconnected", "latency_ms": 0, "error": "refused"}
         mock_redis.return_value = {"status": "connected", "latency_ms": 3}
@@ -106,7 +115,11 @@ class TestHealthEndpoint:
     @patch("src.api.health._check_redis")
     @patch("src.api.health._check_postgres")
     def test_redis_down_returns_yellow(
-        self, mock_pg, mock_redis, mock_psutil_mod, mock_registry_fn,
+        self,
+        mock_pg,
+        mock_redis,
+        mock_psutil_mod,
+        mock_registry_fn,
     ):
         mock_pg.return_value = {"status": "connected", "latency_ms": 2}
         mock_redis.return_value = {"status": "disconnected", "latency_ms": 0}
@@ -130,7 +143,11 @@ class TestHealthEndpoint:
     @patch("src.api.health._check_redis")
     @patch("src.api.health._check_postgres")
     def test_circuit_breaker_open_degrades_to_yellow(
-        self, mock_pg, mock_redis, mock_psutil_mod, mock_registry_fn,
+        self,
+        mock_pg,
+        mock_redis,
+        mock_psutil_mod,
+        mock_registry_fn,
     ):
         mock_pg.return_value = {"status": "connected", "latency_ms": 2}
         mock_redis.return_value = {"status": "connected", "latency_ms": 3}
@@ -139,13 +156,15 @@ class TestHealthEndpoint:
         mock_psutil_mod.cpu_percent = psutil_mock.cpu_percent
         mock_psutil_mod.virtual_memory = psutil_mock.virtual_memory
 
-        mock_registry_fn.return_value = _mock_registry({
-            "gmail": {
-                "circuit_breaker": "open",
-                "recent_failures": 5,
-                "last_success": None,
-            },
-        })
+        mock_registry_fn.return_value = _mock_registry(
+            {
+                "gmail": {
+                    "circuit_breaker": "open",
+                    "recent_failures": 5,
+                    "last_success": None,
+                },
+            }
+        )
 
         app = _build_app()
         client = TestClient(app)
@@ -161,7 +180,11 @@ class TestHealthEndpoint:
     @patch("src.api.health._check_redis")
     @patch("src.api.health._check_postgres")
     def test_no_auth_required(
-        self, mock_pg, mock_redis, mock_psutil_mod, mock_registry_fn,
+        self,
+        mock_pg,
+        mock_redis,
+        mock_psutil_mod,
+        mock_registry_fn,
     ):
         """Health endpoint should work without authentication."""
         mock_pg.return_value = {"status": "connected", "latency_ms": 2}
@@ -184,7 +207,11 @@ class TestHealthEndpoint:
     @patch("src.api.health._check_redis")
     @patch("src.api.health._check_postgres")
     def test_system_resources_included(
-        self, mock_pg, mock_redis, mock_psutil_mod, mock_registry_fn,
+        self,
+        mock_pg,
+        mock_redis,
+        mock_psutil_mod,
+        mock_registry_fn,
     ):
         mock_pg.return_value = {"status": "connected", "latency_ms": 2}
         mock_redis.return_value = {"status": "connected", "latency_ms": 3}

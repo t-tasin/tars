@@ -9,7 +9,6 @@ import pytest
 
 from integrations.github_client import GitHubClient
 
-
 # ---------------------------------------------------------------------------
 # Fake GitHub API responses
 # ---------------------------------------------------------------------------
@@ -105,6 +104,7 @@ _ISSUES_RESPONSE = [
 # ---------------------------------------------------------------------------
 # Helpers
 # ---------------------------------------------------------------------------
+
 
 def _mock_response(json_data: list | dict, status_code: int = 200) -> httpx.Response:
     return httpx.Response(

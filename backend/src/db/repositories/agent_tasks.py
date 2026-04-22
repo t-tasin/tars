@@ -3,15 +3,15 @@
 from __future__ import annotations
 
 import uuid
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from typing import Any
 
 import structlog
+from shared.constants import TaskStatus
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from db.models import AgentTask
-from shared.constants import TaskStatus
 
 log = structlog.get_logger()
 
@@ -31,9 +31,7 @@ class AgentTaskRepository:
 
     async def get_by_id(self, task_id: uuid.UUID) -> AgentTask | None:
         """Fetch a task by primary key."""
-        result = await self._session.execute(
-            select(AgentTask).where(AgentTask.id == task_id)
-        )
+        result = await self._session.execute(select(AgentTask).where(AgentTask.id == task_id))
         return result.scalar_one_or_none()
 
     async def update_status(
@@ -48,9 +46,9 @@ class AgentTaskRepository:
             return None
         task.status = status
         if status == TaskStatus.RUNNING and task.started_at is None:
-            task.started_at = datetime.now(timezone.utc)
+            task.started_at = datetime.now(UTC)
         if status in (TaskStatus.COMPLETED, TaskStatus.FAILED):
-            task.completed_at = datetime.now(timezone.utc)
+            task.completed_at = datetime.now(UTC)
         for key, value in kwargs.items():
             if hasattr(task, key):
                 setattr(task, key, value)
@@ -86,12 +84,12 @@ class AgentTaskRepository:
         import datetime as dt
 
         today_start = dt.datetime.combine(
-            dt.date.today(), dt.time.min, tzinfo=timezone.utc,
+            dt.date.today(),
+            dt.time.min,
+            tzinfo=dt.UTC,
         )
         result = await self._session.execute(
-            select(func.count())
-            .select_from(AgentTask)
-            .where(AgentTask.created_at >= today_start)
+            select(func.count()).select_from(AgentTask).where(AgentTask.created_at >= today_start)
         )
         return result.scalar_one()
 
@@ -100,7 +98,9 @@ class AgentTaskRepository:
         import datetime as dt
 
         today_start = dt.datetime.combine(
-            dt.date.today(), dt.time.min, tzinfo=timezone.utc,
+            dt.date.today(),
+            dt.time.min,
+            tzinfo=dt.UTC,
         )
         result = await self._session.execute(
             select(AgentTask.agent_type, func.count().label("count"))

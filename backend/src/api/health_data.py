@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from typing import Annotated, Any
 
 import structlog
@@ -53,19 +53,21 @@ async def sync_health_data(
                     value=point.value,
                     unit=point.unit,
                     metadata_=point.metadata,
-                    synced_at=datetime.now(timezone.utc),
+                    synced_at=datetime.now(UTC),
                 )
             )
         else:
             # Insert new record
-            db.add(HealthData(
-                data_type=point.type,
-                value=point.value,
-                unit=point.unit,
-                recorded_date=recorded_date,
-                source="healthkit",
-                metadata_=point.metadata,
-            ))
+            db.add(
+                HealthData(
+                    data_type=point.type,
+                    value=point.value,
+                    unit=point.unit,
+                    recorded_date=recorded_date,
+                    source="healthkit",
+                    metadata_=point.metadata,
+                )
+            )
 
         synced += 1
 

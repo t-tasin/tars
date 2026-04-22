@@ -4,16 +4,14 @@ from __future__ import annotations
 
 import asyncio
 import json
-from unittest.mock import AsyncMock, MagicMock, patch
+from unittest.mock import patch
 
 import pytest
 
 from models import MCP_PROFILES
 from models.claude_spawner import (
-    ClaudeCodeResult,
     ClaudeCodeSpawner,
     ClaudeSpawnError,
-    MCP_ENV_KEYS,
 )
 
 
@@ -81,7 +79,10 @@ class TestBuildEnv:
     def test_no_profile_returns_none(self, spawner: ClaudeCodeSpawner) -> None:
         assert spawner._build_env(None) is None
 
-    @patch.dict("os.environ", {"GITHUB_PAT": "ghp_secret", "DATABASE_URL": "pg://...", "BRAVE_API_KEY": "brv_key", "PATH": "/usr/bin"})
+    @patch.dict(
+        "os.environ",
+        {"GITHUB_PAT": "ghp_secret", "DATABASE_URL": "pg://...", "BRAVE_API_KEY": "brv_key", "PATH": "/usr/bin"},
+    )
     def test_coding_profile_removes_brave_key(self, spawner: ClaudeCodeSpawner) -> None:
         env = spawner._build_env("coding")
         assert env is not None

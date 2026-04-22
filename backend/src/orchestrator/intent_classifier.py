@@ -7,7 +7,6 @@ from dataclasses import dataclass, field
 from typing import Any
 
 import structlog
-
 from shared.constants import IntentType, ModelName
 
 log = structlog.get_logger()
@@ -176,6 +175,7 @@ class IntentClassifier:
 # ---------------------------------------------------------------------------
 # Helpers
 # ---------------------------------------------------------------------------
+
 
 def _copy_intent(src: Intent) -> Intent:
     """Shallow-copy an Intent so we don't mutate the template."""

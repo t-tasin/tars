@@ -7,13 +7,12 @@ from typing import Any, Literal
 from uuid import UUID
 
 from pydantic import BaseModel, ConfigDict, Field
-
 from shared.constants import ApprovalStatus, ContentType, JobStatus, MessageSource, RiskTier
-
 
 # ---------------------------------------------------------------------------
 # Shared / nested models
 # ---------------------------------------------------------------------------
+
 
 class Attachment(BaseModel):
     type: str
@@ -42,6 +41,7 @@ class ContactSync(BaseModel):
 # ---------------------------------------------------------------------------
 # Request models
 # ---------------------------------------------------------------------------
+
 
 class SendMessageRequest(BaseModel):
     text: str
@@ -99,6 +99,7 @@ class ContactsSyncRequest(BaseModel):
 # ---------------------------------------------------------------------------
 # Response models — nested components
 # ---------------------------------------------------------------------------
+
 
 class ApprovalPreview(BaseModel):
     approval_id: UUID
@@ -165,6 +166,7 @@ class ErrorDetail(BaseModel):
 # ---------------------------------------------------------------------------
 # Response models — top-level
 # ---------------------------------------------------------------------------
+
 
 class TARSResponse(BaseModel):
     conversation_id: UUID

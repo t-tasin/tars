@@ -9,10 +9,6 @@ an already-approved application.
 from __future__ import annotations
 
 import asyncio
-import base64
-from email.mime.application import MIMEApplication
-from email.mime.multipart import MIMEMultipart
-from email.mime.text import MIMEText
 from pathlib import Path
 from typing import Any
 
@@ -131,7 +127,6 @@ class JobApplicator:
         The Greenhouse public job board API accepts multipart form data
         at ``POST https://boards-api.greenhouse.io/v1/boards/{slug}/jobs/{job_id}``.
         """
-        url = job.get("url", "")
         external_id = job.get("external_id", "")
         qa = application.get("qa_bank", {})
 

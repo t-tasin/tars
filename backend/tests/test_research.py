@@ -12,9 +12,9 @@ import pytest
 from agents.base import AgentContext
 from agents.research import (
     ResearchAgent,
+    _build_section_cards,
     _classify_category,
     _parse_research_json,
-    _build_section_cards,
 )
 from models.claude_spawner import ClaudeCodeResult, ClaudeSpawnError
 
@@ -25,6 +25,7 @@ _fake_db_session_module = sys.modules["db.session"]
 # ---------------------------------------------------------------------------
 # Helpers
 # ---------------------------------------------------------------------------
+
 
 def _make_context(message: str, **config_overrides: Any) -> AgentContext:
     return AgentContext(
@@ -111,6 +112,7 @@ def _install_mock_session(
 # Test: _classify_category
 # ---------------------------------------------------------------------------
 
+
 class TestClassifyCategory:
     def test_career_keywords(self) -> None:
         assert _classify_category("What is the job market like for ML engineers?") == "career"
@@ -137,6 +139,7 @@ class TestClassifyCategory:
 # ---------------------------------------------------------------------------
 # Test: _parse_research_json
 # ---------------------------------------------------------------------------
+
 
 class TestParseResearchJson:
     def test_direct_json(self) -> None:
@@ -169,6 +172,7 @@ class TestParseResearchJson:
 # Test: _build_section_cards
 # ---------------------------------------------------------------------------
 
+
 class TestBuildSectionCards:
     def test_builds_cards_from_sections(self) -> None:
         sections = _SAMPLE_RESEARCH_JSON["sections"]
@@ -195,6 +199,7 @@ class TestBuildSectionCards:
 # Test: ResearchAgent.execute
 # ---------------------------------------------------------------------------
 
+
 @pytest.mark.asyncio
 class TestResearchAgentExecute:
     async def test_successful_research(self) -> None:
@@ -206,9 +211,7 @@ class TestResearchAgentExecute:
             agent._claude = mock_claude
             mock_claude.execute = AsyncMock(return_value=_make_claude_result())
 
-            result = await agent.execute(
-                _make_context("Compare Python vs Rust for building CLI tools")
-            )
+            result = await agent.execute(_make_context("Compare Python vs Rust for building CLI tools"))
 
         assert result.success is True
         assert result.has_side_effects is False
@@ -236,9 +239,7 @@ class TestResearchAgentExecute:
             agent._claude = mock_claude
             mock_claude.execute = AsyncMock(side_effect=ClaudeSpawnError("not found"))
 
-            result = await agent.execute(
-                _make_context("Research quantum computing applications")
-            )
+            result = await agent.execute(_make_context("Research quantum computing applications"))
 
         assert result.success is False
         assert result.error == "claude_unavailable"
@@ -250,13 +251,9 @@ class TestResearchAgentExecute:
 
         with MagicMock() as mock_claude:
             agent._claude = mock_claude
-            mock_claude.execute = AsyncMock(
-                return_value=_make_claude_result(text="", success=True)
-            )
+            mock_claude.execute = AsyncMock(return_value=_make_claude_result(text="", success=True))
 
-            result = await agent.execute(
-                _make_context("Research the best databases for time-series data")
-            )
+            result = await agent.execute(_make_context("Research the best databases for time-series data"))
 
         assert result.success is False
         assert result.error == "empty_response"
@@ -268,13 +265,9 @@ class TestResearchAgentExecute:
 
         with MagicMock() as mock_claude:
             agent._claude = mock_claude
-            mock_claude.execute = AsyncMock(
-                return_value=_make_claude_result(text="", success=False)
-            )
+            mock_claude.execute = AsyncMock(return_value=_make_claude_result(text="", success=False))
 
-            result = await agent.execute(
-                _make_context("Research latest AI trends")
-            )
+            result = await agent.execute(_make_context("Research latest AI trends"))
 
         assert result.success is False
 
@@ -286,13 +279,9 @@ class TestResearchAgentExecute:
         plain_text = "Here are my research findings about quantum computing..."
         with MagicMock() as mock_claude:
             agent._claude = mock_claude
-            mock_claude.execute = AsyncMock(
-                return_value=_make_claude_result(text=plain_text)
-            )
+            mock_claude.execute = AsyncMock(return_value=_make_claude_result(text=plain_text))
 
-            result = await agent.execute(
-                _make_context("Research quantum computing")
-            )
+            result = await agent.execute(_make_context("Research quantum computing"))
 
         assert result.success is True
         assert result.content_type == "text"
@@ -307,9 +296,7 @@ class TestResearchAgentExecute:
             agent._claude = mock_claude
             mock_claude.execute = AsyncMock(return_value=_make_claude_result())
 
-            result = await agent.execute(
-                _make_context("Research salary ranges for ML engineers")
-            )
+            result = await agent.execute(_make_context("Research salary ranges for ML engineers"))
 
         assert result.has_side_effects is False
         assert result.action_type is None
@@ -324,9 +311,7 @@ class TestResearchAgentExecute:
             agent._claude = mock_claude
             mock_claude.execute = AsyncMock(return_value=_make_claude_result())
 
-            await agent.execute(
-                _make_context("Research best practices for FastAPI deployment")
-            )
+            await agent.execute(_make_context("Research best practices for FastAPI deployment"))
 
             mock_claude.execute.assert_called_once()
             call_kwargs = mock_claude.execute.call_args
@@ -342,9 +327,7 @@ class TestResearchAgentExecute:
             agent._claude = mock_claude
             mock_claude.execute = AsyncMock(return_value=_make_claude_result())
 
-            result = await agent.execute(
-                _make_context("What is the job market outlook for software engineers?")
-            )
+            result = await agent.execute(_make_context("What is the job market outlook for software engineers?"))
 
         assert result.success is True
         assert result.data["category"] == "career"
@@ -376,9 +359,7 @@ class TestResearchAgentExecute:
             agent._claude = mock_claude
             mock_claude.execute = AsyncMock(side_effect=capture_prompt)
 
-            await agent.execute(
-                _make_context("Research ML engineer compensation trends")
-            )
+            await agent.execute(_make_context("Research ML engineer compensation trends"))
 
         assert len(prompt_captured) == 1
         prompt = prompt_captured[0]
@@ -394,9 +375,7 @@ class TestResearchAgentExecute:
             agent._claude = mock_claude
             mock_claude.execute = AsyncMock(return_value=_make_claude_result())
 
-            result = await agent.execute(
-                _make_context("Compare Python vs Rust")
-            )
+            result = await agent.execute(_make_context("Compare Python vs Rust"))
 
         assert "Key Takeaways" in result.text
         assert "Rust is better for performance-critical CLI tools" in result.text

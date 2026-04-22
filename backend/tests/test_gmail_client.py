@@ -10,10 +10,10 @@ import pytest
 
 from integrations.gmail_client import GmailClient, _extract_body, _parse_from
 
-
 # ---------------------------------------------------------------------------
 # Helpers
 # ---------------------------------------------------------------------------
+
 
 def _make_creds_b64(**overrides: str) -> str:
     """Build a base64-encoded credentials blob."""
@@ -67,6 +67,7 @@ def _b64_body(text: str) -> str:
 # ---------------------------------------------------------------------------
 # Fixtures
 # ---------------------------------------------------------------------------
+
 
 @pytest.fixture
 def mock_service():
@@ -312,9 +313,7 @@ async def test_send_email_with_cc(client: GmailClient, mock_service):
     )
 
     call_kwargs = mock_service.users.return_value.messages.return_value.send.call_args
-    raw = base64.urlsafe_b64decode(
-        call_kwargs.kwargs.get("body", call_kwargs[1].get("body"))["raw"]
-    ).decode()
+    raw = base64.urlsafe_b64decode(call_kwargs.kwargs.get("body", call_kwargs[1].get("body"))["raw"]).decode()
     assert "b@example.com" in raw
 
 

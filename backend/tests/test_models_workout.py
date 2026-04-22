@@ -1,4 +1,5 @@
 """Test that workout ORM models are importable and have correct table names."""
+
 from __future__ import annotations
 
 from db.models import WorkoutExercise, WorkoutLog, WorkoutSession, WorkoutSplit

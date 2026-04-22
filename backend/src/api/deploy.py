@@ -52,11 +52,14 @@ async def trigger_deploy(
     ws = get_ws_manager()
 
     # Broadcast: deploy starting
-    await ws.broadcast("deploy_status", {
-        "phase": "starting",
-        "message": "Deploy initiated",
-        "sha": body.sha,
-    })
+    await ws.broadcast(
+        "deploy_status",
+        {
+            "phase": "starting",
+            "message": "Deploy initiated",
+            "sha": body.sha,
+        },
+    )
 
     log.info("deploy_triggered", sha=body.sha)
 
@@ -74,54 +77,72 @@ async def _run_deploy(sha: str | None, ws: Any) -> None:
     """Run deploy.sh for each node and stream progress via WebSocket."""
     try:
         # Deploy Node 1
-        await ws.broadcast("deploy_status", {
-            "phase": "pulling",
-            "node": "node1",
-            "message": "Pulling latest images for Node 1...",
-        })
+        await ws.broadcast(
+            "deploy_status",
+            {
+                "phase": "pulling",
+                "node": "node1",
+                "message": "Pulling latest images for Node 1...",
+            },
+        )
 
         node1_result = await _run_deploy_script(_NODE1_DIR)
 
-        await ws.broadcast("deploy_status", {
-            "phase": "pulled",
-            "node": "node1",
-            "message": "Node 1 updated",
-            "output": node1_result,
-        })
+        await ws.broadcast(
+            "deploy_status",
+            {
+                "phase": "pulled",
+                "node": "node1",
+                "message": "Node 1 updated",
+                "output": node1_result,
+            },
+        )
 
         # Deploy Node 2 (if reachable)
-        await ws.broadcast("deploy_status", {
-            "phase": "pulling",
-            "node": "node2",
-            "message": "Pulling latest images for Node 2...",
-        })
+        await ws.broadcast(
+            "deploy_status",
+            {
+                "phase": "pulling",
+                "node": "node2",
+                "message": "Pulling latest images for Node 2...",
+            },
+        )
 
         node2_result = await _run_deploy_script(_NODE2_DIR)
 
-        await ws.broadcast("deploy_status", {
-            "phase": "pulled",
-            "node": "node2",
-            "message": "Node 2 updated",
-            "output": node2_result,
-        })
+        await ws.broadcast(
+            "deploy_status",
+            {
+                "phase": "pulled",
+                "node": "node2",
+                "message": "Node 2 updated",
+                "output": node2_result,
+            },
+        )
 
         # Done
-        await ws.broadcast("deploy_status", {
-            "phase": "complete",
-            "message": "Deploy complete",
-            "sha": sha,
-        })
+        await ws.broadcast(
+            "deploy_status",
+            {
+                "phase": "complete",
+                "message": "Deploy complete",
+                "sha": sha,
+            },
+        )
 
         log.info("deploy_complete", sha=sha)
 
     except Exception as exc:
         log.error("deploy_failed", error=str(exc), sha=sha)
 
-        await ws.broadcast("deploy_status", {
-            "phase": "failed",
-            "message": f"Deploy failed: {exc}",
-            "sha": sha,
-        })
+        await ws.broadcast(
+            "deploy_status",
+            {
+                "phase": "failed",
+                "message": f"Deploy failed: {exc}",
+                "sha": sha,
+            },
+        )
 
 
 async def _run_deploy_script(node_dir: Path) -> str:
@@ -134,7 +155,9 @@ async def _run_deploy_script(node_dir: Path) -> str:
     work_dir = str(node_dir)
 
     proc = await asyncio.create_subprocess_exec(
-        "bash", script, work_dir,
+        "bash",
+        script,
+        work_dir,
         stdout=asyncio.subprocess.PIPE,
         stderr=asyncio.subprocess.STDOUT,
     )
@@ -143,8 +166,6 @@ async def _run_deploy_script(node_dir: Path) -> str:
     output = stdout.decode() if stdout else ""
 
     if proc.returncode != 0:
-        raise RuntimeError(
-            f"deploy.sh failed for {node_dir} (exit {proc.returncode}): {output}"
-        )
+        raise RuntimeError(f"deploy.sh failed for {node_dir} (exit {proc.returncode}): {output}")
 
     return output

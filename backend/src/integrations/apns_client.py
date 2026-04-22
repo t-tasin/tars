@@ -16,7 +16,6 @@ from typing import Any
 
 import structlog
 from aioapns import APNs, NotificationRequest
-from aioapns.common import APNS_RESPONSE_CODE
 
 log = structlog.get_logger()
 
@@ -193,9 +192,10 @@ class APNsClient:
 
         Returns the number of successful deliveries.
         """
+        from sqlalchemy import select
+
         from db.models import DeviceToken
         from db.session import get_db_session
-        from sqlalchemy import select
 
         async with get_db_session() as session:
             result = await session.execute(

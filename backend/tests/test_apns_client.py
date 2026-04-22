@@ -4,14 +4,12 @@ from __future__ import annotations
 
 from unittest.mock import AsyncMock, MagicMock, patch
 
-import pytest
-
-from integrations.apns_client import APNsClient, CATEGORY_APPROVAL
-
+from integrations.apns_client import CATEGORY_APPROVAL, APNsClient
 
 # ---------------------------------------------------------------------------
 # APNsClient unit tests
 # ---------------------------------------------------------------------------
+
 
 class TestAPNsClient:
     """Tests for the APNsClient wrapper."""

@@ -10,6 +10,7 @@ the asyncio event loop via an asyncio.Queue.
 
 Runs as an asyncio background task started from main.py lifespan.
 """
+
 from __future__ import annotations
 
 import asyncio
@@ -88,9 +89,10 @@ class WakeWordListener:
             while self._running:
                 try:
                     audio_data = await asyncio.wait_for(
-                        self._audio_queue.get(), timeout=1.0,
+                        self._audio_queue.get(),
+                        timeout=1.0,
                     )
-                except asyncio.TimeoutError:
+                except TimeoutError:
                     continue
 
                 if audio_data is None:
@@ -122,11 +124,7 @@ class WakeWordListener:
 
                 keyword_index = self._porcupine.process(pcm_unpacked)
                 if keyword_index >= 0:
-                    keyword = (
-                        self._model_paths[keyword_index]
-                        if keyword_index < len(self._model_paths)
-                        else "unknown"
-                    )
+                    keyword = self._model_paths[keyword_index] if keyword_index < len(self._model_paths) else "unknown"
                     log.info("wake_word_detected", keyword_index=keyword_index, keyword_path=keyword)
 
                     # Play confirmation tone (best-effort, sync context)
@@ -217,9 +215,7 @@ class WakeWordListener:
         # Handle approval-required responses (check content_type from ResponseFormatter)
         content_type = response.get("response", {}).get("content_type", "")
         if content_type == "approval":
-            await self._tts.speak(
-                "I'll need your approval for that. I've sent the details to your phone."
-            )
+            await self._tts.speak("I'll need your approval for that. I've sent the details to your phone.")
             return
 
         # Speak the response
@@ -234,9 +230,7 @@ class WakeWordListener:
         # Filter to only existing model files
         existing_paths = [p for p in self._model_paths if Path(p).exists()]
         if not existing_paths:
-            raise FileNotFoundError(
-                f"No wake word model files found. Expected: {self._model_paths}"
-            )
+            raise FileNotFoundError(f"No wake word model files found. Expected: {self._model_paths}")
 
         sensitivities = [self._sensitivity] * len(existing_paths)
 

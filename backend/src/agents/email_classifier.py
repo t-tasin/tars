@@ -6,10 +6,10 @@ import fnmatch
 from typing import Any
 
 import structlog
+from shared.constants import EmailTier, ModelName
 
 from agents.base import AgentContext, AgentResult, BaseAgent
-from models.gemini_client import GeminiClient, GeminiResponse
-from shared.constants import EmailTier, ModelName
+from models.gemini_client import GeminiClient
 
 log = structlog.get_logger()
 
@@ -36,7 +36,7 @@ def _build_few_shot_block(corrections: list[dict[str, Any]]) -> str:
     for c in corrections:
         lines.append(
             f"- From: {c.get('from_address', '?')}, "
-            f"Subject: \"{c.get('subject', '?')}\" → "
+            f'Subject: "{c.get("subject", "?")}" → '
             f"Correct tier: {c.get('corrected_tier', '?')}"
         )
     return "\n".join(lines)
@@ -204,16 +204,18 @@ class EmailClassifierAgent(BaseAgent):
                     model_used = ModelName.GEMINI_FLASH
 
             counts[tier.value] += 1
-            classifications.append({
-                "gmail_account": account_name,
-                "gmail_message_id": email.get("message_id", ""),
-                "from_address": from_address,
-                "from_name": email.get("from_name", ""),
-                "subject": email.get("subject", ""),
-                "snippet": email.get("snippet", ""),
-                "classified_tier": tier.value,
-                "model_used": model_used.value,
-            })
+            classifications.append(
+                {
+                    "gmail_account": account_name,
+                    "gmail_message_id": email.get("message_id", ""),
+                    "from_address": from_address,
+                    "from_name": email.get("from_name", ""),
+                    "subject": email.get("subject", ""),
+                    "snippet": email.get("snippet", ""),
+                    "classified_tier": tier.value,
+                    "model_used": model_used.value,
+                }
+            )
 
             log.info(
                 "email_classified",

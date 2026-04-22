@@ -45,9 +45,7 @@ async def register_device_token(
     Upserts: if the token already exists, updates device_name and
     reactivates it; otherwise inserts a new row.
     """
-    result = await session.execute(
-        select(DeviceToken).where(DeviceToken.token == body.token)
-    )
+    result = await session.execute(select(DeviceToken).where(DeviceToken.token == body.token))
     existing = result.scalar_one_or_none()
 
     if existing:
@@ -55,9 +53,7 @@ async def register_device_token(
         existing.platform = body.platform
         existing.active = True
         log.info("device_token_updated", token=body.token[:8] + "...")
-        return RegisterDeviceTokenResponse(
-            registered=True, message="Device token updated"
-        )
+        return RegisterDeviceTokenResponse(registered=True, message="Device token updated")
 
     token = DeviceToken(
         token=body.token,
@@ -66,9 +62,7 @@ async def register_device_token(
     )
     session.add(token)
     log.info("device_token_registered", token=body.token[:8] + "...", platform=body.platform)
-    return RegisterDeviceTokenResponse(
-        registered=True, message="Device token registered"
-    )
+    return RegisterDeviceTokenResponse(registered=True, message="Device token registered")
 
 
 @router.delete(
@@ -81,12 +75,6 @@ async def unregister_device_token(
     _auth: dict[str, Any] = Depends(verify_api_key),
 ) -> RegisterDeviceTokenResponse:
     """Deactivate a device token (soft delete)."""
-    await session.execute(
-        update(DeviceToken)
-        .where(DeviceToken.token == token)
-        .values(active=False)
-    )
+    await session.execute(update(DeviceToken).where(DeviceToken.token == token).values(active=False))
     log.info("device_token_deactivated", token=token[:8] + "...")
-    return RegisterDeviceTokenResponse(
-        registered=False, message="Device token deactivated"
-    )
+    return RegisterDeviceTokenResponse(registered=False, message="Device token deactivated")

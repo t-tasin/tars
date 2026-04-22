@@ -14,7 +14,6 @@ from integrations.telegram_job_handlers import (
     send_jobs_status,
 )
 
-
 # ---------------------------------------------------------------------------
 # Helpers
 # ---------------------------------------------------------------------------
@@ -59,10 +58,15 @@ class TestSendJobDigest:
         # Patch the telegram import used inside send_job_digest
         mock_button = MagicMock()
         mock_markup = MagicMock()
-        with patch.dict("sys.modules", {"telegram": MagicMock(
-            InlineKeyboardButton=mock_button,
-            InlineKeyboardMarkup=mock_markup,
-        )}):
+        with patch.dict(
+            "sys.modules",
+            {
+                "telegram": MagicMock(
+                    InlineKeyboardButton=mock_button,
+                    InlineKeyboardMarkup=mock_markup,
+                )
+            },
+        ):
             await send_job_digest(gw, [])
 
         gw.send_message.assert_awaited_once()
@@ -112,7 +116,6 @@ class TestSendJobsStatus:
     async def test_send_jobs_status(self) -> None:
         """Verify the status counts are formatted and sent."""
         import sys
-
         from contextlib import asynccontextmanager
 
         gw = _make_gateway()

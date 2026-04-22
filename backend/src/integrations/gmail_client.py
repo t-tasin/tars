@@ -5,7 +5,7 @@ from __future__ import annotations
 import asyncio
 import base64
 import json
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from email.mime.application import MIMEApplication
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
@@ -81,20 +81,25 @@ class GmailClient:
     # ------------------------------------------------------------------
 
     async def get_unread_emails(
-        self, max_results: int = 50, since_hours: int = 12,
+        self,
+        max_results: int = 50,
+        since_hours: int = 12,
     ) -> list[dict[str, Any]]:
         """Fetch unread emails from the last *since_hours* hours."""
         await self._ensure_valid_creds()
 
-        since_epoch = int(
-            (datetime.now(timezone.utc).timestamp()) - since_hours * 3600
-        )
+        since_epoch = int((datetime.now(UTC).timestamp()) - since_hours * 3600)
         query = f"is:unread after:{since_epoch}"
 
         messages_ref = await asyncio.to_thread(
-            self._service.users().messages().list(
-                userId="me", q=query, maxResults=max_results,
-            ).execute,
+            self._service.users()
+            .messages()
+            .list(
+                userId="me",
+                q=query,
+                maxResults=max_results,
+            )
+            .execute,
         )
 
         msg_stubs = messages_ref.get("messages", [])
@@ -102,10 +107,15 @@ class GmailClient:
 
         for stub in msg_stubs:
             msg = await asyncio.to_thread(
-                self._service.users().messages().get(
-                    userId="me", id=stub["id"], format="metadata",
+                self._service.users()
+                .messages()
+                .get(
+                    userId="me",
+                    id=stub["id"],
+                    format="metadata",
                     metadataHeaders=["From", "To", "Subject", "Date"],
-                ).execute,
+                )
+                .execute,
             )
             results.append(self._parse_metadata(msg))
 
@@ -123,9 +133,14 @@ class GmailClient:
         await self._ensure_valid_creds()
 
         msg = await asyncio.to_thread(
-            self._service.users().messages().get(
-                userId="me", id=message_id, format="full",
-            ).execute,
+            self._service.users()
+            .messages()
+            .get(
+                userId="me",
+                id=message_id,
+                format="full",
+            )
+            .execute,
         )
         return _extract_body(msg.get("payload", {}))
 
@@ -145,9 +160,14 @@ class GmailClient:
             body["removeLabelIds"] = remove_labels
 
         await asyncio.to_thread(
-            self._service.users().messages().modify(
-                userId="me", id=message_id, body=body,
-            ).execute,
+            self._service.users()
+            .messages()
+            .modify(
+                userId="me",
+                id=message_id,
+                body=body,
+            )
+            .execute,
         )
         log.info(
             "gmail_labels_modified",
@@ -192,17 +212,26 @@ class GmailClient:
         if reply_to_message_id:
             # Fetch the original to get its threadId
             original = await asyncio.to_thread(
-                self._service.users().messages().get(
-                    userId="me", id=reply_to_message_id, format="metadata",
+                self._service.users()
+                .messages()
+                .get(
+                    userId="me",
+                    id=reply_to_message_id,
+                    format="metadata",
                     metadataHeaders=[],
-                ).execute,
+                )
+                .execute,
             )
             send_body["threadId"] = original.get("threadId")
 
         result = await asyncio.to_thread(
-            self._service.users().messages().send(
-                userId="me", body=send_body,
-            ).execute,
+            self._service.users()
+            .messages()
+            .send(
+                userId="me",
+                body=send_body,
+            )
+            .execute,
         )
 
         log.info(
@@ -256,9 +285,13 @@ class GmailClient:
         }
 
         result = await asyncio.to_thread(
-            self._service.users().messages().send(
-                userId="me", body=send_body,
-            ).execute,
+            self._service.users()
+            .messages()
+            .send(
+                userId="me",
+                body=send_body,
+            )
+            .execute,
         )
 
         log.info(
@@ -302,10 +335,7 @@ class GmailClient:
                 expired=self._creds.expired,
                 has_refresh=bool(self._creds.refresh_token),
             )
-            raise RuntimeError(
-                f"Gmail credentials for {self._account} are invalid and "
-                "cannot be refreshed."
-            )
+            raise RuntimeError(f"Gmail credentials for {self._account} are invalid and cannot be refreshed.")
 
     def _serialise_creds(self) -> str:
         """Return a base64-encoded JSON blob of the current credentials."""
@@ -325,18 +355,12 @@ class GmailClient:
 
     def _parse_metadata(self, msg: dict[str, Any]) -> dict[str, Any]:
         """Extract a clean dict from a Gmail metadata-format message."""
-        headers = {
-            h["name"].lower(): h["value"]
-            for h in msg.get("payload", {}).get("headers", [])
-        }
+        headers = {h["name"].lower(): h["value"] for h in msg.get("payload", {}).get("headers", [])}
 
         from_raw = headers.get("from", "")
         from_name, from_address = _parse_from(from_raw)
 
-        has_attachments = any(
-            part.get("filename")
-            for part in msg.get("payload", {}).get("parts", [])
-        )
+        has_attachments = any(part.get("filename") for part in msg.get("payload", {}).get("parts", []))
 
         return {
             "message_id": msg["id"],
@@ -355,6 +379,7 @@ class GmailClient:
 # Module-level helpers
 # ---------------------------------------------------------------------------
 
+
 def _parse_from(raw: str) -> tuple[str, str]:
     """Parse ``"Display Name <email@example.com>"`` into (name, address)."""
     if "<" in raw and ">" in raw:
@@ -370,18 +395,14 @@ def _extract_body(payload: dict[str, Any]) -> str:
 
     # Leaf node with text/plain
     if mime_type == "text/plain" and payload.get("body", {}).get("data"):
-        return base64.urlsafe_b64decode(payload["body"]["data"]).decode(
-            "utf-8", errors="replace"
-        )
+        return base64.urlsafe_b64decode(payload["body"]["data"]).decode("utf-8", errors="replace")
 
     # Multipart — recurse, prefer text/plain
     for part in payload.get("parts", []):
         if part.get("mimeType") == "text/plain":
             data = part.get("body", {}).get("data", "")
             if data:
-                return base64.urlsafe_b64decode(data).decode(
-                    "utf-8", errors="replace"
-                )
+                return base64.urlsafe_b64decode(data).decode("utf-8", errors="replace")
 
     # Fallback: recurse into nested multipart
     for part in payload.get("parts", []):

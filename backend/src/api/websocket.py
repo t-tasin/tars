@@ -7,7 +7,7 @@ notifications without polling.
 
 from __future__ import annotations
 
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from typing import Any, Literal
 
 import structlog
@@ -87,7 +87,7 @@ def _build_payload(message_type: WSMessageType, data: dict[str, Any]) -> dict[st
     return {
         "type": message_type,
         "data": data,
-        "timestamp": datetime.now(timezone.utc).isoformat(),
+        "timestamp": datetime.now(UTC).isoformat(),
     }
 
 
@@ -106,6 +106,7 @@ def get_ws_manager() -> WebSocketManager:
 # ---------------------------------------------------------------------------
 # WebSocket endpoint
 # ---------------------------------------------------------------------------
+
 
 @router.websocket("/api/v1/stream")
 async def websocket_endpoint(websocket: WebSocket) -> None:

@@ -6,18 +6,16 @@ import uuid
 from typing import Any
 from unittest.mock import AsyncMock, MagicMock, patch
 
-import pytest
 from fastapi import FastAPI
 from fastapi.testclient import TestClient
+from shared.constants import ContentType
 
 from src.api.messages import router
-from src.api.schemas import TARSResponse
-from shared.constants import ContentType, MessageSource
-
 
 # ---------------------------------------------------------------------------
 # App setup
 # ---------------------------------------------------------------------------
+
 
 def _build_app() -> FastAPI:
     app = FastAPI()
@@ -33,6 +31,7 @@ _HEADERS = {
 # ---------------------------------------------------------------------------
 # Mock orchestrator response
 # ---------------------------------------------------------------------------
+
 
 def _mock_orchestrator_response(
     text: str = "Hello, Tasin!",
@@ -210,8 +209,7 @@ class TestSendMessage:
         assert response.status_code == 200
         mock_orch.process_message.assert_called_once()
         call_kwargs = mock_orch.process_message.call_args
-        assert call_kwargs.kwargs.get("conversation_id") == conv_id or \
-               call_kwargs[1].get("conversation_id") == conv_id
+        assert call_kwargs.kwargs.get("conversation_id") == conv_id or call_kwargs[1].get("conversation_id") == conv_id
 
     @patch("src.api.auth.get_settings")
     @patch("src.orchestrator.engine.get_orchestrator")

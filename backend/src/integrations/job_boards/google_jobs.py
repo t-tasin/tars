@@ -70,15 +70,17 @@ class GoogleJobsAdapter(JobBoardAdapter):
         results: list[dict] = []
         for job in data.get("jobs_results", []):
             job_id = job.get("job_id", "")
-            results.append({
-                "id": f"gjobs-{job_id}" if job_id else f"gjobs-{job.get('title', '')[:30]}",
-                "title": job.get("title", ""),
-                "company": job.get("company_name", ""),
-                "location": job.get("location", ""),
-                "salary": _extract_salary(job),
-                "description": job.get("description", ""),
-                "url": _extract_url(job),
-            })
+            results.append(
+                {
+                    "id": f"gjobs-{job_id}" if job_id else f"gjobs-{job.get('title', '')[:30]}",
+                    "title": job.get("title", ""),
+                    "company": job.get("company_name", ""),
+                    "location": job.get("location", ""),
+                    "salary": _extract_salary(job),
+                    "description": job.get("description", ""),
+                    "url": _extract_url(job),
+                }
+            )
 
         log.info("google_jobs_search_completed", returned=len(results), query=query)
         return results

@@ -10,17 +10,15 @@ import uuid
 from typing import Any
 from unittest.mock import AsyncMock, MagicMock, patch
 
-import pytest
 from fastapi import FastAPI
 from fastapi.testclient import TestClient
 
 from src.api.messages import router
-from shared.constants import ContentType, MessageSource
-
 
 # ---------------------------------------------------------------------------
 # App setup
 # ---------------------------------------------------------------------------
+
 
 def _build_app() -> FastAPI:
     app = FastAPI()
@@ -91,8 +89,7 @@ class TestE2EMessagePipeline:
         # Verify orchestrator received the correct args
         mock_orch.process_message.assert_called_once()
         call_kwargs = mock_orch.process_message.call_args
-        assert call_kwargs.kwargs.get("text") == "Good morning" or \
-               call_kwargs[1].get("text") == "Good morning"
+        assert call_kwargs.kwargs.get("text") == "Good morning" or call_kwargs[1].get("text") == "Good morning"
 
     @patch("src.api.auth.get_settings")
     @patch("src.orchestrator.engine.get_orchestrator")
@@ -227,8 +224,7 @@ class TestE2EMessagePipeline:
 
         assert response.status_code == 200
         call_kwargs = mock_orch.process_message.call_args
-        passed_conv_id = call_kwargs.kwargs.get("conversation_id") or \
-                         call_kwargs[1].get("conversation_id")
+        passed_conv_id = call_kwargs.kwargs.get("conversation_id") or call_kwargs[1].get("conversation_id")
         assert passed_conv_id == conv_id
 
     @patch("src.api.auth.get_settings")
@@ -285,7 +281,6 @@ class TestE2EMessagePipeline:
 
         assert response.status_code == 200
         call_kwargs = mock_orch.process_message.call_args
-        attachments = call_kwargs.kwargs.get("attachments") or \
-                      call_kwargs[1].get("attachments")
+        attachments = call_kwargs.kwargs.get("attachments") or call_kwargs[1].get("attachments")
         assert attachments is not None
         assert len(attachments) == 1

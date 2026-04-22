@@ -17,12 +17,12 @@ from typing import Any
 import httpx
 import psutil
 import structlog
+from shared.constants import HealthStatus
 from sqlalchemy import text
 
 from agents.base import AgentContext, AgentResult, BaseAgent
 from config import get_settings
 from db.session import get_db_session
-from shared.constants import HealthStatus
 
 log = structlog.get_logger("health_monitor")
 
@@ -61,18 +61,27 @@ class HealthMonitorAgent(BaseAgent):
 
         checks: list[dict[str, Any]] = []
         check_names = [
-            "postgresql", "redis", "grafana", "loki_errors",
-            "disk", "memory", "pg_pool", "redis_memory", "docker",
+            "postgresql",
+            "redis",
+            "grafana",
+            "loki_errors",
+            "disk",
+            "memory",
+            "pg_pool",
+            "redis_memory",
+            "docker",
         ]
 
         for name, result in zip(check_names, results):
             if isinstance(result, BaseException):
-                checks.append({
-                    "target": name,
-                    "status": HealthStatus.RED,
-                    "response_time_ms": None,
-                    "details": {"error": str(result)},
-                })
+                checks.append(
+                    {
+                        "target": name,
+                        "status": HealthStatus.RED,
+                        "response_time_ms": None,
+                        "details": {"error": str(result)},
+                    }
+                )
             else:
                 checks.append(result)
 
@@ -254,7 +263,8 @@ class HealthMonitorAgent(BaseAgent):
             )
             try:
                 error_count = await client.count_errors(
-                    job="tars-backend", since="5m",
+                    job="tars-backend",
+                    since="5m",
                 )
                 ms = int((time.monotonic() - start) * 1000)
 
@@ -289,6 +299,7 @@ class HealthMonitorAgent(BaseAgent):
 
     async def _check_disk_usage(self) -> dict[str, Any]:
         """Check disk usage on key mount points."""
+
         def _get_disk():
             results = {}
             for path in ["/", "/data"]:
@@ -322,6 +333,7 @@ class HealthMonitorAgent(BaseAgent):
 
     async def _check_memory_usage(self) -> dict[str, Any]:
         """Check system memory usage."""
+
         def _get_memory():
             mem = psutil.virtual_memory()
             return {
@@ -350,10 +362,12 @@ class HealthMonitorAgent(BaseAgent):
         start = time.monotonic()
         try:
             async with get_db_session() as session:
-                result = await session.execute(text(
-                    "SELECT numbackends, xact_commit, xact_rollback, conflicts, deadlocks "
-                    "FROM pg_stat_database WHERE datname = current_database()"
-                ))
+                result = await session.execute(
+                    text(
+                        "SELECT numbackends, xact_commit, xact_rollback, conflicts, deadlocks "
+                        "FROM pg_stat_database WHERE datname = current_database()"
+                    )
+                )
                 row = result.one_or_none()
                 ms = int((time.monotonic() - start) * 1000)
 
@@ -565,10 +579,7 @@ class HealthMonitorAgent(BaseAgent):
             from models.claude_spawner import ClaudeCodeSpawner
 
             targets = ", ".join(c["target"] for c in red_checks)
-            details = "\n".join(
-                f"- {c['target']}: {c['status']} — {c.get('details', {})}"
-                for c in red_checks
-            )
+            details = "\n".join(f"- {c['target']}: {c['status']} — {c.get('details', {})}" for c in red_checks)
 
             prompt = (
                 "You are T.A.R.S. system diagnostics. The following infrastructure "

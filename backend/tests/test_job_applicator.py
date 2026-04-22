@@ -9,7 +9,6 @@ import pytest
 
 from integrations.job_applicator import JobApplicator, classify_apply_method
 
-
 # ---------------------------------------------------------------------------
 # classify_apply_method
 # ---------------------------------------------------------------------------

@@ -6,6 +6,16 @@ import uuid
 from datetime import date, datetime
 from decimal import Decimal
 
+from shared.constants import (
+    ApprovalStatus,
+    EmailTier,
+    HealthStatus,
+    JobStatus,
+    RiskTier,
+    TaskPriority,
+    TaskStatus,
+    WorkoutSessionStatus,
+)
 from sqlalchemy import (
     Boolean,
     Date,
@@ -23,17 +33,6 @@ from sqlalchemy import (
 from sqlalchemy.dialects.postgresql import JSONB, TIMESTAMP
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, relationship
 
-from shared.constants import (
-    ApprovalStatus,
-    EmailTier,
-    HealthStatus,
-    JobStatus,
-    RiskTier,
-    TaskPriority,
-    TaskStatus,
-    WorkoutSessionStatus,
-)
-
 # Reusable SQLAlchemy Enum types with create_type=False so that
 # migrations (not ORM metadata) are the sole owner of PG enum DDL.
 # values_callable ensures SQLAlchemy sends lowercase VALUES ("pending")
@@ -46,12 +45,15 @@ _risk_tier_enum = Enum(RiskTier, name="risk_tier", create_type=False, values_cal
 _email_tier_enum = Enum(EmailTier, name="email_tier", create_type=False, values_callable=_enum_values)
 _job_status_enum = Enum(JobStatus, name="job_status", create_type=False, values_callable=_enum_values)
 _health_status_enum = Enum(HealthStatus, name="health_status", create_type=False, values_callable=_enum_values)
-_workout_session_status_enum = Enum(WorkoutSessionStatus, name="workout_session_status", create_type=False, values_callable=_enum_values)
+_workout_session_status_enum = Enum(
+    WorkoutSessionStatus, name="workout_session_status", create_type=False, values_callable=_enum_values
+)
 
 
 # ---------------------------------------------------------------------------
 # Base
 # ---------------------------------------------------------------------------
+
 
 class Base(DeclarativeBase):
     pass
@@ -87,6 +89,7 @@ def _updated_at() -> Mapped[datetime]:
 # 1. Conversation
 # ---------------------------------------------------------------------------
 
+
 class Conversation(Base):
     __tablename__ = "conversations"
 
@@ -97,12 +100,15 @@ class Conversation(Base):
     metadata_: Mapped[dict] = mapped_column("metadata", JSONB, nullable=False, server_default=text("'{}'::jsonb"))
 
     # relationships
-    messages: Mapped[list[Message]] = relationship(back_populates="conversation", cascade="all, delete-orphan", order_by="Message.created_at")
+    messages: Mapped[list[Message]] = relationship(
+        back_populates="conversation", cascade="all, delete-orphan", order_by="Message.created_at"
+    )
 
 
 # ---------------------------------------------------------------------------
 # 2. Message
 # ---------------------------------------------------------------------------
+
 
 class Message(Base):
     __tablename__ = "messages"
@@ -112,7 +118,9 @@ class Message(Base):
     )
 
     id: Mapped[uuid.UUID] = _uuid_pk()
-    conversation_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("conversations.id", ondelete="CASCADE"), nullable=False)
+    conversation_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("conversations.id", ondelete="CASCADE"), nullable=False
+    )
     role: Mapped[str] = mapped_column(String(10), nullable=False)
     content_type: Mapped[str] = mapped_column(String(20), nullable=False, server_default=text("'text'"))
     content: Mapped[str] = mapped_column(Text, nullable=False)
@@ -127,6 +135,7 @@ class Message(Base):
 # 3. AgentTask
 # ---------------------------------------------------------------------------
 
+
 class AgentTask(Base):
     __tablename__ = "agent_tasks"
     __table_args__ = (
@@ -138,8 +147,12 @@ class AgentTask(Base):
     id: Mapped[uuid.UUID] = _uuid_pk()
     agent_type: Mapped[str] = mapped_column(String(50), nullable=False)
     model_used: Mapped[str | None] = mapped_column(String(30))
-    status: Mapped[TaskStatus] = mapped_column(_task_status_enum, default=TaskStatus.PENDING, server_default=text("'pending'"))
-    priority: Mapped[TaskPriority] = mapped_column(_task_priority_enum, default=TaskPriority.NORMAL, server_default=text("'normal'"))
+    status: Mapped[TaskStatus] = mapped_column(
+        _task_status_enum, default=TaskStatus.PENDING, server_default=text("'pending'")
+    )
+    priority: Mapped[TaskPriority] = mapped_column(
+        _task_priority_enum, default=TaskPriority.NORMAL, server_default=text("'normal'")
+    )
     input_payload: Mapped[dict] = mapped_column(JSONB, nullable=False)
     output_payload: Mapped[dict | None] = mapped_column(JSONB)
     error_message: Mapped[str | None] = mapped_column(Text)
@@ -162,6 +175,7 @@ class AgentTask(Base):
 # 4. Approval
 # ---------------------------------------------------------------------------
 
+
 class Approval(Base):
     __tablename__ = "approvals"
     __table_args__ = (
@@ -173,7 +187,9 @@ class Approval(Base):
     task_id: Mapped[uuid.UUID | None] = mapped_column(ForeignKey("agent_tasks.id"))
     action_type: Mapped[str] = mapped_column(String(50), nullable=False)
     risk_tier: Mapped[RiskTier] = mapped_column(_risk_tier_enum, nullable=False)
-    status: Mapped[ApprovalStatus] = mapped_column(_approval_status_enum, default=ApprovalStatus.PENDING, server_default=text("'pending'"))
+    status: Mapped[ApprovalStatus] = mapped_column(
+        _approval_status_enum, default=ApprovalStatus.PENDING, server_default=text("'pending'")
+    )
     title: Mapped[str] = mapped_column(String(255), nullable=False)
     preview_payload: Mapped[dict] = mapped_column(JSONB, nullable=False)
     edited_payload: Mapped[dict | None] = mapped_column(JSONB)
@@ -192,6 +208,7 @@ class Approval(Base):
 # ---------------------------------------------------------------------------
 # 5. Contact (defined before EmailClassification for FK)
 # ---------------------------------------------------------------------------
+
 
 class Contact(Base):
     __tablename__ = "contacts"
@@ -218,6 +235,7 @@ class Contact(Base):
 # ---------------------------------------------------------------------------
 # 6. EmailClassification
 # ---------------------------------------------------------------------------
+
 
 class EmailClassification(Base):
     __tablename__ = "email_classifications"
@@ -251,11 +269,10 @@ class EmailClassification(Base):
 # 7. Briefing
 # ---------------------------------------------------------------------------
 
+
 class Briefing(Base):
     __tablename__ = "briefings"
-    __table_args__ = (
-        UniqueConstraint("briefing_date", "briefing_type", name="uq_briefings_date_type"),
-    )
+    __table_args__ = (UniqueConstraint("briefing_date", "briefing_type", name="uq_briefings_date_type"),)
 
     id: Mapped[uuid.UUID] = _uuid_pk()
     briefing_type: Mapped[str] = mapped_column(String(20), nullable=False)
@@ -271,6 +288,7 @@ class Briefing(Base):
 # ---------------------------------------------------------------------------
 # 8. Config
 # ---------------------------------------------------------------------------
+
 
 class Config(Base):
     __tablename__ = "config"
@@ -291,6 +309,7 @@ class Config(Base):
 # ---------------------------------------------------------------------------
 # 9. AgentOutput
 # ---------------------------------------------------------------------------
+
 
 class AgentOutput(Base):
     __tablename__ = "agent_outputs"
@@ -314,11 +333,10 @@ class AgentOutput(Base):
 # 10. SystemHealthLog
 # ---------------------------------------------------------------------------
 
+
 class SystemHealthLog(Base):
     __tablename__ = "system_health_log"
-    __table_args__ = (
-        Index("idx_health_log_target", "target", "checked_at"),
-    )
+    __table_args__ = (Index("idx_health_log_target", "target", "checked_at"),)
 
     id: Mapped[uuid.UUID] = _uuid_pk()
     target: Mapped[str] = mapped_column(String(50), nullable=False)
@@ -332,11 +350,10 @@ class SystemHealthLog(Base):
 # 11. FeedbackLog
 # ---------------------------------------------------------------------------
 
+
 class FeedbackLog(Base):
     __tablename__ = "feedback_log"
-    __table_args__ = (
-        Index("idx_feedback_type", "feedback_type", "created_at"),
-    )
+    __table_args__ = (Index("idx_feedback_type", "feedback_type", "created_at"),)
 
     id: Mapped[uuid.UUID] = _uuid_pk()
     feedback_type: Mapped[str] = mapped_column(String(50), nullable=False)
@@ -351,6 +368,7 @@ class FeedbackLog(Base):
 # ---------------------------------------------------------------------------
 # 12. JobListing
 # ---------------------------------------------------------------------------
+
 
 class JobListing(Base):
     __tablename__ = "job_listings"
@@ -387,18 +405,19 @@ class JobListing(Base):
     updated_at: Mapped[datetime] = _updated_at()
 
     # relationships
-    applications: Mapped[list[JobApplication]] = relationship(back_populates="job_listing", cascade="all, delete-orphan")
+    applications: Mapped[list[JobApplication]] = relationship(
+        back_populates="job_listing", cascade="all, delete-orphan"
+    )
 
 
 # ---------------------------------------------------------------------------
 # 13. JobApplication
 # ---------------------------------------------------------------------------
 
+
 class JobApplication(Base):
     __tablename__ = "job_applications"
-    __table_args__ = (
-        Index("idx_job_apps_listing", "job_listing_id"),
-    )
+    __table_args__ = (Index("idx_job_apps_listing", "job_listing_id"),)
 
     id: Mapped[uuid.UUID] = _uuid_pk()
     job_listing_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("job_listings.id", ondelete="CASCADE"), nullable=False)
@@ -418,6 +437,7 @@ class JobApplication(Base):
 # ---------------------------------------------------------------------------
 # 14. WardrobeItem
 # ---------------------------------------------------------------------------
+
 
 class WardrobeItem(Base):
     __tablename__ = "wardrobe_items"
@@ -448,11 +468,10 @@ class WardrobeItem(Base):
 # 15. WardrobeOutfit
 # ---------------------------------------------------------------------------
 
+
 class WardrobeOutfit(Base):
     __tablename__ = "wardrobe_outfits"
-    __table_args__ = (
-        Index("idx_outfits_date", "outfit_date"),
-    )
+    __table_args__ = (Index("idx_outfits_date", "outfit_date"),)
 
     id: Mapped[uuid.UUID] = _uuid_pk()
     outfit_date: Mapped[date] = mapped_column(Date, nullable=False)
@@ -469,11 +488,10 @@ class WardrobeOutfit(Base):
 # 16. ModelUsage
 # ---------------------------------------------------------------------------
 
+
 class ModelUsage(Base):
     __tablename__ = "model_usage"
-    __table_args__ = (
-        Index("idx_usage_model", "model", "created_at"),
-    )
+    __table_args__ = (Index("idx_usage_model", "model", "created_at"),)
 
     id: Mapped[uuid.UUID] = _uuid_pk()
     model: Mapped[str] = mapped_column(String(30), nullable=False)
@@ -495,6 +513,7 @@ class ModelUsage(Base):
 # 17. Transaction
 # ---------------------------------------------------------------------------
 
+
 class Transaction(Base):
     __tablename__ = "transactions"
     __table_args__ = (
@@ -505,7 +524,9 @@ class Transaction(Base):
         Index("idx_txns_teller_id", "teller_transaction_id", unique=True),
         Index("idx_txns_counterparty", "counterparty_name"),
         Index("idx_txns_type", "transaction_type"),
-        Index("idx_txns_recurring_date", "is_recurring", "transaction_date", postgresql_where=text("is_recurring = true")),
+        Index(
+            "idx_txns_recurring_date", "is_recurring", "transaction_date", postgresql_where=text("is_recurring = true")
+        ),
     )
 
     id: Mapped[uuid.UUID] = _uuid_pk()
@@ -534,6 +555,7 @@ class Transaction(Base):
 # 18. FinanceSummary
 # ---------------------------------------------------------------------------
 
+
 class FinanceSummary(Base):
     __tablename__ = "finance_summaries"
     __table_args__ = (
@@ -559,11 +581,10 @@ class FinanceSummary(Base):
 # 19. Budget
 # ---------------------------------------------------------------------------
 
+
 class Budget(Base):
     __tablename__ = "budgets"
-    __table_args__ = (
-        Index("idx_budgets_category", "category", unique=True, postgresql_where=text("active = true")),
-    )
+    __table_args__ = (Index("idx_budgets_category", "category", unique=True, postgresql_where=text("active = true")),)
 
     id: Mapped[uuid.UUID] = _uuid_pk()
     category: Mapped[str] = mapped_column(String(100), nullable=False)
@@ -576,6 +597,7 @@ class Budget(Base):
 # ---------------------------------------------------------------------------
 # 20. HealthData
 # ---------------------------------------------------------------------------
+
 
 class HealthData(Base):
     __tablename__ = "health_data"
@@ -601,11 +623,10 @@ class HealthData(Base):
 # 21. WorkoutSplit
 # ---------------------------------------------------------------------------
 
+
 class WorkoutSplit(Base):
     __tablename__ = "workout_splits"
-    __table_args__ = (
-        Index("idx_splits_active", "active", postgresql_where=text("active = true")),
-    )
+    __table_args__ = (Index("idx_splits_active", "active", postgresql_where=text("active = true")),)
 
     id: Mapped[uuid.UUID] = _uuid_pk()
     name: Mapped[str] = mapped_column(String(100), nullable=False)
@@ -623,11 +644,10 @@ class WorkoutSplit(Base):
 # 22. WorkoutExercise
 # ---------------------------------------------------------------------------
 
+
 class WorkoutExercise(Base):
     __tablename__ = "workout_exercises"
-    __table_args__ = (
-        Index("idx_exercises_split_day", "split_id", "day_name"),
-    )
+    __table_args__ = (Index("idx_exercises_split_day", "split_id", "day_name"),)
 
     id: Mapped[uuid.UUID] = _uuid_pk()
     split_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("workout_splits.id", ondelete="RESTRICT"), nullable=False)
@@ -650,6 +670,7 @@ class WorkoutExercise(Base):
 # ---------------------------------------------------------------------------
 # 23. WorkoutSession
 # ---------------------------------------------------------------------------
+
 
 class WorkoutSession(Base):
     __tablename__ = "workout_sessions"
@@ -685,6 +706,7 @@ class WorkoutSession(Base):
 # 24. WorkoutLog
 # ---------------------------------------------------------------------------
 
+
 class WorkoutLog(Base):
     __tablename__ = "workout_logs"
     __table_args__ = (
@@ -693,8 +715,12 @@ class WorkoutLog(Base):
     )
 
     id: Mapped[uuid.UUID] = _uuid_pk()
-    session_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("workout_sessions.id", ondelete="RESTRICT"), nullable=False)
-    exercise_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("workout_exercises.id", ondelete="RESTRICT"), nullable=False)
+    session_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("workout_sessions.id", ondelete="RESTRICT"), nullable=False
+    )
+    exercise_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("workout_exercises.id", ondelete="RESTRICT"), nullable=False
+    )
     set_number: Mapped[int] = mapped_column(Integer, nullable=False)
     target_reps: Mapped[int] = mapped_column(Integer, nullable=False)
     target_weight: Mapped[Decimal] = mapped_column(Numeric(8, 2), nullable=False)
@@ -712,6 +738,7 @@ class WorkoutLog(Base):
 # ---------------------------------------------------------------------------
 # 20. DeviceToken
 # ---------------------------------------------------------------------------
+
 
 class DeviceToken(Base):
     __tablename__ = "device_tokens"
@@ -733,6 +760,7 @@ class DeviceToken(Base):
 # ---------------------------------------------------------------------------
 # 21. AuditLog
 # ---------------------------------------------------------------------------
+
 
 class AuditLog(Base):
     __tablename__ = "audit_log"

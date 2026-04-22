@@ -6,10 +6,10 @@ from unittest.mock import AsyncMock, MagicMock
 
 import pytest
 
-
 # ---------------------------------------------------------------------------
 # Tests: Telegram message splitting
 # ---------------------------------------------------------------------------
+
 
 class TestTelegramSplitting:
     def test_short_message_not_split(self) -> None:
@@ -65,6 +65,7 @@ class TestTelegramSplitting:
 # Tests: TelegramGateway.deliver_briefing
 # ---------------------------------------------------------------------------
 
+
 class TestDeliverBriefing:
     @pytest.mark.asyncio
     async def test_deliver_morning_briefing(self) -> None:
@@ -114,11 +115,13 @@ class TestDeliverBriefing:
         gateway = TelegramGateway(bot_token="fake", chat_id="123")
         gateway.send_message = AsyncMock()
 
-        await gateway.deliver_briefing({
-            "narrative": "Hello",
-            "briefing_id": "test-id",
-            "type": "morning",
-        })
+        await gateway.deliver_briefing(
+            {
+                "narrative": "Hello",
+                "briefing_id": "test-id",
+                "type": "morning",
+            }
+        )
 
         call_kwargs = gateway.send_message.call_args.kwargs
         assert "reply_markup" in call_kwargs
@@ -128,6 +131,7 @@ class TestDeliverBriefing:
 # ---------------------------------------------------------------------------
 # Tests: TelegramGateway.send_message (chunked)
 # ---------------------------------------------------------------------------
+
 
 class TestSendMessage:
     @pytest.mark.asyncio

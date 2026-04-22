@@ -73,16 +73,18 @@ class JobSpyScraper(JobBoardAdapter):
 
         results: list[dict] = []
         for _, row in jobs_df.iterrows():
-            results.append({
-                "id": f"jobspy-{row.get('id', '')}" if row.get("id") else f"jobspy-{row.get('title', '')[:30]}",
-                "title": str(row.get("title", "")),
-                "company": str(row.get("company_name", row.get("company", ""))),
-                "location": str(row.get("location", "")),
-                "salary": _extract_salary(row),
-                "description": str(row.get("description", "")),
-                "url": str(row.get("job_url", row.get("link", ""))),
-                "site": str(row.get("site", "")),
-            })
+            results.append(
+                {
+                    "id": f"jobspy-{row.get('id', '')}" if row.get("id") else f"jobspy-{row.get('title', '')[:30]}",
+                    "title": str(row.get("title", "")),
+                    "company": str(row.get("company_name", row.get("company", ""))),
+                    "location": str(row.get("location", "")),
+                    "salary": _extract_salary(row),
+                    "description": str(row.get("description", "")),
+                    "url": str(row.get("job_url", row.get("link", ""))),
+                    "site": str(row.get("site", "")),
+                }
+            )
 
         log.info("jobspy_search_completed", returned=len(results), sites=site_names)
         return results

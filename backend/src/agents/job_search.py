@@ -13,15 +13,15 @@ from __future__ import annotations
 import asyncio
 import json
 import uuid
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 from typing import Any
 
 import structlog
-from sqlalchemy import select, func
+from shared.constants import JobStatus
+from sqlalchemy import select
 
 from agents.base import AgentContext, AgentResult, BaseAgent
 from models.gemini_client import GeminiClient
-from shared.constants import JobStatus, ModelName
 
 log = structlog.get_logger()
 
@@ -84,7 +84,7 @@ class JobSearchAgent(BaseAgent):
         from db.models import JobListing
         from db.session import get_db_session
 
-        since = datetime.now(timezone.utc) - timedelta(hours=48)
+        since = datetime.now(UTC) - timedelta(hours=48)
 
         async with get_db_session() as session:
             result = await session.execute(
@@ -120,19 +120,21 @@ class JobSearchAgent(BaseAgent):
 
         cards = []
         for row in rows:
-            cards.append({
-                "id": str(row.id),
-                "title": row.title,
-                "company": row.company,
-                "location": row.location or "",
-                "match_score": row.match_score,
-                "match_reasons": row.match_reasons or [],
-                "concerns": row.concerns or [],
-                "source": row.source,
-                "url": row.url,
-                "salary_range": row.salary_range or "",
-                "status": str(row.status),
-            })
+            cards.append(
+                {
+                    "id": str(row.id),
+                    "title": row.title,
+                    "company": row.company,
+                    "location": row.location or "",
+                    "match_score": row.match_score,
+                    "match_reasons": row.match_reasons or [],
+                    "concerns": row.concerns or [],
+                    "source": row.source,
+                    "url": row.url,
+                    "salary_range": row.salary_range or "",
+                    "status": str(row.status),
+                }
+            )
 
         top = cards[0]
         text = (
@@ -198,10 +200,9 @@ class JobSearchAgent(BaseAgent):
         log.info("job_scan_pro_evaluated", evaluated=len(evaluated))
 
         # Store all results
-        all_listings = [l for l in raw_listings if l not in screened] + evaluated
         await self._store_results(evaluated, flash_only=False)
         # Store flash-rejected separately
-        rejects = [l for l in raw_listings if l.get("_flash_score", 0) < _FLASH_SCORE_CUTOFF]
+        rejects = [listing for listing in raw_listings if listing.get("_flash_score", 0) < _FLASH_SCORE_CUTOFF]
         if rejects:
             await self._store_results(rejects, flash_only=True)
 
@@ -209,10 +210,13 @@ class JobSearchAgent(BaseAgent):
         top_matches = sorted(evaluated, key=lambda x: x.get("match_score", 0), reverse=True)[:15]
 
         # Send Telegram digest
-        await self._send_digest(top_matches, {
-            "total_scraped": len(raw_listings),
-            "sources": "5 sources",
-        })
+        await self._send_digest(
+            top_matches,
+            {
+                "total_scraped": len(raw_listings),
+                "sources": "5 sources",
+            },
+        )
 
         if top_matches:
             top = top_matches[0]
@@ -307,23 +311,19 @@ class JobSearchAgent(BaseAgent):
         from db.session import get_db_session
 
         # Build lookup set of (source, external_id) pairs
-        pairs = [(l["source"], l["external_id"]) for l in listings if l.get("external_id")]
+        pairs = [(listing["source"], listing["external_id"]) for listing in listings if listing.get("external_id")]
         if not pairs:
             return listings
 
         async with get_db_session() as session:
             result = await session.execute(
-                select(JobListing.source, JobListing.external_id)
-                .where(
+                select(JobListing.source, JobListing.external_id).where(
                     JobListing.external_id.in_([p[1] for p in pairs])
                 )
             )
             existing = {(row.source, row.external_id) for row in result.all()}
 
-        return [
-            l for l in listings
-            if (l["source"], l.get("external_id")) not in existing
-        ]
+        return [listing for listing in listings if (listing["source"], listing.get("external_id")) not in existing]
 
     # ------------------------------------------------------------------
     # Stage 2: Flash Screen (Gemini Flash — batch)
@@ -351,7 +351,7 @@ class JobSearchAgent(BaseAgent):
             all_scored.extend(scored)
 
         # Filter by cutoff
-        passed = [l for l in all_scored if l.get("_flash_score", 0) >= _FLASH_SCORE_CUTOFF]
+        passed = [listing for listing in all_scored if listing.get("_flash_score", 0) >= _FLASH_SCORE_CUTOFF]
         return passed
 
     async def _flash_screen_batch(
@@ -364,14 +364,16 @@ class JobSearchAgent(BaseAgent):
         # Build compact representations for the prompt
         compact = []
         for idx, listing in enumerate(batch):
-            compact.append({
-                "idx": idx,
-                "title": listing.get("title", ""),
-                "company": listing.get("company", ""),
-                "location": listing.get("location", ""),
-                "salary": listing.get("salary_range", ""),
-                "snippet": (listing.get("description", "") or "")[:300],
-            })
+            compact.append(
+                {
+                    "idx": idx,
+                    "title": listing.get("title", ""),
+                    "company": listing.get("company", ""),
+                    "location": listing.get("location", ""),
+                    "salary": listing.get("salary_range", ""),
+                    "snippet": (listing.get("description", "") or "")[:300],
+                }
+            )
 
         prompt = (
             f"Candidate profile: {profile_summary}\n\n"
@@ -445,7 +447,7 @@ class JobSearchAgent(BaseAgent):
                 return await self._pro_evaluate_one(listing, profile, gemini)
 
         results = await asyncio.gather(
-            *(eval_one(l) for l in candidates),
+            *(eval_one(listing) for listing in candidates),
             return_exceptions=True,
         )
 
@@ -574,7 +576,7 @@ class JobSearchAgent(BaseAgent):
                     apply_method=apply_method,
                     flash_screen=True,
                     pro_evaluated=not flash_only,
-                    scraped_at=listing.get("scraped_at", datetime.now(timezone.utc)),
+                    scraped_at=listing.get("scraped_at", datetime.now(UTC)),
                 )
                 session.add(job)
                 if not flash_only:
@@ -627,11 +629,11 @@ class JobSearchAgent(BaseAgent):
                     # Update the DB record with the Notion page ID
                     async with get_db_session() as session:
                         from sqlalchemy import update
+
                         from db.models import JobListing
+
                         await session.execute(
-                            update(JobListing)
-                            .where(JobListing.id == job_model.id)
-                            .values(notion_page_id=page_id)
+                            update(JobListing).where(JobListing.id == job_model.id).values(notion_page_id=page_id)
                         )
                 except Exception:
                     log.warning(

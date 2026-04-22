@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from unittest.mock import AsyncMock, MagicMock, patch
+from unittest.mock import AsyncMock, patch
 
 import pytest
 
@@ -29,16 +29,18 @@ async def test_execute_jobspy_source(executor, base_payload):
     with patch(
         "src.executors.job_scraper_executor.JobScraperExecutor._scrape_jobspy",
         new_callable=AsyncMock,
-        return_value=[{
-            "source": "jobspy",
-            "external_id": "jobspy-j1",
-            "title": "Software Engineer",
-            "company": "Acme",
-            "location": "SF, CA",
-            "salary_range": "$150,000-$200,000 yearly",
-            "description": "Build stuff",
-            "url": "https://acme.com/1",
-        }],
+        return_value=[
+            {
+                "source": "jobspy",
+                "external_id": "jobspy-j1",
+                "title": "Software Engineer",
+                "company": "Acme",
+                "location": "SF, CA",
+                "salary_range": "$150,000-$200,000 yearly",
+                "description": "Build stuff",
+                "url": "https://acme.com/1",
+            }
+        ],
     ):
         result = await executor.execute("test-job-1", base_payload)
 
@@ -59,8 +61,10 @@ async def test_execute_multiple_sources(executor):
     jobspy_result = [{"source": "jobspy", "title": "Engineer A", "company": "Co1", "external_id": "a"}]
     greenhouse_result = [{"source": "greenhouse", "title": "Engineer B", "company": "Co2", "external_id": "b"}]
 
-    with patch.object(executor, "_scrape_jobspy", new_callable=AsyncMock, return_value=jobspy_result), \
-         patch.object(executor, "_scrape_greenhouse", new_callable=AsyncMock, return_value=greenhouse_result):
+    with (
+        patch.object(executor, "_scrape_jobspy", new_callable=AsyncMock, return_value=jobspy_result),
+        patch.object(executor, "_scrape_greenhouse", new_callable=AsyncMock, return_value=greenhouse_result),
+    ):
         result = await executor.execute("test-job-2", payload)
 
     assert result["status"] == "completed"
@@ -77,10 +81,14 @@ async def test_execute_deduplicates_across_sources(executor):
 
     # Same job from two sources
     jobspy_result = [{"source": "jobspy", "title": "Software Engineer", "company": "Acme Corp", "external_id": "a"}]
-    greenhouse_result = [{"source": "greenhouse", "title": "Software Engineer", "company": "Acme Corp", "external_id": "b"}]
+    greenhouse_result = [
+        {"source": "greenhouse", "title": "Software Engineer", "company": "Acme Corp", "external_id": "b"}
+    ]
 
-    with patch.object(executor, "_scrape_jobspy", new_callable=AsyncMock, return_value=jobspy_result), \
-         patch.object(executor, "_scrape_greenhouse", new_callable=AsyncMock, return_value=greenhouse_result):
+    with (
+        patch.object(executor, "_scrape_jobspy", new_callable=AsyncMock, return_value=jobspy_result),
+        patch.object(executor, "_scrape_greenhouse", new_callable=AsyncMock, return_value=greenhouse_result),
+    ):
         result = await executor.execute("test-job-3", payload)
 
     assert result["total_raw"] == 2
@@ -97,8 +105,10 @@ async def test_execute_handles_source_failure(executor):
 
     greenhouse_result = [{"source": "greenhouse", "title": "Engineer", "company": "Co", "external_id": "x"}]
 
-    with patch.object(executor, "_scrape_jobspy", new_callable=AsyncMock, side_effect=RuntimeError("boom")), \
-         patch.object(executor, "_scrape_greenhouse", new_callable=AsyncMock, return_value=greenhouse_result):
+    with (
+        patch.object(executor, "_scrape_jobspy", new_callable=AsyncMock, side_effect=RuntimeError("boom")),
+        patch.object(executor, "_scrape_greenhouse", new_callable=AsyncMock, return_value=greenhouse_result),
+    ):
         result = await executor.execute("test-job-4", payload)
 
     # Should still complete with partial results
@@ -115,8 +125,7 @@ async def test_execute_respects_max_results(executor):
     }
 
     many_results = [
-        {"source": "jobspy", "title": f"Job {i}", "company": f"Co {i}", "external_id": f"id-{i}"}
-        for i in range(10)
+        {"source": "jobspy", "title": f"Job {i}", "company": f"Co {i}", "external_id": f"id-{i}"} for i in range(10)
     ]
 
     with patch.object(executor, "_scrape_jobspy", new_callable=AsyncMock, return_value=many_results):

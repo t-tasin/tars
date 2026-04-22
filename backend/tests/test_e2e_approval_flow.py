@@ -7,22 +7,20 @@ with all external dependencies mocked.
 from __future__ import annotations
 
 import uuid
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 from typing import Any
 from unittest.mock import AsyncMock, MagicMock, patch
 
-import pytest
 from fastapi import FastAPI
 from fastapi.testclient import TestClient
 
 from src.api.approvals import router as approvals_router
 from src.api.messages import router as messages_router
-from shared.constants import ApprovalStatus, ContentType, RiskTier
-
 
 # ---------------------------------------------------------------------------
 # App setup — combine messages + approvals routers
 # ---------------------------------------------------------------------------
+
 
 def _build_app() -> FastAPI:
     app = FastAPI()
@@ -41,7 +39,7 @@ def _make_approval_dict(
     status: str = "pending",
 ) -> dict[str, Any]:
     aid = approval_id or str(uuid.uuid4())
-    now = datetime.now(timezone.utc)
+    now = datetime.now(UTC)
     return {
         "id": aid,
         "task_id": None,
@@ -93,7 +91,8 @@ class TestE2EApprovalFlow:
 
         # Step 2: approve it
         approved_dict = _make_approval_dict(
-            approval_id=approval_id, status="approved",
+            approval_id=approval_id,
+            status="approved",
         )
         mock_mgr.approve = AsyncMock(return_value=approved_dict)
 
@@ -128,7 +127,8 @@ class TestE2EApprovalFlow:
 
         # Step 2: reject it
         rejected_dict = _make_approval_dict(
-            approval_id=approval_id, status="rejected",
+            approval_id=approval_id,
+            status="rejected",
         )
         mock_mgr.reject = AsyncMock(return_value=rejected_dict)
 
@@ -162,7 +162,8 @@ class TestE2EApprovalFlow:
 
         # Edit and approve
         edited_dict = _make_approval_dict(
-            approval_id=approval_id, status="edited",
+            approval_id=approval_id,
+            status="edited",
         )
         mock_mgr.edit_and_approve = AsyncMock(return_value=edited_dict)
 

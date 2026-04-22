@@ -87,6 +87,7 @@ DEFAULT_CONFIG: dict[tuple[str, str], Any] = {
 # Seed helper — called on app startup
 # ---------------------------------------------------------------------------
 
+
 async def seed_default_config(session: AsyncSession) -> None:
     """Insert default config values if they don't exist."""
     repo = ConfigRepository(session)
@@ -141,6 +142,7 @@ async def seed_default_budgets(session: AsyncSession) -> None:
 # Endpoints
 # ---------------------------------------------------------------------------
 
+
 @router.get("/config")
 async def get_config(
     namespace: str | None = Query(default=None, description="Filter by namespace"),
@@ -166,17 +168,19 @@ async def update_config(
     await repo.set(body.namespace, body.key, body.value, updated_by="api")
 
     # HC-08: audit log
-    session.add(AuditLog(
-        action_type="config_update",
-        actor="api",
-        target=f"{body.namespace}.{body.key}",
-        details={
-            "namespace": body.namespace,
-            "key": body.key,
-            "old_value": old_value,
-            "new_value": body.value,
-        },
-    ))
+    session.add(
+        AuditLog(
+            action_type="config_update",
+            actor="api",
+            target=f"{body.namespace}.{body.key}",
+            details={
+                "namespace": body.namespace,
+                "key": body.key,
+                "old_value": old_value,
+                "new_value": body.value,
+            },
+        )
+    )
 
     log.info(
         "config_updated",

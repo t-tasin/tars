@@ -15,6 +15,7 @@ from __future__ import annotations
 
 import asyncio
 import time
+from datetime import UTC
 from pathlib import Path
 from typing import TYPE_CHECKING
 
@@ -375,7 +376,8 @@ async def backup_job(orchestrator: Orchestrator) -> None:
             raise FileNotFoundError(f"backup.sh not found at {script_path}")
 
         proc = await asyncio.create_subprocess_exec(
-            "bash", str(script_path),
+            "bash",
+            str(script_path),
             stdout=asyncio.subprocess.PIPE,
             stderr=asyncio.subprocess.PIPE,
         )
@@ -417,12 +419,13 @@ async def backup_job(orchestrator: Orchestrator) -> None:
                 severity="critical",
             )
 
-    except asyncio.TimeoutError:
+    except TimeoutError:
         duration_ms = int((time.monotonic() - start) * 1000)
         log.error("scheduled_job_failed", job=job_name, duration_ms=duration_ms, error="timeout")
 
         try:
             from integrations.notification_service import get_notification_service
+
             notifier = get_notification_service()
             await notifier.notify_alert(
                 title="Database Backup FAILED",
@@ -462,8 +465,9 @@ async def create_daily_workout_session(orchestrator: Orchestrator) -> None:
                 return
 
             # Determine today's rotation day
-            from db.models import WorkoutSession
             from sqlalchemy import select
+
+            from db.models import WorkoutSession
 
             last_result = await session.execute(
                 select(WorkoutSession)
@@ -490,8 +494,9 @@ async def create_daily_workout_session(orchestrator: Orchestrator) -> None:
             # Try to get scheduled time from calendar
             scheduled_at = None
             try:
-                from config import get_settings
                 from datetime import date as date_type
+
+                from config import get_settings
                 from integrations.caldav_client import CalDAVClient
 
                 settings = get_settings()
@@ -508,6 +513,7 @@ async def create_daily_workout_session(orchestrator: Orchestrator) -> None:
                         start_str = event.get("start", "")
                         if start_str:
                             from datetime import datetime as dt
+
                             scheduled_at = dt.fromisoformat(start_str)
                             break
             except Exception:
@@ -542,7 +548,7 @@ async def workout_reminder_poll(orchestrator: Orchestrator) -> None:
 
     try:
         import json as _json
-        from datetime import datetime, timezone
+        from datetime import datetime
 
         from db.repositories.workout import WorkoutRepository
         from db.session import get_db_session
@@ -551,7 +557,7 @@ async def workout_reminder_poll(orchestrator: Orchestrator) -> None:
             repo = WorkoutRepository(session)
             pending = await repo.get_pending_sessions_past_schedule()
 
-            now = datetime.now(timezone.utc)
+            now = datetime.now(UTC)
 
             for pending_session in pending:
                 if pending_session.scheduled_at is None:
@@ -574,6 +580,7 @@ async def workout_reminder_poll(orchestrator: Orchestrator) -> None:
                     )
                     try:
                         from integrations.notification_service import get_notification_service
+
                         notifier = get_notification_service()
                         await notifier.notify_alert(
                             title="Workout Skipped",
@@ -590,6 +597,7 @@ async def workout_reminder_poll(orchestrator: Orchestrator) -> None:
                     await session.flush()
                     try:
                         from integrations.notification_service import get_notification_service
+
                         notifier = get_notification_service()
                         await notifier.notify_alert(
                             title=f"Last chance — {pending_session.day_name.title()} Day",
@@ -606,6 +614,7 @@ async def workout_reminder_poll(orchestrator: Orchestrator) -> None:
                     await session.flush()
                     try:
                         from integrations.notification_service import get_notification_service
+
                         notifier = get_notification_service()
                         await notifier.notify(
                             title=f"{pending_session.day_name.title()} Day — Still Waiting",
@@ -621,8 +630,9 @@ async def workout_reminder_poll(orchestrator: Orchestrator) -> None:
                     pending_session.notes = _json.dumps({"sent": list(sent)})
                     await session.flush()
                     try:
-                        from integrations.apns_client import APNsClient
                         from config import get_settings
+                        from integrations.apns_client import APNsClient
+
                         settings = get_settings()
                         apns = APNsClient(
                             key_path=settings.apns_key_path,
@@ -685,8 +695,9 @@ async def monthly_budget_audit(orchestrator: Orchestrator) -> None:
             tracked_categories = {b.category.lower() for b in active_budgets}
 
             # Query last month's spending grouped by category
-            from db.models import Transaction
             from sqlalchemy import func, select
+
+            from db.models import Transaction
 
             result = await session.execute(
                 select(
@@ -703,10 +714,7 @@ async def monthly_budget_audit(orchestrator: Orchestrator) -> None:
                 .group_by(func.coalesce(func.lower(Transaction.category), "uncategorized"))
                 .order_by(func.sum(Transaction.amount).desc())
             )
-            all_spending = [
-                {"category": row[0], "total": float(row[1]), "count": int(row[2])}
-                for row in result.all()
-            ]
+            all_spending = [{"category": row[0], "total": float(row[1]), "count": int(row[2])} for row in result.all()]
 
         if not all_spending:
             log.info("monthly_budget_audit_skipped", reason="no_transactions")
@@ -780,9 +788,7 @@ Respond in JSON format:
             lines.append(summary)
             lines.append("")
             for s in suggestions:
-                lines.append(
-                    f"• {s['category'].title()}: suggest ${s['monthly_limit']}/mo — {s['reason']}"
-                )
+                lines.append(f"• {s['category'].title()}: suggest ${s['monthly_limit']}/mo — {s['reason']}")
             lines.append("\nTo add: tell me 'set budget [category] to $[amount]'")
 
             notifier = get_notification_service()

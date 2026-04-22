@@ -18,15 +18,15 @@ from __future__ import annotations
 import asyncio
 import json
 import uuid
-from datetime import date, datetime, timedelta, timezone
+from datetime import UTC, date, datetime, timedelta
 from typing import Any
 
 import structlog
+from shared.constants import EmailTier, JobStatus
 from sqlalchemy import func, select
 
 from agents.base import AgentContext, AgentResult, BaseAgent
 from models.gemini_client import GeminiClient
-from shared.constants import EmailTier, JobStatus, ModelName
 
 log = structlog.get_logger()
 
@@ -160,7 +160,7 @@ class BriefingAgent(BaseAgent):
         today = date.today()
 
         # --- Greeting ---
-        greeting = f"Good morning, Tasin."
+        greeting = "Good morning, Tasin."
 
         # --- Weather ---
         weather_raw = raw_data.get("weather", {})
@@ -230,7 +230,10 @@ class BriefingAgent(BaseAgent):
 
         # --- Proactive suggestions ---
         proactive_suggestions = _build_proactive_suggestions(
-            weather, health_raw, finance_raw, today_events,
+            weather,
+            health_raw,
+            finance_raw,
+            today_events,
         )
 
         # --- Unavailability note (HC-09) ---
@@ -249,10 +252,7 @@ class BriefingAgent(BaseAgent):
                 "system_health": "System health",
             }
             names = [source_labels.get(s, s) for s in unavailable]
-            unavailability_note = (
-                f"Note: {', '.join(names)} data was temporarily unavailable "
-                "and may be incomplete."
-            )
+            unavailability_note = f"Note: {', '.join(names)} data was temporarily unavailable and may be incomplete."
 
         return {
             "greeting": greeting,
@@ -319,7 +319,7 @@ class BriefingAgent(BaseAgent):
             f"Data:\n{json.dumps(prompt_data, indent=2, default=str)}\n\n"
             "Write a natural spoken narrative (will be read aloud via TTS).\n"
             "No markdown, no bullet points — flowing sentences.\n"
-            "Start with \"Good morning, Tasin.\" and end with an encouraging note.\n"
+            'Start with "Good morning, Tasin." and end with an encouraging note.\n'
             "Keep it under 500 words."
         )
 
@@ -400,8 +400,15 @@ class BriefingAgent(BaseAgent):
         )
 
         keys = [
-            "calendar", "emails", "weather", "health",
-            "finance", "tasks", "github", "jobs", "system_health",
+            "calendar",
+            "emails",
+            "weather",
+            "health",
+            "finance",
+            "tasks",
+            "github",
+            "jobs",
+            "system_health",
         ]
         defaults: dict[str, Any] = {
             "calendar": {"error": "unavailable", "today": [], "tomorrow": []},
@@ -559,8 +566,7 @@ class BriefingAgent(BaseAgent):
 
             # Month-to-date total
             mtd_result = await session.execute(
-                select(func.coalesce(func.sum(Transaction.amount), 0))
-                .where(
+                select(func.coalesce(func.sum(Transaction.amount), 0)).where(
                     Transaction.transaction_date >= month_start,
                     Transaction.transaction_date <= yesterday,
                     Transaction.pending == False,  # noqa: E712
@@ -570,9 +576,7 @@ class BriefingAgent(BaseAgent):
 
             # Budget status: active budgets + MTD spend per category
             budget_result = await session.execute(
-                select(Budget)
-                .where(Budget.active.is_(True))
-                .order_by(Budget.category)
+                select(Budget).where(Budget.active.is_(True)).order_by(Budget.category)
             )
             budgets = list(budget_result.scalars().all())
 
@@ -605,13 +609,15 @@ class BriefingAgent(BaseAgent):
                     if limit > 0:
                         pct = spent / limit
                         if pct >= 0.80:
-                            budget_alerts.append({
-                                "category": budget.category,
-                                "spent": spent,
-                                "limit": limit,
-                                "pct": round(pct * 100),
-                                "days_left": days_left,
-                            })
+                            budget_alerts.append(
+                                {
+                                    "category": budget.category,
+                                    "spent": spent,
+                                    "limit": limit,
+                                    "pct": round(pct * 100),
+                                    "days_left": days_left,
+                                }
+                            )
 
             # Anomalies from yesterday
             detector = AnomalyDetector()
@@ -631,7 +637,9 @@ class BriefingAgent(BaseAgent):
             # Query already-flagged recurring transactions and check for price changes
             tracker = SubscriptionTracker()
             merchant_col = func.coalesce(
-                Transaction.merchant_name, Transaction.counterparty_name, "Unknown",
+                Transaction.merchant_name,
+                Transaction.counterparty_name,
+                "Unknown",
             )
             recurring_result = await session.execute(
                 select(
@@ -651,9 +659,7 @@ class BriefingAgent(BaseAgent):
 
             recurring_merchant_txns: dict[str, list[tuple[float, date]]] = {}
             for merchant, amount, txn_date in recurring_rows:
-                recurring_merchant_txns.setdefault(merchant, []).append(
-                    (float(amount), txn_date)
-                )
+                recurring_merchant_txns.setdefault(merchant, []).append((float(amount), txn_date))
 
             price_changes = tracker.check_price_changes(recurring_merchant_txns)
             subscription_alerts = [
@@ -719,7 +725,7 @@ class BriefingAgent(BaseAgent):
         from db.models import JobListing
         from db.session import get_db_session
 
-        since = datetime.now(timezone.utc) - timedelta(hours=24)
+        since = datetime.now(UTC) - timedelta(hours=24)
 
         async with get_db_session() as session:
             result = await session.execute(
@@ -782,8 +788,7 @@ class BriefingAgent(BaseAgent):
                 )
                 .join(
                     latest_sq,
-                    (SystemHealthLog.target == latest_sq.c.target)
-                    & (SystemHealthLog.checked_at == latest_sq.c.latest),
+                    (SystemHealthLog.target == latest_sq.c.target) & (SystemHealthLog.checked_at == latest_sq.c.latest),
                 )
                 .order_by(SystemHealthLog.target)
             )
@@ -827,11 +832,13 @@ def _build_schedule(today_events: list[dict[str, Any]]) -> list[dict[str, Any]]:
     """Convert calendar events into the briefing schedule format."""
     schedule: list[dict[str, Any]] = []
     for event in today_events:
-        schedule.append({
-            "time": event.get("start", event.get("time", "")),
-            "event": event.get("title", event.get("summary", "Untitled")),
-            "location": event.get("location", ""),
-        })
+        schedule.append(
+            {
+                "time": event.get("start", event.get("time", "")),
+                "event": event.get("title", event.get("summary", "Untitled")),
+                "location": event.get("location", ""),
+            }
+        )
     return schedule
 
 
@@ -852,7 +859,8 @@ def _compute_leave_home_by(today_events: list[dict[str, Any]]) -> str | None:
             else:
                 parts = str(start).split(":")
                 dt = datetime.now().replace(
-                    hour=int(parts[0]), minute=int(parts[1]) if len(parts) > 1 else 0,
+                    hour=int(parts[0]),
+                    minute=int(parts[1]) if len(parts) > 1 else 0,
                 )
             leave = dt - timedelta(minutes=25)
             return leave.strftime("%-I:%M %p")
@@ -976,8 +984,7 @@ def _build_finance_section(finance_raw: dict[str, Any]) -> dict[str, Any]:
     for ba in finance_raw.get("budget_alerts", []):
         cat = ba["category"].capitalize()
         budget_alerts.append(
-            f"{cat} at {ba['pct']}% (${ba['spent']:.0f}/${ba['limit']:.0f}) "
-            f"— {ba['days_left']} days left"
+            f"{cat} at {ba['pct']}% (${ba['spent']:.0f}/${ba['limit']:.0f}) — {ba['days_left']} days left"
         )
 
     # Subscription price change alerts

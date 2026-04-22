@@ -2,12 +2,12 @@
 
 from __future__ import annotations
 
-from dataclasses import dataclass, replace
+from dataclasses import dataclass
 
 import structlog
+from shared.constants import IntentType, ModelName
 
 from orchestrator.intent_classifier import Intent
-from shared.constants import IntentType, ModelName
 
 log = structlog.get_logger()
 
@@ -118,8 +118,8 @@ class ModelRouter:
             return agent_type
 
         # Agent-type to profile mapping for agents without a direct match
-        _AGENT_PROFILE_MAP: dict[str, str] = {
+        agent_profile_map: dict[str, str] = {
             IntentType.HEALTH_MONITOR: "diagnostics",
             IntentType.SYSTEM: "diagnostics",
         }
-        return _AGENT_PROFILE_MAP.get(agent_type, "general")
+        return agent_profile_map.get(agent_type, "general")

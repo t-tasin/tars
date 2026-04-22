@@ -46,11 +46,7 @@ class MessageRepository:
         limit: int | None = None,
     ) -> list[Message]:
         """Fetch messages for a conversation, newest last."""
-        stmt = (
-            select(Message)
-            .where(Message.conversation_id == conversation_id)
-            .order_by(Message.created_at.asc())
-        )
+        stmt = select(Message).where(Message.conversation_id == conversation_id).order_by(Message.created_at.asc())
         if limit is not None:
             # Return the *most recent* N messages while preserving asc order.
             stmt = (

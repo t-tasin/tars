@@ -7,11 +7,13 @@ Revision ID: 006_add_workout_tables
 Revises: 005_migrate_plaid_to_teller
 Create Date: 2026-03-12
 """
+
 from __future__ import annotations
 
-from alembic import op
 import sqlalchemy as sa
 from sqlalchemy.dialects.postgresql import JSONB, TIMESTAMP
+
+from alembic import op
 
 revision: str = "006_add_workout_tables"
 down_revision: str = "005_migrate_plaid_to_teller"
@@ -27,8 +29,12 @@ def upgrade() -> None:
         EXCEPTION WHEN duplicate_object THEN NULL; END $$
     """)
     workout_status = sa.Enum(
-        "pending", "active", "completed", "skipped",
-        name="workout_session_status", create_type=False,
+        "pending",
+        "active",
+        "completed",
+        "skipped",
+        name="workout_session_status",
+        create_type=False,
     )
 
     # 1. workout_splits
@@ -42,7 +48,9 @@ def upgrade() -> None:
         sa.Column("updated_at", TIMESTAMP(timezone=True), nullable=False, server_default=sa.text("now()")),
     )
     op.create_index(
-        "idx_splits_active", "workout_splits", ["active"],
+        "idx_splits_active",
+        "workout_splits",
+        ["active"],
         postgresql_where=sa.text("active = true"),
     )
 
@@ -81,7 +89,9 @@ def upgrade() -> None:
         sa.Column("updated_at", TIMESTAMP(timezone=True), nullable=False, server_default=sa.text("now()")),
     )
     op.create_index(
-        "idx_sessions_status", "workout_sessions", ["status"],
+        "idx_sessions_status",
+        "workout_sessions",
+        ["status"],
         postgresql_where=sa.text("status = 'pending'"),
     )
     op.create_index("idx_sessions_date", "workout_sessions", [sa.text("created_at DESC")])

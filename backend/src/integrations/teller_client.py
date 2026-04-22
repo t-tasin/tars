@@ -22,7 +22,7 @@ from utils.errors import IntegrationError
 from utils.resilience import get_service_health_registry
 
 if TYPE_CHECKING:
-    from db.models import Transaction
+    pass
 
 log = structlog.get_logger()
 
@@ -121,7 +121,8 @@ class TellerClient:
     async def get_balances(self, account_id: str) -> dict[str, Any]:
         """Get balance for a single account. Read-only (HC-04)."""
         balances: dict[str, Any] = await self._request(
-            "GET", f"/accounts/{account_id}/balances",
+            "GET",
+            f"/accounts/{account_id}/balances",
         )
         return balances
 
@@ -174,9 +175,10 @@ class TellerClient:
         HC-04: Read-only — fetches data and stores locally. No financial
         modifications are ever made.
         """
+        from sqlalchemy.dialects.postgresql import insert as pg_insert
+
         from db.models import Transaction
         from db.session import get_db_session
-        from sqlalchemy.dialects.postgresql import insert as pg_insert
 
         yesterday = date.today() - timedelta(days=1)
         transactions = await self.get_transactions(yesterday, yesterday)

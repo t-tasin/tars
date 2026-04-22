@@ -1,7 +1,7 @@
 """Workout tracking API endpoints."""
+
 from __future__ import annotations
 
-from datetime import date, datetime, timezone
 from typing import Annotated, Any
 from uuid import UUID
 
@@ -48,12 +48,14 @@ async def create_split(
         exercises=[ex.model_dump() for ex in request.exercises],
     )
     # HC-08: audit log
-    db.add(AuditLog(
-        action_type="workout_split_created",
-        actor="api",
-        target=str(split.id),
-        details={"name": split.name, "rotation_days": request.rotation_days},
-    ))
+    db.add(
+        AuditLog(
+            action_type="workout_split_created",
+            actor="api",
+            target=str(split.id),
+            details={"name": split.name, "rotation_days": request.rotation_days},
+        )
+    )
     log.info("workout_split_created", split_id=str(split.id), name=split.name)
     return {"split_id": str(split.id), "name": split.name, "active": True}
 
@@ -84,12 +86,14 @@ async def update_split(
     if split is None:
         raise HTTPException(status_code=404, detail="Split not found")
     # HC-08: audit log
-    db.add(AuditLog(
-        action_type="workout_split_updated",
-        actor="api",
-        target=str(split.id),
-        details={"name": request.name, "rotation_days": request.rotation_days},
-    ))
+    db.add(
+        AuditLog(
+            action_type="workout_split_updated",
+            actor="api",
+            target=str(split.id),
+            details={"name": request.name, "rotation_days": request.rotation_days},
+        )
+    )
     return {"split_id": str(split.id), "updated": True}
 
 
@@ -134,7 +138,14 @@ async def skip_session(
     session = await repo.skip_session(session_id, reason=request.reason)
     if session is None:
         raise HTTPException(status_code=400, detail="Session not found or already completed")
-    db.add(AuditLog(action_type="workout_session_skipped", actor="api", target=str(session_id), details={"reason": request.reason}))
+    db.add(
+        AuditLog(
+            action_type="workout_session_skipped",
+            actor="api",
+            target=str(session_id),
+            details={"reason": request.reason},
+        )
+    )
     log.info("workout_session_skipped", session_id=str(session_id), reason=request.reason)
     return {"session_id": str(session_id), "status": "skipped"}
 
@@ -155,7 +166,14 @@ async def complete_session(
     progression = await repo.apply_progressive_overload(session_id)
     progressed = [str(eid) for eid, advanced in progression.items() if advanced]
 
-    db.add(AuditLog(action_type="workout_session_completed", actor="api", target=str(session_id), details={"exercises_progressed": progressed}))
+    db.add(
+        AuditLog(
+            action_type="workout_session_completed",
+            actor="api",
+            target=str(session_id),
+            details={"exercises_progressed": progressed},
+        )
+    )
     log.info(
         "workout_session_completed",
         session_id=str(session_id),
@@ -211,7 +229,7 @@ async def get_history(
         logs = list(result.scalars().all())
 
     return WorkoutHistoryResponse(
-        logs=[LogDetail.model_validate(l) for l in logs],
+        logs=[LogDetail.model_validate(log) for log in logs],
         total=len(logs),
     )
 

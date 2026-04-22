@@ -1,7 +1,8 @@
 """Tests for TTSOutput — text-to-speech with AirPlay output."""
+
 from __future__ import annotations
 
-from unittest.mock import AsyncMock, MagicMock, patch
+from unittest.mock import AsyncMock, patch
 
 import pytest
 
@@ -53,7 +54,10 @@ async def test_speak_falls_back_to_local(tts: TTSOutput) -> None:
     with (
         patch.object(tts, "_generate_audio", new_callable=AsyncMock, return_value=b"audio-data"),
         patch.object(
-            tts, "_play_via_airplay", new_callable=AsyncMock, side_effect=Exception("HomePod offline"),
+            tts,
+            "_play_via_airplay",
+            new_callable=AsyncMock,
+            side_effect=Exception("HomePod offline"),
         ),
         patch.object(tts, "_play_locally", new_callable=AsyncMock) as mock_local,
     ):

@@ -10,9 +10,10 @@ Create Date: 2026-03-10
 
 from __future__ import annotations
 
-from alembic import op
 import sqlalchemy as sa
 from sqlalchemy.dialects.postgresql import JSONB, TIMESTAMP
+
+from alembic import op
 
 # revision identifiers, used by Alembic.
 revision: str = "001_initial_schema"
@@ -25,33 +26,67 @@ depends_on: str | None = None
 # Custom ENUM types (must exist before any table references them)
 # ---------------------------------------------------------------------------
 task_status = sa.Enum(
-    "pending", "running", "completed", "failed", "cancelled",
-    name="task_status", create_type=False,
+    "pending",
+    "running",
+    "completed",
+    "failed",
+    "cancelled",
+    name="task_status",
+    create_type=False,
 )
 task_priority = sa.Enum(
-    "critical", "high", "normal", "low",
-    name="task_priority", create_type=False,
+    "critical",
+    "high",
+    "normal",
+    "low",
+    name="task_priority",
+    create_type=False,
 )
 approval_status = sa.Enum(
-    "pending", "approved", "rejected", "edited", "expired", "executed",
-    name="approval_status", create_type=False,
+    "pending",
+    "approved",
+    "rejected",
+    "edited",
+    "expired",
+    "executed",
+    name="approval_status",
+    create_type=False,
 )
 risk_tier = sa.Enum(
-    "tier1_autonomous", "tier2_approval", "tier3_escalation",
-    name="risk_tier", create_type=False,
+    "tier1_autonomous",
+    "tier2_approval",
+    "tier3_escalation",
+    name="risk_tier",
+    create_type=False,
 )
 email_tier = sa.Enum(
-    "urgent", "actionable", "informational", "noise",
-    name="email_tier", create_type=False,
+    "urgent",
+    "actionable",
+    "informational",
+    "noise",
+    name="email_tier",
+    create_type=False,
 )
 job_status = sa.Enum(
-    "new", "saved", "applying", "applied", "interview",
-    "offer", "rejected", "skipped", "expired",
-    name="job_status", create_type=False,
+    "new",
+    "saved",
+    "applying",
+    "applied",
+    "interview",
+    "offer",
+    "rejected",
+    "skipped",
+    "expired",
+    name="job_status",
+    create_type=False,
 )
 health_status = sa.Enum(
-    "green", "yellow", "red", "unknown",
-    name="health_status", create_type=False,
+    "green",
+    "yellow",
+    "red",
+    "unknown",
+    name="health_status",
+    create_type=False,
 )
 
 
@@ -178,11 +213,15 @@ def upgrade() -> None:
         sa.ForeignKeyConstraint(["task_id"], ["agent_tasks.id"]),
     )
     op.create_index(
-        "idx_approvals_status", "approvals", ["status"],
+        "idx_approvals_status",
+        "approvals",
+        ["status"],
         postgresql_where=sa.text("status = 'pending'"),
     )
     op.create_index(
-        "idx_approvals_expires", "approvals", ["expires_at"],
+        "idx_approvals_expires",
+        "approvals",
+        ["expires_at"],
         postgresql_where=sa.text("status = 'pending'"),
     )
 
@@ -207,12 +246,8 @@ def upgrade() -> None:
         sa.Column("updated_at", TIMESTAMP(timezone=True), server_default=sa.text("now()"), nullable=False),
         sa.PrimaryKeyConstraint("id"),
     )
-    op.execute(
-        "CREATE INDEX idx_contacts_emails ON contacts USING GIN (email_addresses jsonb_path_ops)"
-    )
-    op.execute(
-        "CREATE INDEX idx_contacts_name ON contacts USING GIN (full_name gin_trgm_ops)"
-    )
+    op.execute("CREATE INDEX idx_contacts_emails ON contacts USING GIN (email_addresses jsonb_path_ops)")
+    op.execute("CREATE INDEX idx_contacts_name ON contacts USING GIN (full_name gin_trgm_ops)")
 
     # ======================================================================
     # 6. email_classifications
@@ -240,7 +275,9 @@ def upgrade() -> None:
     op.create_index("idx_email_class_account", "email_classifications", ["gmail_account", "received_at"])
     op.create_index("idx_email_class_from", "email_classifications", ["from_address"])
     op.create_index(
-        "idx_email_class_corrections", "email_classifications", ["user_correction"],
+        "idx_email_class_corrections",
+        "email_classifications",
+        ["user_correction"],
         postgresql_where=sa.text("user_correction IS NOT NULL"),
     )
 
@@ -406,11 +443,15 @@ def upgrade() -> None:
         sa.PrimaryKeyConstraint("id"),
     )
     op.create_index(
-        "idx_wardrobe_type", "wardrobe_items", ["item_type", "active"],
+        "idx_wardrobe_type",
+        "wardrobe_items",
+        ["item_type", "active"],
         postgresql_where=sa.text("active = true"),
     )
     op.create_index(
-        "idx_wardrobe_formality", "wardrobe_items", ["formality"],
+        "idx_wardrobe_formality",
+        "wardrobe_items",
+        ["formality"],
         postgresql_where=sa.text("active = true"),
     )
 
@@ -480,7 +521,9 @@ def upgrade() -> None:
     op.create_index("idx_txns_merchant", "transactions", ["merchant_name"])
     op.create_index("idx_txns_category", "transactions", ["category", "transaction_date"])
     op.create_index(
-        "idx_txns_recurring", "transactions", ["is_recurring"],
+        "idx_txns_recurring",
+        "transactions",
+        ["is_recurring"],
         postgresql_where=sa.text("is_recurring = true"),
     )
 

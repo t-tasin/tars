@@ -29,9 +29,7 @@ class WardrobeItemRepository:
 
     async def get_by_id(self, item_id: uuid.UUID) -> WardrobeItem | None:
         """Fetch a wardrobe item by primary key."""
-        result = await self._session.execute(
-            select(WardrobeItem).where(WardrobeItem.id == item_id)
-        )
+        result = await self._session.execute(select(WardrobeItem).where(WardrobeItem.id == item_id))
         return result.scalar_one_or_none()
 
     async def get_all(self, active_only: bool = True) -> list[WardrobeItem]:

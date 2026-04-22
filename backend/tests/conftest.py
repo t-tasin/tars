@@ -13,7 +13,7 @@ import types
 import uuid
 from collections.abc import AsyncGenerator
 from contextlib import asynccontextmanager
-from datetime import date, datetime, timezone
+from datetime import UTC, datetime
 from typing import Any
 from unittest.mock import AsyncMock, MagicMock, patch
 
@@ -123,7 +123,9 @@ async def test_db() -> AsyncGenerator[Any]:
             await conn.run_sync(Base.metadata.create_all)
 
         session_factory = async_sessionmaker(
-            engine, class_=AsyncSession, expire_on_commit=False,
+            engine,
+            class_=AsyncSession,
+            expire_on_commit=False,
         )
         session = session_factory()
         try:
@@ -156,7 +158,7 @@ class _InMemorySession:
             if hasattr(obj, "id") and obj.id is None:
                 obj.id = uuid.uuid4()
             if hasattr(obj, "created_at") and obj.created_at is None:
-                obj.created_at = datetime.now(timezone.utc)
+                obj.created_at = datetime.now(UTC)
             self._store.append(obj)
         self._pending.clear()
 
@@ -201,10 +203,7 @@ class _InMemoryResult:
             if entity is not None:
                 table_name = getattr(entity, "name", None) or getattr(entity, "__tablename__", None)
                 if table_name:
-                    return [
-                        obj for obj in self._store
-                        if getattr(type(obj), "__tablename__", None) == table_name
-                    ]
+                    return [obj for obj in self._store if getattr(type(obj), "__tablename__", None) == table_name]
         except Exception:
             pass
         return list(self._store)
@@ -235,6 +234,7 @@ class _InMemoryResult:
 # Mock: GeminiClient
 # ---------------------------------------------------------------------------
 
+
 def _make_gemini_response(
     text_content: str = "Good morning, Tasin. Here is your briefing.",
     model: str = "gemini-2.0-pro",
@@ -264,6 +264,7 @@ def mock_gemini() -> AsyncMock:
 # ---------------------------------------------------------------------------
 # Mock: ClaudeCodeSpawner
 # ---------------------------------------------------------------------------
+
 
 @pytest.fixture()
 def mock_claude() -> AsyncMock:

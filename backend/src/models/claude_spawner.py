@@ -100,7 +100,7 @@ class ClaudeCodeSpawner:
                 self._run_subprocess(cmd, env=env, cwd=cwd),
                 timeout=timeout,
             )
-        except asyncio.TimeoutError:
+        except TimeoutError:
             duration_ms = int((time.monotonic() - start) * 1000)
             log.error("claude_spawn_timeout", duration_ms=duration_ms, timeout=timeout)
             return ClaudeCodeResult(
@@ -113,8 +113,7 @@ class ClaudeCodeSpawner:
             duration_ms = int((time.monotonic() - start) * 1000)
             log.error("claude_binary_not_found", binary=self.claude_binary)
             raise ClaudeSpawnError(
-                f"Claude Code binary not found: {self.claude_binary!r}. "
-                "Ensure the claude CLI is installed and on PATH."
+                f"Claude Code binary not found: {self.claude_binary!r}. Ensure the claude CLI is installed and on PATH."
             ) from None
 
         duration_ms = int((time.monotonic() - start) * 1000)
@@ -158,8 +157,10 @@ class ClaudeCodeSpawner:
         cmd = [
             self.claude_binary,
             "--print",
-            "--output-format", "json",
-            "--max-turns", str(max_turns),
+            "--output-format",
+            "json",
+            "--max-turns",
+            str(max_turns),
         ]
 
         if mcp_profile and mcp_profile in MCP_PROFILES:
@@ -235,9 +236,7 @@ class ClaudeCodeSpawner:
         text = data.get("result", "") or data.get("text", "") or data.get("content", "")
         if isinstance(text, list):
             # Content blocks: [{"type": "text", "text": "..."}]
-            text = "\n".join(
-                block.get("text", "") for block in text if isinstance(block, dict)
-            )
+            text = "\n".join(block.get("text", "") for block in text if isinstance(block, dict))
 
         return ClaudeCodeResult(
             text=text,

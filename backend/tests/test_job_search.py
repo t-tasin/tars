@@ -5,21 +5,21 @@ from __future__ import annotations
 import json
 import uuid
 from contextlib import asynccontextmanager
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from typing import Any
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
+from shared.constants import JobStatus
 
 from agents.base import AgentContext
 from agents.job_search import JobSearchAgent, _parse_action
 from models.gemini_client import GeminiResponse
-from shared.constants import JobStatus
-
 
 # ---------------------------------------------------------------------------
 # Fixtures
 # ---------------------------------------------------------------------------
+
 
 def _mock_settings() -> MagicMock:
     s = MagicMock()
@@ -74,6 +74,7 @@ def _gemini_response(text: str, model: str = "gemini-2.0-flash") -> GeminiRespon
 # _parse_action
 # ---------------------------------------------------------------------------
 
+
 class TestParseAction:
     def test_jobs_command(self) -> None:
         assert _parse_action("/jobs") == "show_digest"
@@ -94,6 +95,7 @@ class TestParseAction:
 # ---------------------------------------------------------------------------
 # Show digest
 # ---------------------------------------------------------------------------
+
 
 class TestShowDigest:
     @pytest.mark.asyncio
@@ -135,7 +137,7 @@ class TestShowDigest:
                 url="https://example.com/job/1",
                 salary_range="$150k-$200k",
                 status=JobStatus.NEW,
-                scraped_at=datetime.now(timezone.utc),
+                scraped_at=datetime.now(UTC),
             ),
         ]
 
@@ -167,6 +169,7 @@ class TestShowDigest:
 # Flash screen batch
 # ---------------------------------------------------------------------------
 
+
 class TestFlashScreen:
     @pytest.mark.asyncio
     async def test_batch_scoring(self, agent: JobSearchAgent, mock_gemini: AsyncMock) -> None:
@@ -176,10 +179,12 @@ class TestFlashScreen:
             {"title": "Bad Job", "company": "B", "location": "", "salary_range": "", "description": "Not a fit"},
         ]
 
-        flash_response = json.dumps([
-            {"idx": 0, "score": 75},
-            {"idx": 1, "score": 20},
-        ])
+        flash_response = json.dumps(
+            [
+                {"idx": 0, "score": 75},
+                {"idx": 1, "score": 20},
+            ]
+        )
         mock_gemini.generate = AsyncMock(return_value=_gemini_response(flash_response))
 
         result = await agent._flash_screen(listings, {"profile_summary": "SWE"}, mock_gemini)
@@ -215,6 +220,7 @@ class TestFlashScreen:
 # Pro evaluate
 # ---------------------------------------------------------------------------
 
+
 class TestProEvaluate:
     @pytest.mark.asyncio
     async def test_evaluates_listing(self, agent: JobSearchAgent, mock_gemini: AsyncMock) -> None:
@@ -230,11 +236,13 @@ class TestProEvaluate:
             },
         ]
 
-        pro_response = json.dumps({
-            "match_score": 88,
-            "match_reasons": ["Strong ML background", "Python expertise"],
-            "concerns": ["Location preference"],
-        })
+        pro_response = json.dumps(
+            {
+                "match_score": 88,
+                "match_reasons": ["Strong ML background", "Python expertise"],
+                "concerns": ["Location preference"],
+            }
+        )
         mock_gemini.generate = AsyncMock(return_value=_gemini_response(pro_response, "gemini-2.0-pro"))
 
         result = await agent._pro_evaluate(listings, {"full_profile": "ML engineer"}, mock_gemini)
@@ -278,6 +286,7 @@ class TestProEvaluate:
 # Collection
 # ---------------------------------------------------------------------------
 
+
 class TestCollection:
     @pytest.mark.asyncio
     async def test_safe_search_returns_results(self, agent: JobSearchAgent) -> None:
@@ -305,6 +314,7 @@ class TestCollection:
 # Storage
 # ---------------------------------------------------------------------------
 
+
 class TestStorage:
     @pytest.mark.asyncio
     async def test_stores_listings(self, agent: JobSearchAgent) -> None:
@@ -322,7 +332,7 @@ class TestStorage:
                 "match_score": 85,
                 "match_reasons": ["Python"],
                 "concerns": [],
-                "scraped_at": datetime.now(timezone.utc),
+                "scraped_at": datetime.now(UTC),
             },
         ]
 
@@ -344,10 +354,12 @@ class TestStorage:
 # Intent classifier integration
 # ---------------------------------------------------------------------------
 
+
 class TestIntentIntegration:
     def test_jobs_command_classified(self) -> None:
-        from orchestrator.intent_classifier import IntentClassifier
         from shared.constants import IntentType
+
+        from orchestrator.intent_classifier import IntentClassifier
 
         classifier = IntentClassifier()
         intent = classifier.classify("/jobs", "ios")
@@ -355,8 +367,9 @@ class TestIntentIntegration:
         assert intent.action == "show_digest"
 
     def test_jobs_scan_classified(self) -> None:
-        from orchestrator.intent_classifier import IntentClassifier
         from shared.constants import IntentType
+
+        from orchestrator.intent_classifier import IntentClassifier
 
         classifier = IntentClassifier()
         intent = classifier.classify("/jobs scan", "ios")
@@ -364,8 +377,9 @@ class TestIntentIntegration:
         assert intent.action == "full_scan"
 
     def test_keyword_job_classified(self) -> None:
-        from orchestrator.intent_classifier import IntentClassifier
         from shared.constants import IntentType
+
+        from orchestrator.intent_classifier import IntentClassifier
 
         classifier = IntentClassifier()
         intent = classifier.classify("looking for a job", "telegram")

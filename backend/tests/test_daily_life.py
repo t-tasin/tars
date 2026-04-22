@@ -3,18 +3,15 @@
 from __future__ import annotations
 
 import json
-import sys
-from datetime import date, datetime, timedelta
+from datetime import date, datetime
 from typing import Any
 from unittest.mock import AsyncMock, MagicMock
 
 import pytest
 
-from agents.base import AgentContext
-
 # Ensure db.models is imported (conftest.py fakes db.session).
 import db.models  # noqa: F401
-
+from agents.base import AgentContext
 
 # ---------------------------------------------------------------------------
 # Helpers
@@ -54,12 +51,14 @@ def _mock_gemini(response_json: dict[str, Any] | list[str] | None = None) -> Mag
     """Create a mock GeminiClient that returns JSON."""
     gemini = MagicMock()
     text = json.dumps(response_json) if response_json else "{}"
-    gemini.generate = AsyncMock(return_value=MagicMock(
-        text=text,
-        tokens_input=50,
-        tokens_output=30,
-        duration_ms=200,
-    ))
+    gemini.generate = AsyncMock(
+        return_value=MagicMock(
+            text=text,
+            tokens_input=50,
+            tokens_output=30,
+            duration_ms=200,
+        )
+    )
     return gemini
 
 
@@ -125,8 +124,20 @@ class TestShowSchedule:
     @pytest.mark.asyncio
     async def test_with_events(self) -> None:
         events = [
-            {"title": "Team standup", "start": "2026-03-10T09:00:00-04:00", "end": "2026-03-10T09:30:00-04:00", "all_day": False, "location": "Zoom"},
-            {"title": "Lunch", "start": "2026-03-10T12:00:00-04:00", "end": "2026-03-10T13:00:00-04:00", "all_day": False, "location": None},
+            {
+                "title": "Team standup",
+                "start": "2026-03-10T09:00:00-04:00",
+                "end": "2026-03-10T09:30:00-04:00",
+                "all_day": False,
+                "location": "Zoom",
+            },
+            {
+                "title": "Lunch",
+                "start": "2026-03-10T12:00:00-04:00",
+                "end": "2026-03-10T13:00:00-04:00",
+                "all_day": False,
+                "location": None,
+            },
         ]
         agent = _make_agent(caldav=_mock_caldav(today_events=events))
         result = await agent.execute(_context("show schedule"))
@@ -157,13 +168,15 @@ class TestShowSchedule:
 class TestScheduleEvent:
     @pytest.mark.asyncio
     async def test_schedule_with_gemini(self) -> None:
-        gemini = _mock_gemini({
-            "title": "Gym",
-            "start": "2026-03-12T18:00:00-04:00",
-            "end": "2026-03-12T19:00:00-04:00",
-            "location": None,
-            "description": None,
-        })
+        gemini = _mock_gemini(
+            {
+                "title": "Gym",
+                "start": "2026-03-12T18:00:00-04:00",
+                "end": "2026-03-12T19:00:00-04:00",
+                "location": None,
+                "description": None,
+            }
+        )
         agent = _make_agent()
         result = await agent.execute(_context("schedule gym Thursday 6pm", gemini_client=gemini))
 
@@ -186,12 +199,14 @@ class TestScheduleEvent:
     @pytest.mark.asyncio
     async def test_schedule_parse_failure(self) -> None:
         gemini = _mock_gemini()
-        gemini.generate = AsyncMock(return_value=MagicMock(
-            text="not valid json!!!",
-            tokens_input=50,
-            tokens_output=30,
-            duration_ms=200,
-        ))
+        gemini.generate = AsyncMock(
+            return_value=MagicMock(
+                text="not valid json!!!",
+                tokens_input=50,
+                tokens_output=30,
+                duration_ms=200,
+            )
+        )
         agent = _make_agent()
         result = await agent.execute(_context("schedule gym Thursday 6pm", gemini_client=gemini))
 
@@ -207,11 +222,13 @@ class TestScheduleEvent:
 class TestReminder:
     @pytest.mark.asyncio
     async def test_reminder_with_gemini(self) -> None:
-        gemini = _mock_gemini({
-            "task": "Call the dentist",
-            "due_date": "2026-03-11",
-            "priority": "normal",
-        })
+        gemini = _mock_gemini(
+            {
+                "task": "Call the dentist",
+                "due_date": "2026-03-11",
+                "priority": "normal",
+            }
+        )
         agent = _make_agent()
         result = await agent.execute(_context("remind me to call the dentist tomorrow", gemini_client=gemini))
 
@@ -357,7 +374,9 @@ class TestHelpers:
         from agents.daily_life import _format_event_time
 
         assert _format_event_time({"all_day": True}) == "All day"
-        assert "AM" in _format_event_time({"start": "2026-03-10T09:00:00-04:00", "end": "2026-03-10T10:00:00-04:00", "all_day": False})
+        assert "AM" in _format_event_time(
+            {"start": "2026-03-10T09:00:00-04:00", "end": "2026-03-10T10:00:00-04:00", "all_day": False}
+        )
 
     def test_format_duration(self) -> None:
         from agents.daily_life import _format_duration

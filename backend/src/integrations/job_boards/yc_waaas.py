@@ -1,7 +1,5 @@
 from __future__ import annotations
 
-from datetime import datetime, timezone
-
 import httpx
 import structlog
 
@@ -97,18 +95,20 @@ class YCWaaaSAdapter(JobBoardAdapter):
                 if location_filter and location_filter not in str(job_location).lower():
                     continue
 
-                results.append({
-                    "id": f"yc-{hit.get('objectID', '')}-{job.get('id', '')}",
-                    "title": job.get("title", job.get("role", "Unknown Role")),
-                    "company": company_name,
-                    "location": job_location,
-                    "salary": job.get("salary_range", ""),
-                    "description": hit.get("one_liner", hit.get("long_description", "")),
-                    "url": job.get("url", company_url),
-                    "batch": batch,
-                    "team_size": hit.get("team_size", 0),
-                    "industry": hit.get("industry", ""),
-                })
+                results.append(
+                    {
+                        "id": f"yc-{hit.get('objectID', '')}-{job.get('id', '')}",
+                        "title": job.get("title", job.get("role", "Unknown Role")),
+                        "company": company_name,
+                        "location": job_location,
+                        "salary": job.get("salary_range", ""),
+                        "description": hit.get("one_liner", hit.get("long_description", "")),
+                        "url": job.get("url", company_url),
+                        "batch": batch,
+                        "team_size": hit.get("team_size", 0),
+                        "industry": hit.get("industry", ""),
+                    }
+                )
 
         return results
 

@@ -1,4 +1,5 @@
 """Tests for WakeWordListener — Porcupine + VAD + pipeline integration."""
+
 from __future__ import annotations
 
 import struct
@@ -73,11 +74,13 @@ async def test_process_audio_calls_stt_and_orchestrator(listener: WakeWordListen
     listener._tts = mock_tts
 
     mock_orchestrator = MagicMock()
-    mock_orchestrator.process_message = AsyncMock(return_value={
-        "response": {"text": "It's sunny and 72F.", "content_type": "text"},
-        "agent_used": "daily_life",
-        "model_used": "gemini_flash",
-    })
+    mock_orchestrator.process_message = AsyncMock(
+        return_value={
+            "response": {"text": "It's sunny and 72F.", "content_type": "text"},
+            "agent_used": "daily_life",
+            "model_used": "gemini_flash",
+        }
+    )
 
     with patch("wake_word.listener.get_orchestrator", return_value=mock_orchestrator):
         await listener._process_audio(b"fake-pcm-data")
@@ -118,18 +121,18 @@ async def test_process_audio_approval_response(listener: WakeWordListener) -> No
     listener._tts = mock_tts
 
     mock_orchestrator = MagicMock()
-    mock_orchestrator.process_message = AsyncMock(return_value={
-        "response": {"text": "Draft ready for review.", "content_type": "approval"},
-        "agent_used": "communication",
-        "model_used": "claude_code",
-    })
+    mock_orchestrator.process_message = AsyncMock(
+        return_value={
+            "response": {"text": "Draft ready for review.", "content_type": "approval"},
+            "agent_used": "communication",
+            "model_used": "claude_code",
+        }
+    )
 
     with patch("wake_word.listener.get_orchestrator", return_value=mock_orchestrator):
         await listener._process_audio(b"fake-pcm-data")
 
-    mock_tts.speak.assert_called_once_with(
-        "I'll need your approval for that. I've sent the details to your phone."
-    )
+    mock_tts.speak.assert_called_once_with("I'll need your approval for that. I've sent the details to your phone.")
 
 
 @pytest.mark.asyncio()
@@ -160,6 +163,7 @@ def test_check_mic_available() -> None:
     _mock_pyaudio.PyAudio.return_value = mock_instance
 
     from wake_word.listener import check_mic_available
+
     result = check_mic_available()
 
     assert result is True
@@ -172,6 +176,7 @@ def test_check_mic_unavailable() -> None:
     _mock_pyaudio.PyAudio.side_effect = OSError("No audio devices")
 
     from wake_word.listener import check_mic_available
+
     result = check_mic_available()
 
     assert result is False

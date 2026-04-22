@@ -21,22 +21,28 @@ def executor():
 def mock_wardrobe_response():
     """Mock Gemini Vision response for wardrobe cataloging."""
     return {
-        "candidates": [{
-            "content": {
-                "parts": [{
-                    "text": json.dumps({
-                        "item_type": "shirt",
-                        "color": "navy blue",
-                        "brand": "Ralph Lauren",
-                        "season": ["spring", "fall"],
-                        "formality": "smart_casual",
-                        "material": "cotton",
-                        "condition": "good",
-                        "additional_notes": "button-down collar, slim fit",
-                    }),
-                }],
-            },
-        }],
+        "candidates": [
+            {
+                "content": {
+                    "parts": [
+                        {
+                            "text": json.dumps(
+                                {
+                                    "item_type": "shirt",
+                                    "color": "navy blue",
+                                    "brand": "Ralph Lauren",
+                                    "season": ["spring", "fall"],
+                                    "formality": "smart_casual",
+                                    "material": "cotton",
+                                    "condition": "good",
+                                    "additional_notes": "button-down collar, slim fit",
+                                }
+                            ),
+                        }
+                    ],
+                },
+            }
+        ],
     }
 
 
@@ -44,24 +50,30 @@ def mock_wardrobe_response():
 def mock_receipt_response():
     """Mock Gemini Vision response for receipt OCR."""
     return {
-        "candidates": [{
-            "content": {
-                "parts": [{
-                    "text": json.dumps({
-                        "merchant": "Whole Foods",
-                        "date": "2026-03-09",
-                        "total": "$45.67",
-                        "subtotal": "$42.30",
-                        "tax": "$3.37",
-                        "line_items": [
-                            {"name": "Organic Milk", "quantity": 1, "price": "$5.99"},
-                            {"name": "Avocados", "quantity": 3, "price": "$4.50"},
-                        ],
-                        "payment_method": "Apple Pay",
-                    }),
-                }],
-            },
-        }],
+        "candidates": [
+            {
+                "content": {
+                    "parts": [
+                        {
+                            "text": json.dumps(
+                                {
+                                    "merchant": "Whole Foods",
+                                    "date": "2026-03-09",
+                                    "total": "$45.67",
+                                    "subtotal": "$42.30",
+                                    "tax": "$3.37",
+                                    "line_items": [
+                                        {"name": "Organic Milk", "quantity": 1, "price": "$5.99"},
+                                        {"name": "Avocados", "quantity": 3, "price": "$4.50"},
+                                    ],
+                                    "payment_method": "Apple Pay",
+                                }
+                            ),
+                        }
+                    ],
+                },
+            }
+        ],
     }
 
 
@@ -178,7 +190,8 @@ async def test_gemini_api_failure(executor, tmp_path):
     }
 
     with patch.object(
-        executor, "_call_gemini_vision",
+        executor,
+        "_call_gemini_vision",
         new_callable=AsyncMock,
         side_effect=httpx.ConnectError("timeout"),
     ):

@@ -4,19 +4,16 @@ from __future__ import annotations
 
 from datetime import date, timedelta
 from decimal import Decimal
-from typing import Any
 from unittest.mock import AsyncMock, MagicMock
 
 import pytest
 
 from agents.subscription_tracker import (
-    PriceChange,
     RecurringCharge,
     SubscriptionTracker,
     _detect_cycle,
     _next_expected,
 )
-
 
 # ---------------------------------------------------------------------------
 # Tests: _detect_cycle helper
@@ -225,9 +222,7 @@ class TestDetectRecurring:
         ]
         session = _make_mock_session_for_recurring(rows)
         # Only one execute call (SELECT) since no recurring found
-        session.execute = AsyncMock(
-            return_value=MagicMock(all=MagicMock(return_value=rows))
-        )
+        session.execute = AsyncMock(return_value=MagicMock(all=MagicMock(return_value=rows)))
 
         tracker = SubscriptionTracker()
         recurring, txn_map = await tracker.detect_recurring(session)
@@ -239,10 +234,7 @@ class TestDetectRecurring:
     async def test_weekly_cycle_detected(self) -> None:
         """Weekly transactions should be detected as weekly cycle."""
         base = date(2026, 1, 5)
-        rows = [
-            ("GymPass", Decimal("5.00"), base + timedelta(days=7 * i))
-            for i in range(6)
-        ]
+        rows = [("GymPass", Decimal("5.00"), base + timedelta(days=7 * i)) for i in range(6)]
         session = _make_mock_session_for_recurring(rows)
         tracker = SubscriptionTracker()
 

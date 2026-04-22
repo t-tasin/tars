@@ -5,11 +5,11 @@ from __future__ import annotations
 from uuid import uuid4
 
 import pytest
+from shared.constants import IntentType, ModelName
 
 from orchestrator.context_builder import ContextBuilder
 from orchestrator.intent_classifier import Intent
 from orchestrator.model_router import ModelRoute
-from shared.constants import IntentType, ModelName
 
 
 @pytest.fixture
@@ -47,8 +47,11 @@ class TestAgentContextShapes:
         conv_id = uuid4()
         intent = Intent(agent=IntentType.COMMUNICATION)
         ctx = await builder.build(
-            intent, _route(ModelName.CLAUDE_CODE), "Draft email to prof",
-            "ios", conversation_id=conv_id,
+            intent,
+            _route(ModelName.CLAUDE_CODE),
+            "Draft email to prof",
+            "ios",
+            conversation_id=conv_id,
         )
         assert "recipient_history" in ctx.db_context
         assert "recent_messages" in ctx.db_context

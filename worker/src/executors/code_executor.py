@@ -166,9 +166,12 @@ class CodeExecutor(BaseExecutor):
             )
 
         cmd = [
-            "git", "clone",
-            "--depth", "1",
-            "--branch", branch,
+            "git",
+            "clone",
+            "--depth",
+            "1",
+            "--branch",
+            branch,
             "--single-branch",
             authed_url,
             str(work_dir / "repo"),
@@ -252,28 +255,43 @@ class CodeExecutor(BaseExecutor):
 
         # All arguments are passed as a list — no shell interpolation.
         cmd = [
-            "docker", "run",
+            "docker",
+            "run",
             "--rm",
-            "--name", container_name,
-            "--network", "none",
-            "-v", f"{repo_dir}:/workspace:rw",
-            "-w", "/workspace",
-            "--memory", "2g",
-            "--cpus", "2",
+            "--name",
+            container_name,
+            "--network",
+            "none",
+            "-v",
+            f"{repo_dir}:/workspace:rw",
+            "-w",
+            "/workspace",
+            "--memory",
+            "2g",
+            "--cpus",
+            "2",
         ]
 
         if github_pat:
             cmd.extend(["-e", f"GITHUB_PAT={github_pat}"])
 
-        cmd.extend([
-            _CLAUDE_CODE_IMAGE,
-            "claude", "--print",
-            "--output-format", "json",
-            "--max-turns", "10",
-            "--allowedTools", "mcp__github__*",
-            "--allowedTools", "mcp__filesystem__*",
-            "--", prompt,
-        ])
+        cmd.extend(
+            [
+                _CLAUDE_CODE_IMAGE,
+                "claude",
+                "--print",
+                "--output-format",
+                "json",
+                "--max-turns",
+                "10",
+                "--allowedTools",
+                "mcp__github__*",
+                "--allowedTools",
+                "mcp__filesystem__*",
+                "--",
+                prompt,
+            ]
+        )
 
         log.info(
             "code_container_start",
@@ -295,7 +313,9 @@ class CodeExecutor(BaseExecutor):
         except asyncio.TimeoutError:
             # Kill the container if it exceeds the timeout.
             kill_proc = await asyncio.create_subprocess_exec(
-                "docker", "kill", container_name,
+                "docker",
+                "kill",
+                container_name,
                 stdout=asyncio.subprocess.DEVNULL,
                 stderr=asyncio.subprocess.DEVNULL,
             )
@@ -311,10 +331,7 @@ class CodeExecutor(BaseExecutor):
                 returncode=proc.returncode,
                 stderr=stderr[:500],
             )
-            raise RuntimeError(
-                f"Claude Code container exited with code {proc.returncode}: "
-                f"{stderr[:300]}"
-            )
+            raise RuntimeError(f"Claude Code container exited with code {proc.returncode}: {stderr[:300]}")
 
         return _parse_claude_output(stdout)
 
@@ -328,7 +345,9 @@ class CodeExecutor(BaseExecutor):
 
         # Stat summary
         proc = await asyncio.create_subprocess_exec(
-            "git", "diff", "--stat",
+            "git",
+            "diff",
+            "--stat",
             cwd=str(repo_dir),
             stdout=asyncio.subprocess.PIPE,
             stderr=asyncio.subprocess.DEVNULL,
@@ -338,7 +357,8 @@ class CodeExecutor(BaseExecutor):
 
         # Full patch (truncated for large diffs)
         proc2 = await asyncio.create_subprocess_exec(
-            "git", "diff",
+            "git",
+            "diff",
             cwd=str(repo_dir),
             stdout=asyncio.subprocess.PIPE,
             stderr=asyncio.subprocess.DEVNULL,
@@ -352,7 +372,10 @@ class CodeExecutor(BaseExecutor):
 
         # Also include untracked files that Claude may have created.
         proc3 = await asyncio.create_subprocess_exec(
-            "git", "ls-files", "--others", "--exclude-standard",
+            "git",
+            "ls-files",
+            "--others",
+            "--exclude-standard",
             cwd=str(repo_dir),
             stdout=asyncio.subprocess.PIPE,
             stderr=asyncio.subprocess.DEVNULL,
@@ -390,7 +413,9 @@ class CodeExecutor(BaseExecutor):
 
         # Modified files
         proc = await asyncio.create_subprocess_exec(
-            "git", "diff", "--name-only",
+            "git",
+            "diff",
+            "--name-only",
             cwd=str(repo_dir),
             stdout=asyncio.subprocess.PIPE,
             stderr=asyncio.subprocess.DEVNULL,
@@ -400,7 +425,10 @@ class CodeExecutor(BaseExecutor):
 
         # Untracked (new) files
         proc2 = await asyncio.create_subprocess_exec(
-            "git", "ls-files", "--others", "--exclude-standard",
+            "git",
+            "ls-files",
+            "--others",
+            "--exclude-standard",
             cwd=str(repo_dir),
             stdout=asyncio.subprocess.PIPE,
             stderr=asyncio.subprocess.DEVNULL,
@@ -434,9 +462,7 @@ def _parse_claude_output(stdout: str) -> str:
 
     text = data.get("result", "") or data.get("text", "") or data.get("content", "")
     if isinstance(text, list):
-        text = "\n".join(
-            block.get("text", "") for block in text if isinstance(block, dict)
-        )
+        text = "\n".join(block.get("text", "") for block in text if isinstance(block, dict))
     return text
 
 

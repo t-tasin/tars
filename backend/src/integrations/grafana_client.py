@@ -105,13 +105,15 @@ class GrafanaClient:
 
             alerts: list[dict[str, Any]] = []
             for rule in rules:
-                alerts.append({
-                    "name": rule.get("title", ""),
-                    "state": rule.get("provenance", "unknown"),
-                    "labels": rule.get("labels", {}),
-                    "folder": rule.get("folderUID", ""),
-                    "uid": rule.get("uid", ""),
-                })
+                alerts.append(
+                    {
+                        "name": rule.get("title", ""),
+                        "state": rule.get("provenance", "unknown"),
+                        "labels": rule.get("labels", {}),
+                        "folder": rule.get("folderUID", ""),
+                        "uid": rule.get("uid", ""),
+                    }
+                )
 
             self._grafana_cb.record_success()
             log.debug("grafana_alerts_fetched", count=len(alerts))
@@ -122,7 +124,8 @@ class GrafanaClient:
             return []
 
     async def get_dashboard_status(
-        self, dashboard_uid: str,
+        self,
+        dashboard_uid: str,
     ) -> dict[str, Any]:
         """Fetch a specific dashboard by UID.
 
@@ -197,11 +200,13 @@ class GrafanaClient:
             for stream in results:
                 labels = stream.get("stream", {})
                 for ts, line in stream.get("values", []):
-                    entries.append({
-                        "timestamp": ts,
-                        "line": line,
-                        "labels": labels,
-                    })
+                    entries.append(
+                        {
+                            "timestamp": ts,
+                            "line": line,
+                            "labels": labels,
+                        }
+                    )
 
             self._loki_cb.record_success()
             log.debug("loki_query_ok", query=logql[:100], entries=len(entries))

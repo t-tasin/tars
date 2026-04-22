@@ -2,16 +2,16 @@
 
 from __future__ import annotations
 
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 from typing import Annotated, Any
 from uuid import UUID
 
 import structlog
 from fastapi import APIRouter, Depends, HTTPException, Query
+from shared.constants import JobStatus
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from shared.constants import JobStatus
 from src.api.schemas import (
     ErrorDetail,
     ErrorResponse,
@@ -59,7 +59,7 @@ async def list_jobs(
     total = total_result.scalar_one()
 
     # New today count
-    today_start = datetime.now(timezone.utc).replace(hour=0, minute=0, second=0, microsecond=0)
+    today_start = datetime.now(UTC).replace(hour=0, minute=0, second=0, microsecond=0)
     new_today_result = await db.execute(
         select(func.count()).where(
             JobListing.scraped_at >= today_start,
@@ -160,7 +160,7 @@ async def job_action(
     # Direct status update for non-apply actions
     kwargs: dict[str, Any] = {}
     if body.action == "save":
-        kwargs["follow_up_at"] = datetime.now(timezone.utc) + timedelta(days=7)
+        kwargs["follow_up_at"] = datetime.now(UTC) + timedelta(days=7)
 
     await repo.update_status(job_id, new_status, **kwargs)
 

@@ -12,7 +12,6 @@ from fastapi.testclient import TestClient
 
 from src.api.budgets import router
 
-
 # ---------------------------------------------------------------------------
 # App setup
 # ---------------------------------------------------------------------------
@@ -76,10 +75,15 @@ class TestListBudgets:
     @patch("src.api.budgets._mtd_spending_by_category", new_callable=AsyncMock)
     @patch("src.api.budgets.compute_budget_statuses")
     def test_list_budgets_empty(
-        self, mock_compute, mock_mtd, mock_repo_cls, mock_settings,
+        self,
+        mock_compute,
+        mock_mtd,
+        mock_repo_cls,
+        mock_settings,
     ) -> None:
         mock_settings.return_value = MagicMock(
-            tars_api_key="test-api-key", allowed_device_tokens="",
+            tars_api_key="test-api-key",
+            allowed_device_tokens="",
         )
         mock_repo = AsyncMock()
         mock_repo.get_active = AsyncMock(return_value=[])
@@ -100,10 +104,15 @@ class TestListBudgets:
     @patch("src.api.budgets._mtd_spending_by_category", new_callable=AsyncMock)
     @patch("src.api.budgets.compute_budget_statuses")
     def test_list_budgets_with_data(
-        self, mock_compute, mock_mtd, mock_repo_cls, mock_settings,
+        self,
+        mock_compute,
+        mock_mtd,
+        mock_repo_cls,
+        mock_settings,
     ) -> None:
         mock_settings.return_value = MagicMock(
-            tars_api_key="test-api-key", allowed_device_tokens="",
+            tars_api_key="test-api-key",
+            allowed_device_tokens="",
         )
         budgets = [_mock_budget("dining"), _mock_budget("entertainment", 300.0)]
         mock_repo = AsyncMock()
@@ -138,10 +147,15 @@ class TestBudgetStatusSummary:
     @patch("src.api.budgets._mtd_spending_by_category", new_callable=AsyncMock)
     @patch("src.api.budgets.compute_budget_statuses")
     def test_status_endpoint(
-        self, mock_compute, mock_mtd, mock_repo_cls, mock_settings,
+        self,
+        mock_compute,
+        mock_mtd,
+        mock_repo_cls,
+        mock_settings,
     ) -> None:
         mock_settings.return_value = MagicMock(
-            tars_api_key="test-api-key", allowed_device_tokens="",
+            tars_api_key="test-api-key",
+            allowed_device_tokens="",
         )
         mock_repo = AsyncMock()
         mock_repo.get_active = AsyncMock(return_value=[_mock_budget()])
@@ -174,10 +188,15 @@ class TestCreateOrUpdateBudget:
     @patch("src.api.budgets._mtd_spending_by_category", new_callable=AsyncMock)
     @patch("src.api.budgets.compute_budget_statuses")
     def test_create_new_budget(
-        self, mock_compute, mock_mtd, mock_repo_cls, mock_settings,
+        self,
+        mock_compute,
+        mock_mtd,
+        mock_repo_cls,
+        mock_settings,
     ) -> None:
         mock_settings.return_value = MagicMock(
-            tars_api_key="test-api-key", allowed_device_tokens="",
+            tars_api_key="test-api-key",
+            allowed_device_tokens="",
         )
         mock_repo = AsyncMock()
         mock_repo.get_by_category = AsyncMock(
@@ -211,10 +230,15 @@ class TestCreateOrUpdateBudget:
     @patch("src.api.budgets._mtd_spending_by_category", new_callable=AsyncMock)
     @patch("src.api.budgets.compute_budget_statuses")
     def test_update_existing_budget(
-        self, mock_compute, mock_mtd, mock_repo_cls, mock_settings,
+        self,
+        mock_compute,
+        mock_mtd,
+        mock_repo_cls,
+        mock_settings,
     ) -> None:
         mock_settings.return_value = MagicMock(
-            tars_api_key="test-api-key", allowed_device_tokens="",
+            tars_api_key="test-api-key",
+            allowed_device_tokens="",
         )
         existing = _mock_budget("dining", 200.0)
         mock_repo = AsyncMock()
@@ -242,7 +266,8 @@ class TestCreateOrUpdateBudget:
     def test_create_budget_invalid_limit(self, mock_settings) -> None:
         """monthly_limit must be > 0."""
         mock_settings.return_value = MagicMock(
-            tars_api_key="test-api-key", allowed_device_tokens="",
+            tars_api_key="test-api-key",
+            allowed_device_tokens="",
         )
         app = _build_app()
         client = TestClient(app)
@@ -265,7 +290,8 @@ class TestDeactivateBudget:
     @patch("src.api.budgets.BudgetRepository")
     def test_deactivate_success(self, mock_repo_cls, mock_settings) -> None:
         mock_settings.return_value = MagicMock(
-            tars_api_key="test-api-key", allowed_device_tokens="",
+            tars_api_key="test-api-key",
+            allowed_device_tokens="",
         )
         mock_repo = AsyncMock()
         mock_repo.deactivate_by_category = AsyncMock(return_value=True)
@@ -284,7 +310,8 @@ class TestDeactivateBudget:
     @patch("src.api.budgets.BudgetRepository")
     def test_deactivate_not_found(self, mock_repo_cls, mock_settings) -> None:
         mock_settings.return_value = MagicMock(
-            tars_api_key="test-api-key", allowed_device_tokens="",
+            tars_api_key="test-api-key",
+            allowed_device_tokens="",
         )
         mock_repo = AsyncMock()
         mock_repo.deactivate_by_category = AsyncMock(return_value=False)
@@ -310,11 +337,16 @@ class TestBudgetPercentageScenarios:
     @patch("src.api.budgets._mtd_spending_by_category", new_callable=AsyncMock)
     @patch("src.api.budgets.compute_budget_statuses")
     def test_budget_zero_spending(
-        self, mock_compute, mock_mtd, mock_repo_cls, mock_settings,
+        self,
+        mock_compute,
+        mock_mtd,
+        mock_repo_cls,
+        mock_settings,
     ) -> None:
         """0% usage — no spending at all."""
         mock_settings.return_value = MagicMock(
-            tars_api_key="test-api-key", allowed_device_tokens="",
+            tars_api_key="test-api-key",
+            allowed_device_tokens="",
         )
         mock_repo = AsyncMock()
         mock_repo.get_active = AsyncMock(return_value=[_mock_budget()])
@@ -337,11 +369,16 @@ class TestBudgetPercentageScenarios:
     @patch("src.api.budgets._mtd_spending_by_category", new_callable=AsyncMock)
     @patch("src.api.budgets.compute_budget_statuses")
     def test_budget_exceeded(
-        self, mock_compute, mock_mtd, mock_repo_cls, mock_settings,
+        self,
+        mock_compute,
+        mock_mtd,
+        mock_repo_cls,
+        mock_settings,
     ) -> None:
         """100%+ usage — over budget."""
         mock_settings.return_value = MagicMock(
-            tars_api_key="test-api-key", allowed_device_tokens="",
+            tars_api_key="test-api-key",
+            allowed_device_tokens="",
         )
         mock_repo = AsyncMock()
         mock_repo.get_active = AsyncMock(return_value=[_mock_budget()])

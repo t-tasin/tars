@@ -2,13 +2,12 @@
 
 from __future__ import annotations
 
-from unittest.mock import AsyncMock, patch
+from unittest.mock import AsyncMock
 
 import httpx
 import pytest
 
 from integrations.weather_client import WeatherClient, _build_suggestion
-
 
 # ---------------------------------------------------------------------------
 # Fake OWM API responses
@@ -95,6 +94,7 @@ _RAINY_FORECAST = {
 # ---------------------------------------------------------------------------
 # Fixtures
 # ---------------------------------------------------------------------------
+
 
 def _mock_response(json_data: dict, status_code: int = 200) -> httpx.Response:
     return httpx.Response(

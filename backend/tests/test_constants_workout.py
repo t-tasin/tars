@@ -1,4 +1,5 @@
 """Test that workout-related constants exist in shared.constants."""
+
 from __future__ import annotations
 
 from shared.constants import (

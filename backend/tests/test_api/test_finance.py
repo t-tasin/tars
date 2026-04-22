@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-from datetime import date
 from decimal import Decimal
 from typing import Any
 from unittest.mock import AsyncMock, MagicMock, patch
@@ -11,7 +10,6 @@ from fastapi import FastAPI
 from fastapi.testclient import TestClient
 
 from src.api.finance import router
-
 
 # ---------------------------------------------------------------------------
 # App setup
@@ -82,12 +80,14 @@ class TestGetFinanceSummary:
     @patch("src.api.auth.get_settings")
     def test_basic_summary(self, mock_settings) -> None:
         mock_settings.return_value = MagicMock(
-            tars_api_key="test-api-key", allowed_device_tokens="",
+            tars_api_key="test-api-key",
+            allowed_device_tokens="",
         )
         mock_session = _mock_db_for_summary(total_spent=245.50)
 
         app = _build_app()
         from src.dependencies import get_db
+
         app.dependency_overrides[get_db] = lambda: mock_session
 
         client = TestClient(app)
@@ -104,17 +104,20 @@ class TestGetFinanceSummary:
     @patch("src.api.auth.get_settings")
     def test_day_period(self, mock_settings) -> None:
         mock_settings.return_value = MagicMock(
-            tars_api_key="test-api-key", allowed_device_tokens="",
+            tars_api_key="test-api-key",
+            allowed_device_tokens="",
         )
         mock_session = _mock_db_for_summary(total_spent=50.0)
 
         app = _build_app()
         from src.dependencies import get_db
+
         app.dependency_overrides[get_db] = lambda: mock_session
 
         client = TestClient(app)
         response = client.get(
-            "/api/v1/finance/summary?period=day", headers=_HEADERS,
+            "/api/v1/finance/summary?period=day",
+            headers=_HEADERS,
         )
 
         assert response.status_code == 200
@@ -123,17 +126,20 @@ class TestGetFinanceSummary:
     @patch("src.api.auth.get_settings")
     def test_month_period(self, mock_settings) -> None:
         mock_settings.return_value = MagicMock(
-            tars_api_key="test-api-key", allowed_device_tokens="",
+            tars_api_key="test-api-key",
+            allowed_device_tokens="",
         )
         mock_session = _mock_db_for_summary(total_spent=1500.0)
 
         app = _build_app()
         from src.dependencies import get_db
+
         app.dependency_overrides[get_db] = lambda: mock_session
 
         client = TestClient(app)
         response = client.get(
-            "/api/v1/finance/summary?period=month", headers=_HEADERS,
+            "/api/v1/finance/summary?period=month",
+            headers=_HEADERS,
         )
 
         assert response.status_code == 200
@@ -143,14 +149,19 @@ class TestGetFinanceSummary:
     def test_empty_transactions(self, mock_settings) -> None:
         """No transactions should return empty list, not crash."""
         mock_settings.return_value = MagicMock(
-            tars_api_key="test-api-key", allowed_device_tokens="",
+            tars_api_key="test-api-key",
+            allowed_device_tokens="",
         )
         mock_session = _mock_db_for_summary(
-            total_spent=0.0, txn_rows=[], mtd_total=0.0, mtd_count=0,
+            total_spent=0.0,
+            txn_rows=[],
+            mtd_total=0.0,
+            mtd_count=0,
         )
 
         app = _build_app()
         from src.dependencies import get_db
+
         app.dependency_overrides[get_db] = lambda: mock_session
 
         client = TestClient(app)
@@ -165,18 +176,21 @@ class TestGetFinanceSummary:
     def test_trends_included_when_previous_exists(self, mock_settings) -> None:
         """When a previous period summary exists, trends should be populated."""
         mock_settings.return_value = MagicMock(
-            tars_api_key="test-api-key", allowed_device_tokens="",
+            tars_api_key="test-api-key",
+            allowed_device_tokens="",
         )
 
         prev_summary = MagicMock()
         prev_summary.total_spent = Decimal("200.00")
 
         mock_session = _mock_db_for_summary(
-            total_spent=250.0, previous_summary=prev_summary,
+            total_spent=250.0,
+            previous_summary=prev_summary,
         )
 
         app = _build_app()
         from src.dependencies import get_db
+
         app.dependency_overrides[get_db] = lambda: mock_session
 
         client = TestClient(app)
@@ -191,12 +205,14 @@ class TestGetFinanceSummary:
     @patch("src.api.auth.get_settings")
     def test_trends_null_when_no_previous(self, mock_settings) -> None:
         mock_settings.return_value = MagicMock(
-            tars_api_key="test-api-key", allowed_device_tokens="",
+            tars_api_key="test-api-key",
+            allowed_device_tokens="",
         )
         mock_session = _mock_db_for_summary(total_spent=245.50, previous_summary=None)
 
         app = _build_app()
         from src.dependencies import get_db
+
         app.dependency_overrides[get_db] = lambda: mock_session
 
         client = TestClient(app)
@@ -208,17 +224,20 @@ class TestGetFinanceSummary:
     @patch("src.api.auth.get_settings")
     def test_high_daily_spending_alert(self, mock_settings) -> None:
         mock_settings.return_value = MagicMock(
-            tars_api_key="test-api-key", allowed_device_tokens="",
+            tars_api_key="test-api-key",
+            allowed_device_tokens="",
         )
         mock_session = _mock_db_for_summary(total_spent=300.0)
 
         app = _build_app()
         from src.dependencies import get_db
+
         app.dependency_overrides[get_db] = lambda: mock_session
 
         client = TestClient(app)
         response = client.get(
-            "/api/v1/finance/summary?period=day", headers=_HEADERS,
+            "/api/v1/finance/summary?period=day",
+            headers=_HEADERS,
         )
 
         assert response.status_code == 200
@@ -229,7 +248,8 @@ class TestGetFinanceSummary:
     def test_auth_required(self, mock_settings) -> None:
         """Requests without auth should be rejected."""
         mock_settings.return_value = MagicMock(
-            tars_api_key="test-api-key", allowed_device_tokens="",
+            tars_api_key="test-api-key",
+            allowed_device_tokens="",
         )
         app = _build_app()
         client = TestClient(app)

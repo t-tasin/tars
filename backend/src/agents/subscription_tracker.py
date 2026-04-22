@@ -46,10 +46,12 @@ class PriceChange:
     change_pct: float
 
 
-def _merchant_coalesce(Transaction: type) -> Any:
+def _merchant_coalesce(transaction_model: type) -> Any:
     """COALESCE(merchant_name, counterparty_name, 'Unknown') expression."""
     return func.coalesce(
-        Transaction.merchant_name, Transaction.counterparty_name, "Unknown"
+        transaction_model.merchant_name,
+        transaction_model.counterparty_name,
+        "Unknown",
     )
 
 
@@ -81,7 +83,8 @@ class SubscriptionTracker:
     """Detects recurring charges and price changes in transaction history."""
 
     async def detect_recurring(
-        self, session: AsyncSession,
+        self,
+        session: AsyncSession,
     ) -> tuple[list[RecurringCharge], dict[str, list[tuple[float, date]]]]:
         """Identify recurring merchants from the last 90 days of transactions.
 
@@ -150,9 +153,7 @@ class SubscriptionTracker:
                     )
                 )
                 recurring_merchants.append(merchant)
-                recurring_merchant_txns[merchant] = [
-                    (float(t[0]), t[1]) for t in sorted_txns
-                ]
+                recurring_merchant_txns[merchant] = [(float(t[0]), t[1]) for t in sorted_txns]
 
         # Batch-update is_recurring on matching transactions (within the 90-day window only)
         if recurring_merchants:
@@ -218,7 +219,8 @@ class SubscriptionTracker:
         return changes
 
     async def get_subscription_summary(
-        self, session: AsyncSession,
+        self,
+        session: AsyncSession,
     ) -> dict[str, Any]:
         """Return a combined subscription summary with recurring charges and price changes."""
         recurring, recurring_merchant_txns = await self.detect_recurring(session)

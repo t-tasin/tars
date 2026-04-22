@@ -15,10 +15,10 @@ from agents.health_fitness import (
     _is_gym_event,
 )
 
-
 # ---------------------------------------------------------------------------
 # Helper factories
 # ---------------------------------------------------------------------------
+
 
 def _make_context(
     message: str = "health summary",
@@ -49,11 +49,13 @@ def _make_health_rows(
     ]
     # Add a second day for trend calculation
     d2 = date(2026, 3, 8)
-    rows.extend([
-        ("steps", d2, steps - 500, "count", None),
-        ("sleep", d2, sleep - 0.3, "hours", None),
-        ("exercise_minutes", d2, exercise - 10, "minutes", None),
-    ])
+    rows.extend(
+        [
+            ("steps", d2, steps - 500, "count", None),
+            ("sleep", d2, sleep - 0.3, "hours", None),
+            ("exercise_minutes", d2, exercise - 10, "minutes", None),
+        ]
+    )
     return rows
 
 
@@ -63,15 +65,18 @@ def _make_health_rows(
 
 
 class TestIsGymEvent:
-    @pytest.mark.parametrize("title,expected", [
-        ("Gym session", True),
-        ("Morning workout", True),
-        ("Yoga class", True),
-        ("Swimming practice", True),
-        ("Team Standup", False),
-        ("Lunch", False),
-        ("Run errands", True),
-    ])
+    @pytest.mark.parametrize(
+        "title,expected",
+        [
+            ("Gym session", True),
+            ("Morning workout", True),
+            ("Yoga class", True),
+            ("Swimming practice", True),
+            ("Team Standup", False),
+            ("Lunch", False),
+            ("Run errands", True),
+        ],
+    )
     def test_gym_detection(self, title: str, expected: bool):
         assert _is_gym_event({"title": title}) is expected
 
@@ -217,8 +222,10 @@ class TestHealthFitnessExecute:
         mock_session = AsyncMock()
         mock_session.execute = AsyncMock(return_value=mock_result)
 
-        with patch("db.session.get_db_session") as mock_db, \
-             patch.object(agent, "_get_calendar_context", return_value={}):
+        with (
+            patch("db.session.get_db_session") as mock_db,
+            patch.object(agent, "_get_calendar_context", return_value={}),
+        ):
             mock_db.return_value.__aenter__ = AsyncMock(return_value=mock_session)
             mock_db.return_value.__aexit__ = AsyncMock(return_value=False)
             result = await agent.execute(_make_context())
@@ -245,8 +252,10 @@ class TestHealthFitnessExecute:
         gemini_response.tokens_output = 150
         mock_gemini.generate = AsyncMock(return_value=gemini_response)
 
-        with patch("db.session.get_db_session") as mock_db, \
-             patch.object(agent, "_get_calendar_context", return_value={}):
+        with (
+            patch("db.session.get_db_session") as mock_db,
+            patch.object(agent, "_get_calendar_context", return_value={}),
+        ):
             mock_db.return_value.__aenter__ = AsyncMock(return_value=mock_session)
             mock_db.return_value.__aexit__ = AsyncMock(return_value=False)
             result = await agent.execute(_make_context(gemini_client=mock_gemini))

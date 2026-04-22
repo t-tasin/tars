@@ -3,11 +3,12 @@
 from __future__ import annotations
 
 import uuid
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 from typing import Any
-from unittest.mock import AsyncMock, MagicMock, patch
+from unittest.mock import AsyncMock, MagicMock
 
 import pytest
+from shared.constants import ApprovalStatus, RiskTier
 
 from db.models import Approval, AuditLog
 from orchestrator.approval_manager import (
@@ -16,8 +17,6 @@ from orchestrator.approval_manager import (
     ApprovalManager,
     ApprovalNotFoundError,
 )
-from shared.constants import ApprovalStatus, RiskTier
-
 
 # ---------------------------------------------------------------------------
 # Helpers
@@ -41,7 +40,7 @@ def _make_approval(
     created_at: datetime | None = None,
 ) -> Approval:
     """Build a fake Approval ORM instance without touching the DB."""
-    now = datetime.now(timezone.utc)
+    now = datetime.now(UTC)
     return Approval(
         id=approval_id or uuid.uuid4(),
         task_id=task_id,
@@ -168,11 +167,7 @@ class TestCreate:
             preview_payload={},
         )
 
-        audit_adds = [
-            call.args[0]
-            for call in session.add.call_args_list
-            if isinstance(call.args[0], AuditLog)
-        ]
+        audit_adds = [call.args[0] for call in session.add.call_args_list if isinstance(call.args[0], AuditLog)]
         assert len(audit_adds) == 1
         assert audit_adds[0].action_type == "approval_created"
         assert audit_adds[0].actor == "system"
@@ -193,7 +188,7 @@ class TestCreate:
 
     async def test_expires_at_approximately_one_hour(self, manager: ApprovalManager) -> None:
         session = _mock_session()
-        before = datetime.now(timezone.utc)
+        before = datetime.now(UTC)
 
         result = await manager.create(
             session,
@@ -204,7 +199,7 @@ class TestCreate:
 
         expires = datetime.fromisoformat(result["expires_at"])
         if expires.tzinfo is None:
-            expires = expires.replace(tzinfo=timezone.utc)
+            expires = expires.replace(tzinfo=UTC)
         expected = before + timedelta(hours=1)
         assert abs((expires - expected).total_seconds()) < 5
 
@@ -248,11 +243,7 @@ class TestApprove:
 
         await manager.approve(session, approval.id, source="telegram")
 
-        audit_adds = [
-            call.args[0]
-            for call in session.add.call_args_list
-            if isinstance(call.args[0], AuditLog)
-        ]
+        audit_adds = [call.args[0] for call in session.add.call_args_list if isinstance(call.args[0], AuditLog)]
         assert len(audit_adds) == 1
         assert audit_adds[0].action_type == "approval_approved"
         assert audit_adds[0].actor == "telegram"
@@ -282,11 +273,7 @@ class TestReject:
 
         await manager.reject(session, approval.id, source="ios", reason="Bad idea")
 
-        audit_adds = [
-            call.args[0]
-            for call in session.add.call_args_list
-            if isinstance(call.args[0], AuditLog)
-        ]
+        audit_adds = [call.args[0] for call in session.add.call_args_list if isinstance(call.args[0], AuditLog)]
         assert audit_adds[0].details["reason"] == "Bad idea"
 
 
@@ -325,11 +312,7 @@ class TestEditAndApprove:
             edited_payload={"subject": "new", "body": "new"},
         )
 
-        audit_adds = [
-            call.args[0]
-            for call in session.add.call_args_list
-            if isinstance(call.args[0], AuditLog)
-        ]
+        audit_adds = [call.args[0] for call in session.add.call_args_list if isinstance(call.args[0], AuditLog)]
         assert set(audit_adds[0].details["edited_keys"]) == {"subject", "body"}
 
 
@@ -381,11 +364,7 @@ class TestMarkExecuted:
 
         await manager.mark_executed(session, approval.id, result="Sent successfully")
 
-        audit_adds = [
-            call.args[0]
-            for call in session.add.call_args_list
-            if isinstance(call.args[0], AuditLog)
-        ]
+        audit_adds = [call.args[0] for call in session.add.call_args_list if isinstance(call.args[0], AuditLog)]
         assert len(audit_adds) == 1
         assert audit_adds[0].action_type == "approval_executed"
 
@@ -397,11 +376,7 @@ class TestMarkExecuted:
         long_result = "x" * 1000
         await manager.mark_executed(session, approval.id, result=long_result)
 
-        audit_adds = [
-            call.args[0]
-            for call in session.add.call_args_list
-            if isinstance(call.args[0], AuditLog)
-        ]
+        audit_adds = [call.args[0] for call in session.add.call_args_list if isinstance(call.args[0], AuditLog)]
         assert len(audit_adds[0].details["result"]) == 500
 
 
@@ -447,13 +422,11 @@ class TestErrorCases:
         session.execute = AsyncMock(return_value=_mock_scalar_result(approval))
 
         with pytest.raises(ApprovalAlreadyDecidedError):
-            await manager.edit_and_approve(
-                session, approval.id, source="ios", edited_payload={}
-            )
+            await manager.edit_and_approve(session, approval.id, source="ios", edited_payload={})
 
     async def test_approve_expired_raises(self, manager: ApprovalManager) -> None:
         approval = _make_approval(
-            expires_at=datetime.now(timezone.utc) - timedelta(minutes=5),
+            expires_at=datetime.now(UTC) - timedelta(minutes=5),
         )
         session = _mock_session()
         session.execute = AsyncMock(return_value=_mock_scalar_result(approval))
@@ -466,7 +439,7 @@ class TestErrorCases:
 
     async def test_reject_expired_raises(self, manager: ApprovalManager) -> None:
         approval = _make_approval(
-            expires_at=datetime.now(timezone.utc) - timedelta(minutes=5),
+            expires_at=datetime.now(UTC) - timedelta(minutes=5),
         )
         session = _mock_session()
         session.execute = AsyncMock(return_value=_mock_scalar_result(approval))
@@ -533,11 +506,7 @@ class TestExpireStale:
 
         await manager.expire_stale(session)
 
-        audit_adds = [
-            call.args[0]
-            for call in session.add.call_args_list
-            if isinstance(call.args[0], AuditLog)
-        ]
+        audit_adds = [call.args[0] for call in session.add.call_args_list if isinstance(call.args[0], AuditLog)]
         assert len(audit_adds) == 2
         assert all(a.action_type == "approval_expired" for a in audit_adds)
 
@@ -558,7 +527,7 @@ class TestExpireStale:
 
 class TestToDict:
     def test_serialises_all_fields(self, manager: ApprovalManager) -> None:
-        now = datetime.now(timezone.utc)
+        now = datetime.now(UTC)
         aid = uuid.uuid4()
         tid = uuid.uuid4()
         approval = _make_approval(

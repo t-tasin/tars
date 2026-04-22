@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from datetime import date
 from typing import Any
-from unittest.mock import AsyncMock, MagicMock
+from unittest.mock import AsyncMock
 
 import pytest
 
@@ -15,10 +15,10 @@ from integrations.notion_client import (
     _normalise_page,
 )
 
-
 # ---------------------------------------------------------------------------
 # Fake Notion API responses
 # ---------------------------------------------------------------------------
+
 
 def _fake_page(
     page_id: str = "page-1",
