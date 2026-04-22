@@ -45,6 +45,14 @@ jobs:
         with:
           python-version: "3.12"
 
+      - name: Install system build dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends \
+            portaudio19-dev \
+            libasound2-dev \
+            ffmpeg
+
       - name: Install backend dependencies
         run: |
           cd backend
