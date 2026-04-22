@@ -2,25 +2,26 @@
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
 <dict>
-	<key>UIBackgroundModes</key>
-	<array>
-		<string>remote-notification</string>
-		<string>processing</string>
-	</array>
-	<key>NSHealthShareUsageDescription</key>
-	<string>T.A.R.S. reads your health data (sleep, steps, workouts, heart rate, exercise minutes) to include in your daily briefings and health insights.</string>
-	<key>NSCalendarsFullAccessUsageDescription</key>
-	<string>T.A.R.S. reads your calendar events to include in briefings and schedule management.</string>
-	<key>NSContactsUsageDescription</key>
-	<string>T.A.R.S. syncs your contacts for email enrichment and communication drafting.</string>
-	<key>NSSpeechRecognitionUsageDescription</key>
-	<string>T.A.R.S. uses speech recognition for voice input and commands.</string>
-	<key>NSMicrophoneUsageDescription</key>
-	<string>T.A.R.S. needs microphone access for voice input.</string>
 	<key>BGTaskSchedulerPermittedIdentifiers</key>
 	<array>
 		<string>com.tasin.tars.healthsync</string>
 		<string>com.tasin.tars.contactsync</string>
 	</array>
+	<key>CFBundleName</key>
+	<string>TARS</string>
+	<key>CFBundleDisplayName</key>
+	<string>T.A.R.S.</string>
+	<key>CFBundleIdentifier</key>
+	<string>$(PRODUCT_BUNDLE_IDENTIFIER)</string>
+	<key>NSCalendarsFullAccessUsageDescription</key>
+	<string>T.A.R.S. reads your calendar events to include in briefings and schedule management.</string>
+	<key>NSContactsUsageDescription</key>
+	<string>T.A.R.S. syncs your contacts for email enrichment and communication drafting.</string>
+	<key>NSHealthShareUsageDescription</key>
+	<string>T.A.R.S. reads your health data (sleep, steps, workouts, heart rate, exercise minutes) to include in your daily briefings and health insights.</string>
+	<key>NSMicrophoneUsageDescription</key>
+	<string>T.A.R.S. needs microphone access for voice input.</string>
+	<key>NSSpeechRecognitionUsageDescription</key>
+	<string>T.A.R.S. uses speech recognition for voice input and commands.</string>
 </dict>
 </plist>

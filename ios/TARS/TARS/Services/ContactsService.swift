@@ -80,7 +80,7 @@ final class ContactsService: ObservableObject {
     /// Full sync: fetch all contacts and send to backend.
     func syncContacts(fullSync: Bool = true) async {
         guard !isSyncing else { return }
-        guard isAuthorized else {
+        if !isAuthorized {
             await requestAccess()
             guard isAuthorized else { return }
         }

@@ -21,9 +21,32 @@
 		B9089C9A761B6E4352C16B90 /* BriefingView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 37979349D3F955E5908ECF52 /* BriefingView.swift */; };
 		BAB5F774ED78D0D42408714F /* ScheduleView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 592258D6A93308FCE69194F6 /* ScheduleView.swift */; };
 		CA6B2B7D438702921E094419 /* AnyCodable.swift in Sources */ = {isa = PBXBuildFile; fileRef = E8150366C05D4A05ECBE8349 /* AnyCodable.swift */; };
+		D4A1E8B3F72C9D0E18A53F01 /* TARSIntents.swift in Sources */ = {isa = PBXBuildFile; fileRef = D4A1E8B3F72C9D0E18A53F02 /* TARSIntents.swift */; };
 		ECB5BDEDE11E2EC5ADF1A62D /* ChatView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 130887104B5F48D39C362133 /* ChatView.swift */; };
 		F3155862AB70AEB9F9074359 /* Message.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6EDEADE7D34896695A509D62 /* Message.swift */; };
-		D4A1E8B3F72C9D0E18A53F01 /* TARSIntents.swift in Sources */ = {isa = PBXBuildFile; fileRef = D4A1E8B3F72C9D0E18A53F02 /* TARSIntents.swift */; };
+		E1F2A3B4C5D6E7F8A9B0C1D2 /* APIClient.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1B2C3D4E5F6A7B8C9D0E1F2 /* APIClient.swift */; };
+		E1F2A3B4C5D6E7F8A9B0C1D3 /* AlarmService.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1B2C3D4E5F6A7B8C9D0E1F3 /* AlarmService.swift */; };
+		E1F2A3B4C5D6E7F8A9B0C1D4 /* ContactsService.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1B2C3D4E5F6A7B8C9D0E1F4 /* ContactsService.swift */; };
+		E1F2A3B4C5D6E7F8A9B0C1D5 /* EventKitService.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1B2C3D4E5F6A7B8C9D0E1F5 /* EventKitService.swift */; };
+		E1F2A3B4C5D6E7F8A9B0C1D6 /* HealthKitService.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1B2C3D4E5F6A7B8C9D0E1F6 /* HealthKitService.swift */; };
+		E1F2A3B4C5D6E7F8A9B0C1D7 /* SpeechService.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1B2C3D4E5F6A7B8C9D0E1F7 /* SpeechService.swift */; };
+		E1F2A3B4C5D6E7F8A9B0C1D8 /* WebSocketManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1B2C3D4E5F6A7B8C9D0E1F8 /* WebSocketManager.swift */; };
+		E1F2A3B4C5D6E7F8A9B0C1D9 /* BriefingViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = B1C2D3E4F5A6B7C8D9E0F1A2 /* BriefingViewModel.swift */; };
+		E1F2A3B4C5D6E7F8A9B0C1DA /* ChatViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = B1C2D3E4F5A6B7C8D9E0F1A3 /* ChatViewModel.swift */; };
+		E1F2A3B4C5D6E7F8A9B0C1DB /* ScheduleViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = B1C2D3E4F5A6B7C8D9E0F1A4 /* ScheduleViewModel.swift */; };
+		E1F2A3B4C5D6E7F8A9B0C1DC /* WorkoutViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = B1C2D3E4F5A6B7C8D9E0F1A5 /* WorkoutViewModel.swift */; };
+		E1F2A3B4C5D6E7F8A9B0C1DD /* MessageBubble.swift in Sources */ = {isa = PBXBuildFile; fileRef = C1D2E3F4A5B6C7D8E9F0A1B2 /* MessageBubble.swift */; };
+		E1F2A3B4C5D6E7F8A9B0C1DE /* ApprovalCard.swift in Sources */ = {isa = PBXBuildFile; fileRef = C1D2E3F4A5B6C7D8E9F0A1B3 /* ApprovalCard.swift */; };
+		E1F2A3B4C5D6E7F8A9B0C1DF /* JobCard.swift in Sources */ = {isa = PBXBuildFile; fileRef = C1D2E3F4A5B6C7D8E9F0A1B4 /* JobCard.swift */; };
+		E1F2A3B4C5D6E7F8A9B0C1E0 /* BriefingSectionView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C1D2E3F4A5B6C7D8E9F0A1B5 /* BriefingSectionView.swift */; };
+		E1F2A3B4C5D6E7F8A9B0C1E1 /* AlarmView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C1D2E3F4A5B6C7D8E9F0A1B6 /* AlarmView.swift */; };
+		E1F2A3B4C5D6E7F8A9B0C1E2 /* WorkoutSessionView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C1D2E3F4A5B6C7D8E9F0A1B7 /* WorkoutSessionView.swift */; };
+		E1F2A3B4C5D6E7F8A9B0C1E3 /* SplitSetupView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C1D2E3F4A5B6C7D8E9F0A1B8 /* SplitSetupView.swift */; };
+		F1A2B3C4D5E6F7A8B9C0D1E2 /* WidgetAPIClient.swift in Sources */ = {isa = PBXBuildFile; fileRef = D1E2F3A4B5C6D7E8F9A0B1C2 /* WidgetAPIClient.swift */; };
+		F1A2B3C4D5E6F7A8B9C0D1E3 /* ScheduleWidget.swift in Sources */ = {isa = PBXBuildFile; fileRef = D1E2F3A4B5C6D7E8F9A0B1C3 /* ScheduleWidget.swift */; };
+		F1A2B3C4D5E6F7A8B9C0D1E4 /* ApprovalsWidget.swift in Sources */ = {isa = PBXBuildFile; fileRef = D1E2F3A4B5C6D7E8F9A0B1C4 /* ApprovalsWidget.swift */; };
+		F1A2B3C4D5E6F7A8B9C0D1E5 /* HealthWidget.swift in Sources */ = {isa = PBXBuildFile; fileRef = D1E2F3A4B5C6D7E8F9A0B1C5 /* HealthWidget.swift */; };
+		F1A2B3C4D5E6F7A8B9C0D1E6 /* OutfitWidget.swift in Sources */ = {isa = PBXBuildFile; fileRef = D1E2F3A4B5C6D7E8F9A0B1C6 /* OutfitWidget.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -48,7 +71,7 @@
 		130887104B5F48D39C362133 /* ChatView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChatView.swift; sourceTree = "<group>"; };
 		1637DB69CD388CD48395E3EE /* TARSApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TARSApp.swift; sourceTree = "<group>"; };
 		1A076673047EA6192D1DA8F5 /* Approval.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Approval.swift; sourceTree = "<group>"; };
-		1ACACC1E76478D326BCB4C1B /* TARS.app */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.application; path = TARS.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		1ACACC1E76478D326BCB4C1B /* TARS.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = TARS.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		1F0655D84489F08303BB7C54 /* MainTabView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MainTabView.swift; sourceTree = "<group>"; };
 		37979349D3F955E5908ECF52 /* BriefingView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BriefingView.swift; sourceTree = "<group>"; };
 		447C75DDC0C835E8521C316F /* TARSWidgetExtension.appex */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = "wrapper.app-extension"; path = TARSWidgetExtension.appex; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -63,11 +86,34 @@
 		ABD61F99353B50B0FC4EF4BD /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
 		B5F6EE3FBD2C553F75A1B18F /* Briefing.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Briefing.swift; sourceTree = "<group>"; };
 		C0F03C2DFCF0FCD00EF22653 /* KeychainService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KeychainService.swift; sourceTree = "<group>"; };
+		D4A1E8B3F72C9D0E18A53F02 /* TARSIntents.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TARSIntents.swift; sourceTree = "<group>"; };
 		E7433E1B2043E02478F721E7 /* TARS.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = TARS.entitlements; sourceTree = "<group>"; };
 		E8150366C05D4A05ECBE8349 /* AnyCodable.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AnyCodable.swift; sourceTree = "<group>"; };
 		F65231B90A0E8E3195E6F818 /* TARSWatch.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = TARSWatch.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		FDF2C8CD43C9B53F0511B22B /* TARSWidget.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TARSWidget.swift; sourceTree = "<group>"; };
-		D4A1E8B3F72C9D0E18A53F02 /* TARSIntents.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TARSIntents.swift; sourceTree = "<group>"; };
+		A1B2C3D4E5F6A7B8C9D0E1F2 /* APIClient.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = APIClient.swift; sourceTree = "<group>"; };
+		A1B2C3D4E5F6A7B8C9D0E1F3 /* AlarmService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AlarmService.swift; sourceTree = "<group>"; };
+		A1B2C3D4E5F6A7B8C9D0E1F4 /* ContactsService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContactsService.swift; sourceTree = "<group>"; };
+		A1B2C3D4E5F6A7B8C9D0E1F5 /* EventKitService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EventKitService.swift; sourceTree = "<group>"; };
+		A1B2C3D4E5F6A7B8C9D0E1F6 /* HealthKitService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HealthKitService.swift; sourceTree = "<group>"; };
+		A1B2C3D4E5F6A7B8C9D0E1F7 /* SpeechService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SpeechService.swift; sourceTree = "<group>"; };
+		A1B2C3D4E5F6A7B8C9D0E1F8 /* WebSocketManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WebSocketManager.swift; sourceTree = "<group>"; };
+		B1C2D3E4F5A6B7C8D9E0F1A2 /* BriefingViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BriefingViewModel.swift; sourceTree = "<group>"; };
+		B1C2D3E4F5A6B7C8D9E0F1A3 /* ChatViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChatViewModel.swift; sourceTree = "<group>"; };
+		B1C2D3E4F5A6B7C8D9E0F1A4 /* ScheduleViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScheduleViewModel.swift; sourceTree = "<group>"; };
+		B1C2D3E4F5A6B7C8D9E0F1A5 /* WorkoutViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WorkoutViewModel.swift; sourceTree = "<group>"; };
+		C1D2E3F4A5B6C7D8E9F0A1B2 /* MessageBubble.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MessageBubble.swift; sourceTree = "<group>"; };
+		C1D2E3F4A5B6C7D8E9F0A1B3 /* ApprovalCard.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ApprovalCard.swift; sourceTree = "<group>"; };
+		C1D2E3F4A5B6C7D8E9F0A1B4 /* JobCard.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = JobCard.swift; sourceTree = "<group>"; };
+		C1D2E3F4A5B6C7D8E9F0A1B5 /* BriefingSectionView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BriefingSectionView.swift; sourceTree = "<group>"; };
+		C1D2E3F4A5B6C7D8E9F0A1B6 /* AlarmView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AlarmView.swift; sourceTree = "<group>"; };
+		C1D2E3F4A5B6C7D8E9F0A1B7 /* WorkoutSessionView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WorkoutSessionView.swift; sourceTree = "<group>"; };
+		C1D2E3F4A5B6C7D8E9F0A1B8 /* SplitSetupView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SplitSetupView.swift; sourceTree = "<group>"; };
+		D1E2F3A4B5C6D7E8F9A0B1C2 /* WidgetAPIClient.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WidgetAPIClient.swift; sourceTree = "<group>"; };
+		D1E2F3A4B5C6D7E8F9A0B1C3 /* ScheduleWidget.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScheduleWidget.swift; sourceTree = "<group>"; };
+		D1E2F3A4B5C6D7E8F9A0B1C4 /* ApprovalsWidget.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ApprovalsWidget.swift; sourceTree = "<group>"; };
+		D1E2F3A4B5C6D7E8F9A0B1C5 /* HealthWidget.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HealthWidget.swift; sourceTree = "<group>"; };
+		D1E2F3A4B5C6D7E8F9A0B1C6 /* OutfitWidget.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OutfitWidget.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXGroup section */
@@ -88,18 +134,12 @@
 				24E0738F0720FF4204DB70E6 /* Resources */,
 				3177532E71F01F92404EA123 /* Services */,
 				D4A1E8B3F72C9D0E18A53F03 /* SiriIntents */,
+				AA11BB22CC33DD44EE55FF66 /* ViewModels */,
 				99BCB5F158AD8FBB471ECA3A /* Views */,
+				AA11BB22CC33DD44EE55FF6C /* Widgets */,
 				1637DB69CD388CD48395E3EE /* TARSApp.swift */,
 			);
 			path = TARS;
-			sourceTree = "<group>";
-		};
-		D4A1E8B3F72C9D0E18A53F03 /* SiriIntents */ = {
-			isa = PBXGroup;
-			children = (
-				D4A1E8B3F72C9D0E18A53F02 /* TARSIntents.swift */,
-			);
-			path = SiriIntents;
 			sourceTree = "<group>";
 		};
 		24E0738F0720FF4204DB70E6 /* Resources */ = {
@@ -114,7 +154,14 @@
 		3177532E71F01F92404EA123 /* Services */ = {
 			isa = PBXGroup;
 			children = (
+				A1B2C3D4E5F6A7B8C9D0E1F2 /* APIClient.swift */,
+				A1B2C3D4E5F6A7B8C9D0E1F3 /* AlarmService.swift */,
+				A1B2C3D4E5F6A7B8C9D0E1F4 /* ContactsService.swift */,
+				A1B2C3D4E5F6A7B8C9D0E1F5 /* EventKitService.swift */,
+				A1B2C3D4E5F6A7B8C9D0E1F6 /* HealthKitService.swift */,
 				C0F03C2DFCF0FCD00EF22653 /* KeychainService.swift */,
+				A1B2C3D4E5F6A7B8C9D0E1F7 /* SpeechService.swift */,
+				A1B2C3D4E5F6A7B8C9D0E1F8 /* WebSocketManager.swift */,
 			);
 			path = Services;
 			sourceTree = "<group>";
@@ -132,17 +179,87 @@
 			path = Models;
 			sourceTree = "<group>";
 		};
+		AA11BB22CC33DD44EE55FF66 /* ViewModels */ = {
+			isa = PBXGroup;
+			children = (
+				B1C2D3E4F5A6B7C8D9E0F1A2 /* BriefingViewModel.swift */,
+				B1C2D3E4F5A6B7C8D9E0F1A3 /* ChatViewModel.swift */,
+				B1C2D3E4F5A6B7C8D9E0F1A4 /* ScheduleViewModel.swift */,
+				B1C2D3E4F5A6B7C8D9E0F1A5 /* WorkoutViewModel.swift */,
+			);
+			path = ViewModels;
+			sourceTree = "<group>";
+		};
 		99BCB5F158AD8FBB471ECA3A /* Views */ = {
 			isa = PBXGroup;
 			children = (
-				37979349D3F955E5908ECF52 /* BriefingView.swift */,
-				130887104B5F48D39C362133 /* ChatView.swift */,
+				AA11BB22CC33DD44EE55FF6A /* Alarm */,
+				AA11BB22CC33DD44EE55FF68 /* Briefing */,
+				AA11BB22CC33DD44EE55FF67 /* Chat */,
+				AA11BB22CC33DD44EE55FF69 /* Schedule */,
+				AA11BB22CC33DD44EE55FF6B /* Workout */,
 				A3D6F0F50F66E237662313AB /* JobsListView.swift */,
 				1F0655D84489F08303BB7C54 /* MainTabView.swift */,
-				592258D6A93308FCE69194F6 /* ScheduleView.swift */,
 				47D97CB0A728A4F2696818C3 /* SettingsView.swift */,
 			);
 			path = Views;
+			sourceTree = "<group>";
+		};
+		AA11BB22CC33DD44EE55FF67 /* Chat */ = {
+			isa = PBXGroup;
+			children = (
+				C1D2E3F4A5B6C7D8E9F0A1B3 /* ApprovalCard.swift */,
+				130887104B5F48D39C362133 /* ChatView.swift */,
+				C1D2E3F4A5B6C7D8E9F0A1B4 /* JobCard.swift */,
+				C1D2E3F4A5B6C7D8E9F0A1B2 /* MessageBubble.swift */,
+			);
+			path = Chat;
+			sourceTree = "<group>";
+		};
+		AA11BB22CC33DD44EE55FF68 /* Briefing */ = {
+			isa = PBXGroup;
+			children = (
+				C1D2E3F4A5B6C7D8E9F0A1B5 /* BriefingSectionView.swift */,
+				37979349D3F955E5908ECF52 /* BriefingView.swift */,
+			);
+			path = Briefing;
+			sourceTree = "<group>";
+		};
+		AA11BB22CC33DD44EE55FF69 /* Schedule */ = {
+			isa = PBXGroup;
+			children = (
+				592258D6A93308FCE69194F6 /* ScheduleView.swift */,
+			);
+			path = Schedule;
+			sourceTree = "<group>";
+		};
+		AA11BB22CC33DD44EE55FF6A /* Alarm */ = {
+			isa = PBXGroup;
+			children = (
+				C1D2E3F4A5B6C7D8E9F0A1B6 /* AlarmView.swift */,
+			);
+			path = Alarm;
+			sourceTree = "<group>";
+		};
+		AA11BB22CC33DD44EE55FF6B /* Workout */ = {
+			isa = PBXGroup;
+			children = (
+				C1D2E3F4A5B6C7D8E9F0A1B8 /* SplitSetupView.swift */,
+				C1D2E3F4A5B6C7D8E9F0A1B7 /* WorkoutSessionView.swift */,
+			);
+			path = Workout;
+			sourceTree = "<group>";
+		};
+		AA11BB22CC33DD44EE55FF6C /* Widgets */ = {
+			isa = PBXGroup;
+			children = (
+				D1E2F3A4B5C6D7E8F9A0B1C4 /* ApprovalsWidget.swift */,
+				D1E2F3A4B5C6D7E8F9A0B1C5 /* HealthWidget.swift */,
+				D1E2F3A4B5C6D7E8F9A0B1C6 /* OutfitWidget.swift */,
+				D1E2F3A4B5C6D7E8F9A0B1C3 /* ScheduleWidget.swift */,
+				D1E2F3A4B5C6D7E8F9A0B1C2 /* WidgetAPIClient.swift */,
+			);
+			path = Widgets;
 			sourceTree = "<group>";
 		};
 		99FE387757DD0460B1DCD1D9 /* TARSWidgetExtension */ = {
@@ -161,6 +278,14 @@
 				08A82D165307842134590672 /* TARSWatchApp.swift */,
 			);
 			path = TARSWatch;
+			sourceTree = "<group>";
+		};
+		D4A1E8B3F72C9D0E18A53F03 /* SiriIntents */ = {
+			isa = PBXGroup;
+			children = (
+				D4A1E8B3F72C9D0E18A53F02 /* TARSIntents.swift */,
+			);
+			path = SiriIntents;
 			sourceTree = "<group>";
 		};
 		EBAAFE2141C197F44501E00A = {
@@ -238,9 +363,6 @@
 				BuildIndependentTargetsInParallel = YES;
 				LastUpgradeCheck = 1600;
 				TargetAttributes = {
-					50E0CDF3E1501CECAAB497E6 = {
-						DevelopmentTeam = "";
-					};
 					C9B56589D4201968941B7DBA = {
 						DevelopmentTeam = "";
 					};
@@ -275,7 +397,12 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				F1A2B3C4D5E6F7A8B9C0D1E4 /* ApprovalsWidget.swift in Sources */,
+				F1A2B3C4D5E6F7A8B9C0D1E5 /* HealthWidget.swift in Sources */,
+				F1A2B3C4D5E6F7A8B9C0D1E6 /* OutfitWidget.swift in Sources */,
+				F1A2B3C4D5E6F7A8B9C0D1E3 /* ScheduleWidget.swift in Sources */,
 				1EC0C5E202ED088CBB94CDEB /* TARSWidget.swift in Sources */,
+				F1A2B3C4D5E6F7A8B9C0D1E2 /* WidgetAPIClient.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -291,21 +418,39 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				E1F2A3B4C5D6E7F8A9B0C1D2 /* APIClient.swift in Sources */,
+				E1F2A3B4C5D6E7F8A9B0C1E1 /* AlarmView.swift in Sources */,
+				E1F2A3B4C5D6E7F8A9B0C1D3 /* AlarmService.swift in Sources */,
 				CA6B2B7D438702921E094419 /* AnyCodable.swift in Sources */,
 				239D60090D6272686F950B4F /* Approval.swift in Sources */,
+				E1F2A3B4C5D6E7F8A9B0C1DE /* ApprovalCard.swift in Sources */,
 				668259EEBCDEB821BD49B976 /* Briefing.swift in Sources */,
+				E1F2A3B4C5D6E7F8A9B0C1E0 /* BriefingSectionView.swift in Sources */,
 				B9089C9A761B6E4352C16B90 /* BriefingView.swift in Sources */,
+				E1F2A3B4C5D6E7F8A9B0C1D9 /* BriefingViewModel.swift in Sources */,
 				ECB5BDEDE11E2EC5ADF1A62D /* ChatView.swift in Sources */,
+				E1F2A3B4C5D6E7F8A9B0C1DA /* ChatViewModel.swift in Sources */,
+				E1F2A3B4C5D6E7F8A9B0C1D4 /* ContactsService.swift in Sources */,
 				A4551D24407DCF8577F1BB25 /* ErrorResponse.swift in Sources */,
+				E1F2A3B4C5D6E7F8A9B0C1D5 /* EventKitService.swift in Sources */,
+				E1F2A3B4C5D6E7F8A9B0C1D6 /* HealthKitService.swift in Sources */,
+				E1F2A3B4C5D6E7F8A9B0C1DF /* JobCard.swift in Sources */,
 				0FE3CD093D5A856C24EDD6AD /* JobListing.swift in Sources */,
 				90BBFCDB13819C64D54EFF5F /* JobsListView.swift in Sources */,
 				66E4759920B2D14A931F7E6C /* KeychainService.swift in Sources */,
 				78BE6375C2FAAD1D7E3916B8 /* MainTabView.swift in Sources */,
 				F3155862AB70AEB9F9074359 /* Message.swift in Sources */,
+				E1F2A3B4C5D6E7F8A9B0C1DD /* MessageBubble.swift in Sources */,
 				BAB5F774ED78D0D42408714F /* ScheduleView.swift in Sources */,
+				E1F2A3B4C5D6E7F8A9B0C1DB /* ScheduleViewModel.swift in Sources */,
 				1F1869563CCFF517E4A0C168 /* SettingsView.swift in Sources */,
+				E1F2A3B4C5D6E7F8A9B0C1D7 /* SpeechService.swift in Sources */,
+				E1F2A3B4C5D6E7F8A9B0C1E3 /* SplitSetupView.swift in Sources */,
 				16B8BF66D9CE802F09DC53C2 /* TARSApp.swift in Sources */,
 				D4A1E8B3F72C9D0E18A53F01 /* TARSIntents.swift in Sources */,
+				E1F2A3B4C5D6E7F8A9B0C1D8 /* WebSocketManager.swift in Sources */,
+				E1F2A3B4C5D6E7F8A9B0C1E2 /* WorkoutSessionView.swift in Sources */,
+				E1F2A3B4C5D6E7F8A9B0C1DC /* WorkoutViewModel.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -412,6 +557,7 @@
 				CODE_SIGN_ENTITLEMENTS = TARS/Resources/TARS.entitlements;
 				CODE_SIGN_IDENTITY = "iPhone Developer";
 				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = YMDN7588DX;
 				INFOPLIST_FILE = TARS/Resources/Info.plist;
 				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
 				LD_RUNPATH_SEARCH_PATHS = (
@@ -419,7 +565,7 @@
 					"@executable_path/Frameworks",
 				);
 				MARKETING_VERSION = 1.0.0;
-				PRODUCT_BUNDLE_IDENTIFIER = com.tasin.tars;
+				PRODUCT_BUNDLE_IDENTIFIER = com.tasin.tars.dev;
 				SDKROOT = iphoneos;
 				SUPPORTS_MACCATALYST = NO;
 				TARGETED_DEVICE_FAMILY = "1,2";
@@ -542,6 +688,7 @@
 				CODE_SIGN_ENTITLEMENTS = TARS/Resources/TARS.entitlements;
 				CODE_SIGN_IDENTITY = "iPhone Developer";
 				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = YMDN7588DX;
 				INFOPLIST_FILE = TARS/Resources/Info.plist;
 				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
 				LD_RUNPATH_SEARCH_PATHS = (
@@ -549,7 +696,7 @@
 					"@executable_path/Frameworks",
 				);
 				MARKETING_VERSION = 1.0.0;
-				PRODUCT_BUNDLE_IDENTIFIER = com.tasin.tars;
+				PRODUCT_BUNDLE_IDENTIFIER = com.tasin.tars.dev;
 				SDKROOT = iphoneos;
 				SUPPORTS_MACCATALYST = NO;
 				TARGETED_DEVICE_FAMILY = "1,2";

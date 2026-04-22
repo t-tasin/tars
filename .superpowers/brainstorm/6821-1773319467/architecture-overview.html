@@ -1,0 +1,106 @@
+<h2>Workout Tracker — Architecture Overview</h2>
+<p class="subtitle">How the new workout tracker agent fits into T.A.R.S.</p>
+
+<div style="background: #1a1a2e; border-radius: 12px; padding: 32px; margin: 24px 0; font-family: 'SF Mono', monospace; font-size: 13px; line-height: 1.8; color: #e0e0e0; overflow-x: auto;">
+
+<div style="color: #7c8aff; font-weight: 600; margin-bottom: 16px;">── CLIENT LAYER ──</div>
+
+<div style="display: grid; grid-template-columns: 1fr 1fr; gap: 24px; margin-bottom: 24px;">
+  <div style="background: #252547; border: 1px solid #3a3a6a; border-radius: 8px; padding: 16px;">
+    <div style="color: #ffd700; font-weight: 600; margin-bottom: 8px;">📱 iOS App</div>
+    <div style="color: #b0b0d0; font-size: 12px;">
+      • Workout Session Screen (Start/Skip)<br>
+      • Set-by-set logging UI (fallback)<br>
+      • Exercise cards with pre-filled targets<br>
+      • Streak display
+    </div>
+  </div>
+  <div style="background: #252547; border: 1px solid #3a3a6a; border-radius: 8px; padding: 16px;">
+    <div style="color: #ffd700; font-weight: 600; margin-bottom: 8px;">🎙️ Voice / Chat</div>
+    <div style="color: #b0b0d0; font-size: 12px;">
+      • "Set 1 done, 10 reps bench 135lbs"<br>
+      • "I'm done" → session complete<br>
+      • Natural language → Gemini Flash parse<br>
+      • Ambiguity resolution via follow-up
+    </div>
+  </div>
+</div>
+
+<div style="text-align: center; color: #7c8aff; margin: 16px 0; font-size: 18px;">▼ &nbsp; REST + WebSocket + APNs &nbsp; ▼</div>
+
+<div style="color: #7c8aff; font-weight: 600; margin-bottom: 16px;">── NODE 1 — BRAIN ──</div>
+
+<div style="display: grid; grid-template-columns: 1fr 1fr; gap: 24px; margin-bottom: 24px;">
+  <div style="background: #1a2e1a; border: 1px solid #3a6a3a; border-radius: 8px; padding: 16px;">
+    <div style="color: #66ff66; font-weight: 600; margin-bottom: 8px;">🏋️ Workout Tracker Agent</div>
+    <div style="color: #b0d0b0; font-size: 12px;">
+      <strong>New agent — workout_tracker.py</strong><br><br>
+      • Split management (CRUD)<br>
+      • Progressive overload engine<br>
+      • Session lifecycle (pending → active → completed/skipped)<br>
+      • Accountability (streak, skip memory, nudges)<br>
+      • Voice log parsing (delegates to Gemini Flash)<br>
+      • Post-session summary generation
+    </div>
+  </div>
+  <div style="background: #252547; border: 1px solid #3a3a6a; border-radius: 8px; padding: 16px;">
+    <div style="color: #9999ff; font-weight: 600; margin-bottom: 8px;">💚 Health & Fitness Agent</div>
+    <div style="color: #b0b0d0; font-size: 12px;">
+      <strong>Existing — health_fitness.py</strong><br><br>
+      • HealthKit summaries (sleep, steps, HR)<br>
+      • Cross-references workout_sessions<br>
+      • "Burned 450 cal at gym + walked 8k steps"<br>
+      • Trend tracking
+    </div>
+  </div>
+</div>
+
+<div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 16px; margin-bottom: 24px;">
+  <div style="background: #2e2e1a; border: 1px solid #6a6a3a; border-radius: 8px; padding: 12px;">
+    <div style="color: #ffcc00; font-weight: 600; font-size: 12px; margin-bottom: 6px;">Orchestrator</div>
+    <div style="color: #d0d0a0; font-size: 11px;">
+      Intent: "workout|gym|set|reps"<br>
+      → workout_tracker agent<br>
+      Model: Gemini Flash
+    </div>
+  </div>
+  <div style="background: #2e2e1a; border: 1px solid #6a6a3a; border-radius: 8px; padding: 12px;">
+    <div style="color: #ffcc00; font-weight: 600; font-size: 12px; margin-bottom: 6px;">Scheduler</div>
+    <div style="color: #d0d0a0; font-size: 11px;">
+      • Create daily sessions from calendar<br>
+      • Workout time reminder (APNs)<br>
+      • +30min / +60min inactivity nudges
+    </div>
+  </div>
+  <div style="background: #2e2e1a; border: 1px solid #6a6a3a; border-radius: 8px; padding: 12px;">
+    <div style="color: #ffcc00; font-weight: 600; font-size: 12px; margin-bottom: 6px;">Approval System</div>
+    <div style="color: #d0d0a0; font-size: 11px;">
+      Tier 1 (autonomous)<br>
+      Read + internal write only<br>
+      No external side effects
+    </div>
+  </div>
+</div>
+
+<div style="color: #7c8aff; font-weight: 600; margin-bottom: 16px;">── POSTGRESQL ──</div>
+
+<div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px;">
+  <div style="background: #1a1a3e; border: 1px solid #4a4a8a; border-radius: 6px; padding: 10px; text-align: center;">
+    <div style="color: #ff9966; font-weight: 600; font-size: 12px;">workout_splits</div>
+    <div style="color: #999; font-size: 10px; margin-top: 4px;">Split definitions<br>rotation_days[]</div>
+  </div>
+  <div style="background: #1a1a3e; border: 1px solid #4a4a8a; border-radius: 6px; padding: 10px; text-align: center;">
+    <div style="color: #ff9966; font-weight: 600; font-size: 12px;">workout_exercises</div>
+    <div style="color: #999; font-size: 10px; margin-top: 4px;">Per-day exercises<br>current_weight</div>
+  </div>
+  <div style="background: #1a1a3e; border: 1px solid #4a4a8a; border-radius: 6px; padding: 10px; text-align: center;">
+    <div style="color: #ff9966; font-weight: 600; font-size: 12px;">workout_sessions</div>
+    <div style="color: #999; font-size: 10px; margin-top: 4px;">Daily sessions<br>status + skip_reason</div>
+  </div>
+  <div style="background: #1a1a3e; border: 1px solid #4a4a8a; border-radius: 6px; padding: 10px; text-align: center;">
+    <div style="color: #ff9966; font-weight: 600; font-size: 12px;">workout_logs</div>
+    <div style="color: #999; font-size: 10px; margin-top: 4px;">Every set ever<br>full history</div>
+  </div>
+</div>
+
+</div>

@@ -90,7 +90,7 @@ final class HealthKitService: ObservableObject {
 
     /// Fetch yesterday's health data and sync to backend.
     func syncYesterdayData() async {
-        guard isAuthorized else {
+        if !isAuthorized {
             await requestAuthorization()
             guard isAuthorized else { return }
         }
