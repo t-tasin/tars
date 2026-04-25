@@ -4,7 +4,7 @@
 >
 > **States:** `PLANNED` → `IN_PROGRESS` → `BUILT` → `TESTED` → `SHIPPED`
 >
-> **Last updated:** 2026-04-25 (Phase 0 + Phase 1 verified deployed on tars1; Node 2 cleanup; P0-18 SSH boundary policy live)
+> **Last updated:** 2026-04-25 (Phase 2 prep — llama.cpp built w/ CUDA on tars2; Qwen3 GGUFs downloaded; embed model GPU smoke OK)
 
 ---
 
@@ -72,13 +72,13 @@ Claude Code: this doc is the source of truth. Check before picking up work. Upda
 
 | ID | Feature | Status | Owner | Evidence | Last Touched | Blockers | Notes |
 |----|---------|--------|-------|----------|--------------|----------|-------|
-| P2-01 | llama.cpp built on Node 2 with AVX2+FMA | PLANNED | Tasin | — | 2026-04-21 | — | `make -j8 LLAMA_AVX2=1 LLAMA_FMA=1` |
-| P2-02 | Download Qwen3-1.7B-Instruct Q4_K_M GGUF (L0) | PLANNED | Tasin | — | 2026-04-21 | — | ~1.2GB |
-| P2-03 | Download Qwen3-8B-Instruct-2507 Q4_K_M GGUF (L1) | PLANNED | Tasin | — | 2026-04-21 | — | ~5GB |
+| P2-01 | llama.cpp built on Node 2 with AVX2+FMA+CUDA | BUILT | Claude | tars2 ~/llama.cpp build 2026-04-25 | 2026-04-25 | — | cmake build w/ `-DGGML_CUDA=ON -DCMAKE_CUDA_HOST_COMPILER=/usr/bin/g++-12 -DCMAKE_CUDA_ARCHITECTURES=50 -DGGML_NATIVE=ON -DLLAMA_CURL=ON`. ggml v0.10.0, commit 0adede866. CUDA backend libs (libggml-cuda.so) present. `llama-cli`, `llama-server`, `llama-embedding` all built. Smoke: detects M620 (1997 MiB / 1969 MiB free), runs embed model end-to-end on GPU. **Note:** OpenSSL not found at config time → HTTPS support disabled in cpp-httplib (cosmetic; not used by tars). |
+| P2-02 | Download Qwen3-1.7B GGUF (L0) | BUILT | Claude | ~/models/Qwen3-1.7B-Q8_0.gguf 2026-04-25 | 2026-04-25 | — | **Drift from spec:** Qwen only published Q8_0 + Q5_K_M for 1.7B (no Q4_K_M). Using **Qwen3-1.7B-Q8_0.gguf** (1.8GB, repo `Qwen/Qwen3-1.7B-GGUF`). VRAM note: full GPU offload at default ctx (4096) OOMs on 2GB M620. Plan for systemd unit: `-ngl 99 -c 1024` or partial offload. |
+| P2-03 | Download Qwen3-8B Q4_K_M GGUF (L1) | BUILT | Claude | ~/models/Qwen3-8B-Q4_K_M.gguf 2026-04-25 | 2026-04-25 | — | 4.7GB, repo `Qwen/Qwen3-8B-GGUF`. Will run primarily on CPU with tiny GPU offload (KV cache only) given 2GB VRAM. Smoke test deferred to systemd unit phase. |
 | P2-04 | systemd unit `llama-l0` on port 8001 (Qwen3-1.7B) | PLANNED | Tasin | — | 2026-04-21 | depends P2-01,2 | Always-on, auto-restart |
 | P2-05 | systemd unit `llama-l1` on port 8002 (Qwen3-8B) | PLANNED | Tasin | — | 2026-04-21 | depends P2-01,3 | Always-on |
 | P2-05a | (stretch) bench Qwen3-30B-A3B Q4_K_M mmap'd | PLANNED | Tasin | — | 2026-04-21 | depends P2-04..5 | Only promote if ≥6 tok/s sustained |
-| P2-05b | systemd unit `llama-embed` on port 8003 (Qwen3-Embedding-0.6B) | PLANNED | Tasin | — | 2026-04-21 | depends P2-01 | ~0.6GB |
+| P2-05b | systemd unit `llama-embed` on port 8003 (Qwen3-Embedding-0.6B) | IN_PROGRESS | Tasin | model downloaded + GPU smoke 2026-04-25 | 2026-04-25 | depends P2-01 | **Drift from spec:** only Q8_0 + f16 published (no Q4_K_M). Using **Qwen3-Embedding-0.6B-Q8_0.gguf** (610MB). GPU smoke: full offload at ctx 512, 44 tok/s prompt eval, 1024-dim embedding output. systemd unit pending. |
 | P2-05c | Whisper.cpp w/ CUDA backend on Quadro M620 | PLANNED | Tasin | — | 2026-04-21 | depends P0-15 | Whisper-small.en, ~500MB VRAM |
 | P2-05d | 3-way L1 bench: Qwen3-8B vs Gemma 4 12B vs Qwen3-30B-A3B-mmap | PLANNED | Tasin | — | 2026-04-21 | depends P2-04,5 | 50 real prompts; measure tok/s + quality + tool-use accuracy; pick L1 winner empirically |
 | P2-05e | Pull Gemma 4 12B Q4_K_M GGUF (candidate) | PLANNED | Tasin | — | 2026-04-21 | — | ~7.5GB |
