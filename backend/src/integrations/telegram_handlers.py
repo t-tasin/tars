@@ -10,6 +10,7 @@ receive capabilities via python-telegram-bot's Application polling.
 
 from __future__ import annotations
 
+import asyncio
 import re
 from typing import Any
 from uuid import UUID
@@ -19,6 +20,7 @@ from telegram import Update
 from telegram.ext import (
     Application,
     CallbackQueryHandler,
+    CommandHandler,
     ContextTypes,
     MessageHandler,
     filters,
@@ -254,6 +256,103 @@ async def _handle_job_callback(query: Any, action: str, job_id: str) -> None:
 
 
 # ---------------------------------------------------------------------------
+# Slash command handlers (P2.5-01)
+# ---------------------------------------------------------------------------
+
+
+async def handle_slash_briefing(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    """Handle /briefing — invoke BriefingAgent and reply with result."""
+    if not _is_authorized(update):
+        return
+    try:
+        from src.agents.base import AgentContext
+        from src.agents.briefing import BriefingAgent
+
+        agent = BriefingAgent()
+        ctx = AgentContext(user_message="/briefing", intent_type="briefing", source="telegram")
+        result = await agent.execute(ctx)
+        reply = result.text or "Briefing complete."
+        if len(reply) > _MAX_REPLY_LENGTH:
+            reply = reply[:_MAX_REPLY_LENGTH] + "\n\n... (truncated)"
+        await update.message.reply_text(reply)
+    except Exception:
+        log.exception("telegram_slash_briefing_error")
+        await update.message.reply_text("Error generating briefing.")
+
+
+async def handle_slash_status(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    """Handle /status — quick online confirmation."""
+    if not _is_authorized(update):
+        return
+    await update.message.reply_text("T.A.R.S. online. Use /health for infrastructure status.")
+
+
+async def handle_slash_help(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    """Handle /help — list available slash commands."""
+    if not _is_authorized(update):
+        return
+    help_text = (
+        "T.A.R.S. commands:\n\n"
+        "/briefing — morning briefing\n"
+        "/status — system status\n"
+        "/health — infrastructure health\n"
+        "/budget — AI usage summary\n"
+        "/help — this message\n\n"
+        "Or just type in plain English."
+    )
+    await update.message.reply_text(help_text)
+
+
+async def handle_slash_health(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    """Handle /health — check Postgres and Redis, format summary."""
+    if not _is_authorized(update):
+        return
+    try:
+        from src.api.health import _check_postgres, _check_redis
+
+        pg, redis = await asyncio.gather(_check_postgres(), _check_redis())
+        overall = "green" if pg["status"] == "connected" and redis["status"] == "connected" else "yellow"
+        reply = (
+            f"Health: {overall}\n"
+            f"Postgres: {pg['status']} ({pg.get('latency_ms', '?')}ms)\n"
+            f"Redis: {redis['status']} ({redis.get('latency_ms', '?')}ms)"
+        )
+        await update.message.reply_text(reply)
+    except Exception:
+        log.exception("telegram_slash_health_error")
+        await update.message.reply_text("Error checking health.")
+
+
+async def handle_slash_budget(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    """Handle /budget — show today's AI usage from UsageTracker."""
+    if not _is_authorized(update):
+        return
+    try:
+        from src.db.session import get_db_session
+        from src.models.usage_tracker import UsageTracker
+
+        async with get_db_session() as session:
+            tracker = UsageTracker(session)
+            summary = await tracker.get_daily_summary()
+        lines = ["Today's AI usage:"]
+        for model, data in summary.items():
+            lines.append(f"  {model}: {data['calls']} calls, ${data['estimated_cost']}")
+        if len(lines) == 1:
+            lines.append("  No usage today.")
+        await update.message.reply_text("\n".join(lines))
+    except Exception:
+        log.exception("telegram_slash_budget_error")
+        await update.message.reply_text("Error fetching budget.")
+
+
+async def handle_slash_unknown(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    """Handle unrecognised slash commands."""
+    if not _is_authorized(update):
+        return
+    await update.message.reply_text("Unknown command. Try plain English or /help for available commands.")
+
+
+# ---------------------------------------------------------------------------
 # Authorization helper
 # ---------------------------------------------------------------------------
 
@@ -295,8 +394,15 @@ def create_telegram_application(bot_token: str, chat_id: str) -> Application:
     # Text messages (non-command) -> orchestrator
     application.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_message))
 
-    # Command messages -> also through orchestrator
-    application.add_handler(MessageHandler(filters.COMMAND, handle_message))
+    # Known slash commands
+    application.add_handler(CommandHandler("briefing", handle_slash_briefing))
+    application.add_handler(CommandHandler("status", handle_slash_status))
+    application.add_handler(CommandHandler("help", handle_slash_help))
+    application.add_handler(CommandHandler("health", handle_slash_health))
+    application.add_handler(CommandHandler("budget", handle_slash_budget))
+
+    # Unknown slash commands catch-all (must be after specific handlers)
+    application.add_handler(MessageHandler(filters.COMMAND, handle_slash_unknown))
 
     # Inline keyboard callbacks
     application.add_handler(CallbackQueryHandler(handle_callback))
