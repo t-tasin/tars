@@ -4,7 +4,7 @@
 >
 > **States:** `PLANNED` → `IN_PROGRESS` → `BUILT` → `TESTED` → `SHIPPED`
 >
-> **Last updated:** 2026-04-25 (P0-17 SHIPPED — tars-worker live on tars2, smoke round-trip confirmed; P2-08/09/10/13 BUILT — SignalDetector + SignalAwareRouter + FEATURE_NEW_ROUTER, 64 unit tests, full suite 1091 passed)
+> **Last updated:** 2026-04-25 (P2-12 BUILT — L1 self-escalation JSON protocol on phase-2-self-escalation; escalation_parser + engine state machine; 28 new tests; full suite 1133 passed)
 
 ---
 
@@ -88,7 +88,7 @@ Claude Code: this doc is the source of truth. Check before picking up work. Upda
 | P2-09 | Rewrite `model_router.py` around signals | BUILT | Claude | PR #11 (cherry-pick of 4efae9e); test_signal_aware_router.py 33/33 | 2026-04-25 | — | New `SignalAwareRouter` class lives alongside legacy `ModelRouter`. Local default (REFLEX/BRAIN per intent), cloud escalation per signal w/ documented precedence. ARCH_CODE → Claude on node2 w/ coding mcp; CRITICAL_DIAGNOSTIC → Claude w/ diagnostics mcp. |
 | P2-10 | Feature flag `FEATURE_NEW_ROUTER` | BUILT | Claude | PR #11 (cherry-pick of 4efae9e) | 2026-04-25 | — | `Settings.feature_new_router: bool = False` in `config.py`. Engine `Orchestrator.__init__` reads flag, branches per-request between `ModelRouter` (legacy) and `SignalAwareRouter`. `model_routed` log gains `router=signal_aware\|legacy` + `signals=[…]` fields. Conftest pins flag False to keep legacy assertions valid. Production stays on legacy until 1-week soak — flip via `FEATURE_NEW_ROUTER=true` env. |
 | P2-11 | Fallback chain extended (local → gemini → claude) | BUILT | Claude | phase-2-fallback branch; test_fallback_chain.py 14/14 | 2026-04-25 | — | `LocalClient` wired into `Orchestrator`. `_local_call()` + `_execute_local_with_fallback()`: LOCAL_REFLEX/BRAIN → local→gemini_flash→claude→raw. Cloud chain (gemini→claude, claude→gemini) unchanged. 14 tests cover every hop + regressions. Full suite 1105 passed. |
-| P2-12 | L2 self-escalation JSON protocol | PLANNED | Claude | — | 2026-04-21 | — | System prompt + engine detection |
+| P2-12 | L1 self-escalation JSON protocol | BUILT | Claude | phase-2-self-escalation branch; test_escalation_parser.py 17/17 + test_self_escalation.py 11/11 | 2026-04-25 | — | `orchestrator/escalation_parser.py` parses `{"escalate": "web\|gemini_pro\|claude", "reason": "..."}` from L1 reply (tolerates code fences + prose prefix). Engine wires `SELF_ESCALATION_SYSTEM_PROMPT` to L1 (`LOCAL_BRAIN`) calls only — L0 (`LOCAL_REFLEX`) never escalates. On detection → `_self_escalate()` reroutes to target tier; one-hop guarantee (upstream reply never re-parsed). Escalation target failure falls through cross-family cloud fallback then raw delivery. Result data tagged `self_escalated_from` + `escalation_reason`. Full suite 1133 passed. |
 | P2-13 | Router unit tests (30+) | BUILT | Claude | PR #11 (cherry-pick of 4efae9e) | 2026-04-25 | — | 64 unit tests across `test_signal_detector.py` (31) + `test_signal_aware_router.py` (33). Covers every signal × intent matrix, precedence overrides, attachment dispatch, threshold edges. Full suite 1091 passed 0 failed. |
 | P2-14 | Cost/tier tracking in `model_usage` | PLANNED | Claude | — | 2026-04-21 | depends P2-06 | Update usage_tracker |
 | P2-15 | Tag release `v0.2-local-first` | PLANNED | Tasin | — | 2026-04-21 | depends P2-01..14 | — |
