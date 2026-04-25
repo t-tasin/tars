@@ -101,6 +101,11 @@ class Settings(BaseSettings):
     log_level: str = "INFO"
     debug: bool = False
 
+    # --- Feature flags ---
+    # P2-10: dark-ship the SignalAwareRouter. When false, engine uses legacy
+    # ModelRouter. Flip to true after 1-week soak.
+    feature_new_router: bool = False
+
     model_config = {
         "env_file": ".env",
         "env_file_encoding": "utf-8",

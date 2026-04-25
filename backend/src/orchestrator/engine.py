@@ -25,8 +25,9 @@ from models.usage_tracker import UsageTracker
 from orchestrator.approval_manager import ApprovalManager
 from orchestrator.context_builder import ContextBuilder
 from orchestrator.intent_classifier import Intent, IntentClassifier
-from orchestrator.model_router import ModelRoute, ModelRouter
+from orchestrator.model_router import ModelRoute, ModelRouter, SignalAwareRouter
 from orchestrator.response_formatter import ResponseFormatter
+from orchestrator.signal_detector import SignalDetector
 
 log = structlog.get_logger()
 
@@ -46,6 +47,9 @@ class Orchestrator:
 
         self.intent_classifier = IntentClassifier()
         self.model_router = ModelRouter()
+        self.signal_aware_router = SignalAwareRouter()
+        self.signal_detector = SignalDetector()
+        self._feature_new_router = settings.feature_new_router
         self.gemini_client = GeminiClient(api_key=settings.gemini_api_key)
         self.context_builder = ContextBuilder(gemini_client=self.gemini_client)
         self.approval_manager = ApprovalManager()
@@ -111,13 +115,22 @@ class Orchestrator:
                 complexity=intent.complexity,
             )
 
-            # 3. Route to model
-            route = self.model_router.route(intent)
+            # 3. Route to model — P2-10 feature flag selects router.
+            if self._feature_new_router:
+                signals = self.signal_detector.detect(text, intent, attachments)
+                route = self.signal_aware_router.route(intent, signals)
+                router_kind = "signal_aware"
+            else:
+                signals = set()
+                route = self.model_router.route(intent)
+                router_kind = "legacy"
             log.info(
                 "model_routed",
                 model=route.model,
                 node=route.node,
                 mcp_profile=route.mcp_profile,
+                router=router_kind,
+                signals=sorted(s.value for s in signals),
             )
 
             # 4. Build scoped context
