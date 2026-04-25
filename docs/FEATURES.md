@@ -4,7 +4,7 @@
 >
 > **States:** `PLANNED` → `IN_PROGRESS` → `BUILT` → `TESTED` → `SHIPPED`
 >
-> **Last updated:** 2026-04-25 (Phase 2 systemd — llama-l0/l1/embed live on tars2; cross-node smoke tests green from tars1)
+> **Last updated:** 2026-04-25 (Phase 2 LocalClient — `local_client.py` BUILT w/ Qwen3 reasoning_content parsing; live cross-node smoke green on all 3 tiers)
 
 ---
 
@@ -82,8 +82,8 @@ Claude Code: this doc is the source of truth. Check before picking up work. Upda
 | P2-05c | Whisper.cpp w/ CUDA backend on Quadro M620 | PLANNED | Tasin | — | 2026-04-21 | depends P0-15 | Whisper-small.en, ~500MB VRAM |
 | P2-05d | 3-way L1 bench: Qwen3-8B vs Gemma 4 12B vs Qwen3-30B-A3B-mmap | PLANNED | Tasin | — | 2026-04-21 | depends P2-04,5 | 50 real prompts; measure tok/s + quality + tool-use accuracy; pick L1 winner empirically |
 | P2-05e | Pull Gemma 4 12B Q4_K_M GGUF (candidate) | PLANNED | Tasin | — | 2026-04-21 | — | ~7.5GB |
-| P2-06 | `backend/src/models/local_client.py` | PLANNED | Claude | — | 2026-04-21 | — | OpenAI-compat httpx |
-| P2-07 | Add `LOCAL_REFLEX`/`LOCAL_BRAIN`/`LOCAL_EMBED` to `ModelName` | PLANNED | Claude | — | 2026-04-21 | — | shared/constants.py |
+| P2-06 | `backend/src/models/local_client.py` | BUILT | Claude | phase-2-local-client branch, tests test_local_client.py 11/11 | 2026-04-25 | — | httpx async, OpenAI-compat. `generate()` parses Qwen3 `reasoning_content` separately into `LocalResponse.reasoning`. `embed()` for 0.6B embed tier. Per-tier `enable_thinking` defaults (REFLEX off, BRAIN on). Live smoke from tars1 → all 3 tiers green: REFLEX 413ms, EMBED 1024-dim 68ms, BRAIN "2+2=4" 2162ms. |
+| P2-07 | Add `LOCAL_REFLEX`/`LOCAL_BRAIN`/`LOCAL_EMBED` to `ModelName` | BUILT | Claude | phase-2-local-client branch | 2026-04-25 | — | `shared/constants.py` ModelName enum extended w/ `LOCAL_REFLEX`/`LOCAL_BRAIN`/`LOCAL_EMBED`. Endpoint mapping (port + alias + kind + default-thinking) lives in `local_client._ENDPOINTS`. |
 | P2-08 | `orchestrator/signal_detector.py` | PLANNED | Claude | — | 2026-04-21 | — | `EscalationSignal` enum + detect() |
 | P2-09 | Rewrite `model_router.py` around signals | PLANNED | Claude | — | 2026-04-21 | depends P2-07..8 | Local default, escalate on signal |
 | P2-10 | Feature flag `FEATURE_NEW_ROUTER` | PLANNED | Claude | — | 2026-04-21 | depends P2-09 | Dark ship 1 week |
