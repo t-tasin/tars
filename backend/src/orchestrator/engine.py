@@ -8,6 +8,7 @@ Routes messages through the full pipeline:
 
 from __future__ import annotations
 
+import json
 from typing import Any
 from uuid import UUID
 
@@ -457,6 +458,19 @@ class Orchestrator:
             )
         return ModelRoute(model=target_model, node="node1")
 
+    def _inject_system_context(self, context: AgentContext) -> str:
+        """Inject pre-fetched system_context into the prompt as a [CONTEXT] block.
+
+        Local tier (Qwen3) has no native tool-call capability. Pre-fetched
+        data from ContextBuilder (weather, schedule, email, finance) is
+        serialised as JSON and prepended to the user message so the model
+        can reason over real-time data without making external calls.
+        """
+        if not context.system_context:
+            return context.user_message
+        context_block = f"[CONTEXT]\n{json.dumps(context.system_context, indent=2)}\n[/CONTEXT]\n\n"
+        return context_block + context.user_message
+
     async def _local_call(
         self,
         route: ModelRoute,
@@ -466,16 +480,15 @@ class Orchestrator:
 
         P2-12: L1 (LOCAL_BRAIN) carries the self-escalation system prompt;
         L0 (LOCAL_REFLEX) does not — reflex tier never escalates.
+        P2.5-04: system_context pre-fetched by ContextBuilder is injected
+        as a [CONTEXT] block before the user message.
         """
-        system = (
-            SELF_ESCALATION_SYSTEM_PROMPT
-            if route.model == ModelName.LOCAL_BRAIN
-            else BASE_LOCAL_SYSTEM_PROMPT
-        )
+        system = SELF_ESCALATION_SYSTEM_PROMPT if route.model == ModelName.LOCAL_BRAIN else BASE_LOCAL_SYSTEM_PROMPT
+        prompt = self._inject_system_context(context)
         try:
             response = await self.local_client.generate(
                 model=route.model,
-                prompt=context.user_message,
+                prompt=prompt,
                 system=system,
             )
             return AgentResult(
