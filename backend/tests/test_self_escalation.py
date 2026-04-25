@@ -213,7 +213,7 @@ class TestSystemPromptScope:
         assert "escalate" in system.lower()
 
     @pytest.mark.asyncio
-    async def test_l0_reflex_call_has_no_system_prompt(self, orch):
+    async def test_l0_reflex_call_has_base_persona_no_escalation(self, orch):
         route = ModelRoute(model=ModelName.LOCAL_REFLEX, node="node2")
         orch.local_client.generate = AsyncMock(
             return_value=_local_response("hi", ModelName.LOCAL_REFLEX),
@@ -222,8 +222,11 @@ class TestSystemPromptScope:
         await orch._execute_with_fallback(route, _ctx())
 
         kwargs = orch.local_client.generate.call_args.kwargs
-        # Reflex tier never escalates — no system prompt
-        assert kwargs.get("system") is None
+        system = kwargs.get("system") or ""
+        # Reflex tier carries base persona (English-only) but never escalates
+        assert "T.A.R.S." in system
+        assert "English" in system
+        assert "escalate" not in system.lower()
 
 
 # ---------------------------------------------------------------------------
