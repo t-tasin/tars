@@ -21,6 +21,7 @@ from db.repositories.system_health_log import SystemHealthLogRepository
 from db.repositories.transactions import TransactionRepository
 from db.repositories.wardrobe_items import WardrobeItemRepository
 from db.repositories.wardrobe_outfits import WardrobeOutfitRepository
+from db.repositories.world_state import WorldStateRepository
 
 __all__ = [
     "AgentOutputRepository",
@@ -44,4 +45,5 @@ __all__ = [
     "TransactionRepository",
     "WardrobeItemRepository",
     "WardrobeOutfitRepository",
+    "WorldStateRepository",
 ]
