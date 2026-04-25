@@ -178,6 +178,79 @@ async def test_unauthorized_path(executor, tmp_path):
     assert "outside allowed directories" in result["error"]
 
 
+# ---------------------------------------------------------------------------
+# save_image task_type — FashionAgent → worker image persistence
+# ---------------------------------------------------------------------------
+
+
+@pytest.mark.asyncio
+async def test_save_image_writes_bytes_from_redis_to_target(executor, tmp_path):
+    import fakeredis.aioredis
+
+    image_path = tmp_path / "wardrobe" / "abc.jpg"
+    image_bytes = b"\xff\xd8\xff\xe0JPEG-body"
+    fake = fakeredis.aioredis.FakeRedis(decode_responses=False)
+    await fake.setex("wardrobe_image:abc", 60, image_bytes)
+
+    payload = {
+        "task_type": "save_image",
+        "image_redis_key": "wardrobe_image:abc",
+        "image_path": str(image_path),
+        "item_id": "abc",
+    }
+
+    def _from_url(url, decode_responses=False):
+        return fake
+
+    with (
+        patch("redis.asyncio.from_url", side_effect=_from_url),
+        patch("src.executors.image_processor._is_under", return_value=True),
+    ):
+        result = await executor.execute("job-save-1", payload)
+
+    assert result["status"] == "completed"
+    assert result["success"] is True
+    assert result["bytes_written"] == len(image_bytes)
+    assert image_path.read_bytes() == image_bytes
+    # Key must be deleted after successful write
+    assert await fake.exists("wardrobe_image:abc") == 0
+
+
+@pytest.mark.asyncio
+async def test_save_image_fails_when_redis_key_missing(executor, tmp_path):
+    import fakeredis.aioredis
+
+    fake = fakeredis.aioredis.FakeRedis(decode_responses=False)
+    payload = {
+        "task_type": "save_image",
+        "image_redis_key": "wardrobe_image:missing",
+        "image_path": str(tmp_path / "w" / "missing.jpg"),
+        "item_id": "missing",
+    }
+
+    with (
+        patch("redis.asyncio.from_url", return_value=fake),
+        patch("src.executors.image_processor._is_under", return_value=True),
+    ):
+        result = await executor.execute("job-save-2", payload)
+
+    assert result["status"] == "failed"
+    assert "bytes missing" in result["error"]
+
+
+@pytest.mark.asyncio
+async def test_save_image_rejects_path_outside_wardrobe(executor, tmp_path):
+    payload = {
+        "task_type": "save_image",
+        "image_redis_key": "wardrobe_image:x",
+        "image_path": str(tmp_path / "evil.jpg"),
+        "item_id": "x",
+    }
+    result = await executor.execute("job-save-3", payload)
+    assert result["status"] == "failed"
+    assert "outside allowed directory" in result["error"]
+
+
 @pytest.mark.asyncio
 async def test_gemini_api_failure(executor, tmp_path):
     image_path = tmp_path / "test.jpg"

@@ -69,6 +69,11 @@ class ImageProcessor(BaseExecutor):
 
     Calls Gemini Vision API directly from Node 2. Images stay on the local
     persistent volume and are only sent transiently to the Gemini API.
+
+    Also handles ``task_type="save_image"`` — reads image bytes from a
+    Redis key (populated by the backend before enqueue) and writes them
+    to the Node 2 persistent volume.  Used by FashionAgent after
+    cataloging so the wardrobe image lands on disk (HC-11).
     """
 
     EXECUTOR_TYPE = "image"
@@ -78,13 +83,21 @@ class ImageProcessor(BaseExecutor):
 
         Expected payload keys:
             image_path (str): Path to image on Node 2 persistent volume.
-            task_type (str): "wardrobe_catalog" | "receipt_ocr" | "visual_context"
+            task_type (str): "wardrobe_catalog" | "receipt_ocr" |
+                "visual_context" | "save_image"
             prompt (str): Optional additional instructions to append.
             gemini_api_key (str): Gemini API key for Vision calls.
+
+        For ``task_type="save_image"`` additional keys:
+            image_redis_key (str): Redis key holding the raw image bytes.
+            item_id (str): Wardrobe item UUID (for logging).
         """
         image_path = payload.get("image_path", "")
         task_type = payload.get("task_type", "visual_context")
         extra_prompt = payload.get("prompt", "")
+
+        if task_type == "save_image":
+            return await self._save_image(job_id, payload)
 
         # Prefer API key from worker env config over payload (HC-05)
         from ..config import get_settings
@@ -157,6 +170,78 @@ class ImageProcessor(BaseExecutor):
             "task_type": task_type,
             "metadata": metadata,
             "raw_response": result_text,
+            "duration_ms": duration_ms,
+        }
+
+    async def _save_image(
+        self,
+        job_id: str,
+        payload: dict[str, Any],
+    ) -> dict[str, Any]:
+        """Persist image bytes (fetched via a Redis key) to the local volume.
+
+        The backend stores raw bytes at ``image_redis_key`` with a short
+        TTL, then enqueues this job.  We pull the bytes, write them to
+        ``image_path`` (which must be under ``/data/wardrobe``), and
+        delete the Redis key.
+        """
+        import redis.asyncio as aioredis
+
+        from ..config import get_settings
+
+        start = time.monotonic()
+        image_redis_key = payload.get("image_redis_key", "")
+        image_path = payload.get("image_path", "")
+        item_id = payload.get("item_id", "")
+
+        if not image_redis_key:
+            return self._failure(job_id, "no image_redis_key provided", start)
+
+        target = Path(image_path)
+        if not target.is_absolute():
+            return self._failure(job_id, f"image_path must be absolute: {image_path}", start)
+
+        if not _is_under(target, _IMAGE_BASE):
+            return self._failure(
+                job_id,
+                f"image_path outside allowed directory: {image_path}",
+                start,
+            )
+
+        redis_url = get_settings().redis_url
+        redis = aioredis.from_url(redis_url, decode_responses=False)
+        try:
+            image_bytes = await redis.get(image_redis_key)
+            if image_bytes is None:
+                return self._failure(
+                    job_id,
+                    f"image bytes missing at key {image_redis_key}",
+                    start,
+                )
+
+            target.parent.mkdir(parents=True, exist_ok=True)
+            target.write_bytes(image_bytes)
+            await redis.delete(image_redis_key)
+        finally:
+            await redis.aclose()
+
+        duration_ms = int((time.monotonic() - start) * 1000)
+        log.info(
+            "image_save_completed",
+            job_id=job_id,
+            item_id=item_id,
+            image_path=image_path,
+            bytes=len(image_bytes),
+            duration_ms=duration_ms,
+        )
+
+        return {
+            "status": "completed",
+            "success": True,
+            "job_id": job_id,
+            "task_type": "save_image",
+            "image_path": image_path,
+            "bytes_written": len(image_bytes),
             "duration_ms": duration_ms,
         }
 

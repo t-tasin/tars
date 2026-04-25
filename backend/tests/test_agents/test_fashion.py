@@ -411,3 +411,74 @@ class TestFashionAgentShopping:
 
         assert result.success is True
         assert "formal" in result.text.lower()
+
+
+# ---------------------------------------------------------------------------
+# Image dispatch — FashionAgent → JobQueue (P1-03)
+# ---------------------------------------------------------------------------
+
+
+@patch("config.get_settings")
+@patch("integrations.caldav_client.CalDAVClient")
+@patch("integrations.weather_client.WeatherClient")
+@patch("models.gemini_client.GeminiClient")
+class TestFashionImageDispatch:
+    def _make_agent(self, mock_gemini, mock_weather, mock_caldav, mock_settings):
+        mock_settings.return_value = MagicMock(
+            gemini_api_key="test",
+            openweathermap_api_key="test",
+            default_location="Wooster,OH,US",
+            icloud_caldav_user="test",
+            icloud_caldav_password="test",
+            redis_url="redis://fake/0",
+        )
+        return FashionAgent()
+
+    async def test_dispatch_image_save_enqueues_on_job_queue_with_save_image_task(
+        self, mock_gemini, mock_weather, mock_caldav, mock_settings
+    ):
+        import fakeredis.aioredis
+
+        agent = self._make_agent(mock_gemini, mock_weather, mock_caldav, mock_settings)
+
+        fake_redis = fakeredis.aioredis.FakeRedis(decode_responses=False)
+        queue_mock = MagicMock()
+        queue_mock.enqueue = AsyncMock(return_value="j1")
+        queue_mock.aclose = AsyncMock()
+
+        with (
+            patch("redis.asyncio.from_url", return_value=fake_redis),
+            patch(
+                "integrations.job_queue.get_job_queue",
+                return_value=queue_mock,
+            ),
+        ):
+            item_id = uuid.uuid4()
+            await agent._dispatch_image_save(
+                item_id,
+                b"jpeg-bytes",
+                f"/data/wardrobe/{item_id}.jpg",
+            )
+
+        queue_mock.enqueue.assert_awaited_once()
+        args, kwargs = queue_mock.enqueue.await_args
+        assert args[0] == "image"
+        payload = args[1]
+        assert payload["task_type"] == "save_image"
+        assert payload["image_redis_key"] == f"wardrobe_image:{item_id}"
+        assert payload["image_path"] == f"/data/wardrobe/{item_id}.jpg"
+        queue_mock.aclose.assert_awaited_once()
+        # Image bytes staged under the expected redis key
+        assert await fake_redis.get(f"wardrobe_image:{item_id}") == b"jpeg-bytes"
+
+    async def test_dispatch_image_save_swallows_redis_failures(
+        self, mock_gemini, mock_weather, mock_caldav, mock_settings
+    ):
+        agent = self._make_agent(mock_gemini, mock_weather, mock_caldav, mock_settings)
+
+        def _raise(*_a, **_kw):
+            raise RuntimeError("redis down")
+
+        with patch("redis.asyncio.from_url", side_effect=_raise):
+            # Must not raise — HC-09 graceful degradation.
+            await agent._dispatch_image_save(uuid.uuid4(), b"x", "/data/wardrobe/x.jpg")

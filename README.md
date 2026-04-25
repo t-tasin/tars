@@ -4,8 +4,8 @@ A personal AI assistant platform that runs 24/7 on two HP Z2 Mini G3 workstation
 
 ## Architecture
 
-- **Node 1 (Brain)**: FastAPI backend, orchestrator, PostgreSQL, integrations
-- **Node 2 (Muscle)**: Redis queue, ChromaDB vector store, sandboxed job workers
+- **Node 1 (Brain)**: FastAPI backend, orchestrator, PostgreSQL, Redis queue, Prometheus + Grafana, integrations
+- **Node 2 (Muscle)**: Sandboxed job workers, local LLM inference (Qwen3 via llama.cpp), Qdrant vector store, Whisper STT
 
 ## Clients
 

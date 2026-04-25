@@ -565,30 +565,43 @@ class FashionAgent(BaseAgent):
         image_bytes: bytes,
         image_path: str,
     ) -> None:
-        """Dispatch an image save job to Node 2 via Redis.
+        """Dispatch an image save job to Node 2 via :class:`JobQueue`.
 
-        If Redis is unavailable, logs a warning but does not fail the
-        cataloging operation (HC-09 graceful degradation).
+        Bytes go to a TTL'd Redis key that the worker reads before writing
+        the file to Node 2's persistent volume.  If Redis is unavailable,
+        logs a warning but does not fail the cataloging operation (HC-09
+        graceful degradation).
         """
         try:
-            import redis.asyncio as aioredis
-
             from config import get_settings
+            from integrations.job_queue import get_job_queue
 
             settings = get_settings()
-            r = aioredis.from_url(settings.redis_url)
+            image_key = f"wardrobe_image:{item_id}"
 
-            job_payload = json.dumps(
-                {
-                    "job_type": "save_wardrobe_image",
-                    "item_id": str(item_id),
-                    "image_path": image_path,
-                }
-            )
-            # Store image bytes separately with TTL
-            await r.setex(f"wardrobe_image:{item_id}", 3600, image_bytes)
-            await r.lpush("tars:jobs", job_payload)
-            await r.aclose()
+            # Use a dedicated redis handle for the raw-bytes set: the
+            # JobQueue's handle is created with decode_responses=True, so
+            # it can't hold bytes.
+            import redis.asyncio as aioredis
+
+            raw = aioredis.from_url(settings.redis_url, decode_responses=False)
+            await raw.setex(image_key, 3600, image_bytes)
+            await raw.aclose()
+
+            queue = get_job_queue(settings.redis_url)
+            try:
+                await queue.enqueue(
+                    "image",
+                    {
+                        "task_type": "save_image",
+                        "image_redis_key": image_key,
+                        "image_path": image_path,
+                        "item_id": str(item_id),
+                    },
+                    priority="normal",
+                )
+            finally:
+                await queue.aclose()
 
             log.info("fashion_image_dispatched", item_id=str(item_id), path=image_path)
 
