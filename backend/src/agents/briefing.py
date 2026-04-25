@@ -22,7 +22,7 @@ from datetime import UTC, date, datetime, timedelta
 from typing import Any
 
 import structlog
-from shared.constants import EmailTier, JobStatus
+from shared.constants import EmailTier, JobStatus, ModelName
 from sqlalchemy import func, select
 
 from agents.base import AgentContext, AgentResult, BaseAgent
@@ -49,6 +49,15 @@ _NARRATIVE_SYSTEM_PROMPT = (
 )
 
 _FALLBACK_NARRATIVE = "Good morning, Tasin. I had trouble composing your briefing narrative today, but your data is ready for review. Have a great day!"
+
+_BRIEFING_LOCAL_SYSTEM_PROMPT = (
+    "You are T.A.R.S., Tasin's personal AI assistant. "
+    "Always respond in English. "
+    "Generate a concise morning briefing from the structured data in the [CONTEXT] block. "
+    "Speak to Tasin in second person. Be warm, specific, and efficient. "
+    "Start with 'Good morning, Tasin.' and end with an encouraging note. "
+    "Under 400 words. No markdown."
+)
 
 
 class BriefingAgent(BaseAgent):
@@ -89,6 +98,10 @@ class BriefingAgent(BaseAgent):
         self._notion = NotionClient(token=settings.notion_token)
         self._notion_tasks_db: str | None = None  # set from config at execute time
 
+        from models.local_client import LocalClient
+
+        self._local_client = LocalClient()
+
     # ------------------------------------------------------------------
     # BaseAgent interface
     # ------------------------------------------------------------------
@@ -113,14 +126,19 @@ class BriefingAgent(BaseAgent):
         # 1. Fetch all data
         raw_data = await self._fetch_all_data()
 
-        # 2. Build structured payload
+        # 2. Build structured payload (for DB storage + Gemini fallback)
         email_classifications = context.config.get("email_classifications", [])
         payload = self._build_payload(raw_data, email_classifications)
 
-        # 3. Compose narrative via Gemini Pro
-        gemini: GeminiClient | None = context.config.get("gemini_client")
-        sections_config = context.config.get("sections", DEFAULT_SECTIONS)
-        narrative = await self._compose_narrative(payload, sections_config, gemini)
+        # 3. Compose narrative: LOCAL_BRAIN first (P2.5-02), Gemini as fallback (HC-09)
+        try:
+            local_context = self._build_local_context(raw_data)
+            narrative = await self._compose_with_local(local_context)
+        except Exception:
+            log.warning("briefing_local_compose_failed", fallback="gemini", exc_info=True)
+            gemini: GeminiClient | None = context.config.get("gemini_client")
+            sections_config = context.config.get("sections", DEFAULT_SECTIONS)
+            narrative = await self._compose_narrative(payload, sections_config, gemini)
 
         # 4. Store in briefings table
         briefing_id = await self._store_briefing(payload, narrative)
@@ -273,7 +291,58 @@ class BriefingAgent(BaseAgent):
         }
 
     # ------------------------------------------------------------------
-    # Narrative composition (Gemini Pro)
+    # LOCAL_BRAIN composition (P2.5-02)
+    # ------------------------------------------------------------------
+
+    def _build_local_context(self, raw_data: dict[str, Any]) -> dict[str, Any]:
+        """Build a truncated context dict for LOCAL_BRAIN composition.
+
+        Truncation limits: 5 events, 5 emails per account (10 total), 5 tasks.
+        """
+        calendar = raw_data.get("calendar", {})
+        emails = raw_data.get("emails", {})
+        weather = raw_data.get("weather", {})
+        tasks = raw_data.get("tasks", [])
+
+        return {
+            "weather": weather.get("current", {}),
+            "weather_summary": weather.get("summary", {}),
+            "schedule_today": calendar.get("today", [])[:5],
+            "emails_personal": emails.get("personal", [])[:5],
+            "emails_professional": emails.get("professional", [])[:5],
+            "notion_tasks": tasks[:5],
+        }
+
+    async def _compose_with_local(self, context_dict: dict[str, Any]) -> str:
+        """Compose briefing narrative using LOCAL_BRAIN (Qwen3-8B).
+
+        Raises RuntimeError if no local_client is available (triggers Gemini fallback).
+        """
+        local = getattr(self, "_local_client", None)
+        if local is None:
+            raise RuntimeError("no local_client configured")
+
+        prompt = (
+            "[CONTEXT]\n" + json.dumps(context_dict, indent=2, default=str) + "\n[/CONTEXT]\n\n"
+            "Generate a morning briefing narrative from the data above."
+        )
+
+        response = await local.generate(
+            model=ModelName.LOCAL_BRAIN,
+            prompt=prompt,
+            system=_BRIEFING_LOCAL_SYSTEM_PROMPT,
+            max_tokens=1024,
+        )
+        log.info(
+            "briefing_local_composed",
+            tokens_input=response.tokens_input,
+            tokens_output=response.tokens_output,
+            duration_ms=response.duration_ms,
+        )
+        return response.text.strip()
+
+    # ------------------------------------------------------------------
+    # Narrative composition (Gemini Pro — fallback)
     # ------------------------------------------------------------------
 
     async def _compose_narrative(
