@@ -1,4 +1,12 @@
-"""Routes intents to the appropriate AI model and execution node."""
+"""Routes intents to the appropriate AI model and execution node.
+
+Two routers live here:
+
+- ``ModelRouter`` (legacy) — pre-Phase-2 routing keyed off ``intent.agent`` w/
+  Claude escalation on complexity. Used while ``FEATURE_NEW_ROUTER=false``.
+- ``SignalAwareRouter`` (P2-09) — local-default routing. Each request runs on
+  Qwen3 (L0 reflex or L1 brain) unless one of ``EscalationSignal`` fires.
+"""
 
 from __future__ import annotations
 
@@ -8,6 +16,7 @@ import structlog
 from shared.constants import IntentType, ModelName
 
 from orchestrator.intent_classifier import Intent
+from orchestrator.signal_detector import EscalationSignal
 
 log = structlog.get_logger()
 
@@ -123,3 +132,70 @@ class ModelRouter:
             IntentType.SYSTEM: "diagnostics",
         }
         return agent_profile_map.get(agent_type, "general")
+
+
+# ---------------------------------------------------------------------------
+# SignalAwareRouter (P2-09)
+# ---------------------------------------------------------------------------
+
+# Intents whose default workload fits the L0 reflex tier (short, casual, latency-sensitive).
+_REFLEX_INTENTS: set[str] = {
+    IntentType.GENERAL,
+    IntentType.CONFIG,
+    IntentType.SYSTEM,
+}
+
+
+class SignalAwareRouter:
+    """Local-default router. Escalates to cloud only on EscalationSignal.
+
+    Routing precedence (most specific / most expensive first):
+        TIER3_ESCALATION       → Claude (general mcp)
+        IMAGE_GENERATION       → Gemini Vision
+        IMAGE_UNDERSTANDING    → Gemini Vision
+        OCR_DOCUMENT           → Gemini Vision
+        CRITICAL_DIAGNOSTIC    → Claude (diagnostics mcp)
+        ARCHITECTURAL_CODE     → Claude (coding mcp, node2)
+        SERIOUS_DISCUSSION     → Claude (general mcp)
+        DEEP_RESEARCH          → Gemini Pro
+        LONG_CONTEXT_REQUIRED  → Gemini Pro
+        WEB_GROUNDING_NEEDED   → Gemini Flash
+        (none)                 → Local Reflex / Brain per intent
+    """
+
+    def route(self, intent: Intent, signals: set[EscalationSignal]) -> ModelRoute:
+        # Cloud escalation — first matching signal wins.
+        if EscalationSignal.TIER3_ESCALATION in signals:
+            route = ModelRoute(model=ModelName.CLAUDE_CODE, node="node1", mcp_profile="general")
+        elif EscalationSignal.IMAGE_GENERATION in signals:
+            route = ModelRoute(model=ModelName.GEMINI_VISION, node="node1")
+        elif EscalationSignal.IMAGE_UNDERSTANDING in signals:
+            route = ModelRoute(model=ModelName.GEMINI_VISION, node="node1")
+        elif EscalationSignal.OCR_DOCUMENT in signals:
+            route = ModelRoute(model=ModelName.GEMINI_VISION, node="node1")
+        elif EscalationSignal.ARCHITECTURAL_CODE in signals:
+            route = ModelRoute(model=ModelName.CLAUDE_CODE, node="node2", mcp_profile="coding")
+        elif EscalationSignal.CRITICAL_DIAGNOSTIC in signals:
+            route = ModelRoute(model=ModelName.CLAUDE_CODE, node="node1", mcp_profile="diagnostics")
+        elif EscalationSignal.SERIOUS_DISCUSSION in signals:
+            route = ModelRoute(model=ModelName.CLAUDE_CODE, node="node1", mcp_profile="general")
+        elif EscalationSignal.DEEP_RESEARCH in signals:
+            route = ModelRoute(model=ModelName.GEMINI_PRO, node="node1")
+        elif EscalationSignal.LONG_CONTEXT_REQUIRED in signals:
+            route = ModelRoute(model=ModelName.GEMINI_PRO, node="node1")
+        elif EscalationSignal.WEB_GROUNDING_NEEDED in signals:
+            route = ModelRoute(model=ModelName.GEMINI_FLASH, node="node1")
+        elif intent.agent in _REFLEX_INTENTS:
+            route = ModelRoute(model=ModelName.LOCAL_REFLEX, node="node2")
+        else:
+            route = ModelRoute(model=ModelName.LOCAL_BRAIN, node="node2")
+
+        log.debug(
+            "signal_aware_routed",
+            agent=intent.agent,
+            model=route.model,
+            node=route.node,
+            mcp_profile=route.mcp_profile,
+            signals=sorted(s.value for s in signals),
+        )
+        return route
