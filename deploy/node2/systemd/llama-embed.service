@@ -1,0 +1,33 @@
+[Unit]
+Description=T.A.R.S. llama-embed (Qwen3-Embedding-0.6B Q8_0, full GPU offload)
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=tasin
+Group=tasin
+WorkingDirectory=/home/tasin
+Environment="LD_LIBRARY_PATH=/usr/local/cuda-12.2/lib64"
+Environment="PATH=/usr/local/cuda-12.2/bin:/usr/bin:/bin"
+ExecStart=/home/tasin/llama.cpp/build/bin/llama-server \
+  -m /home/tasin/models/Qwen3-Embedding-0.6B-Q8_0.gguf \
+  --host 0.0.0.0 \
+  --port 8003 \
+  --ctx-size 512 \
+  --threads 4 \
+  --n-gpu-layers 99 \
+  --embedding \
+  --no-warmup \
+  --alias qwen3-embed-0.6b
+Restart=on-failure
+RestartSec=10s
+StandardOutput=journal
+StandardError=journal
+
+# GPU-only: M620 (2GB VRAM) dedicated to embed.
+# 0.6B Q8_0 (610MB) + KV/compute (~500MB at ctx 512) ≈ 1.1GB, fits with headroom.
+# Smoke test 2026-04-25: 44 tok/s prompt eval, 1024-dim output.
+
+[Install]
+WantedBy=multi-user.target
