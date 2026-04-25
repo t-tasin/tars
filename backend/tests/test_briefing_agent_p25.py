@@ -81,6 +81,7 @@ def _install_mock_session() -> None:
     """Install a mock async session context manager into the fake db.session module."""
     mock_session = MagicMock()
     mock_session.add = MagicMock()
+    mock_session.execute = AsyncMock(return_value=MagicMock())
     mock_session.__aenter__ = AsyncMock(return_value=mock_session)
     mock_session.__aexit__ = AsyncMock(return_value=False)
     _fake_db_session_module.get_db_session = MagicMock(return_value=mock_session)

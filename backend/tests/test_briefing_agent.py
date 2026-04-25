@@ -1065,8 +1065,8 @@ class TestStoreBriefing:
         briefing_id = await agent._store_briefing(payload, narrative)
 
         assert briefing_id is not None
-        # Verify session.add was called
-        assert session.add.called
+        # Verify session.execute was called (UPSERT via pg_insert ON CONFLICT)
+        assert session.execute.called
 
 
 # ---------------------------------------------------------------------------
