@@ -105,7 +105,6 @@ class LocalClient:
             finish_reason=choice.get("finish_reason", ""),
         )
 
-
     async def embed(self, model: ModelName, inputs: list[str]) -> list[list[float]]:
         """Run an embedding call on a local llama-server."""
         port, alias, kind, _ = _resolve(model)
