@@ -38,6 +38,7 @@ _MOCK_SETTINGS.icloud_caldav_user = "test@icloud.com"
 _MOCK_SETTINGS.icloud_caldav_password = "test-password"
 _MOCK_SETTINGS.github_pat = "test-pat"
 _MOCK_SETTINGS.notion_token = "test-notion"
+_MOCK_SETTINGS.feature_new_router = False
 _MOCK_SETTINGS.teller_access_token = "test-teller-token"
 _MOCK_SETTINGS.teller_cert_path = "/tmp/test-cert.pem"
 _MOCK_SETTINGS.teller_key_path = "/tmp/test-key.pem"
