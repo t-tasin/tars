@@ -4,7 +4,7 @@
 >
 > **States:** `PLANNED` → `IN_PROGRESS` → `BUILT` → `TESTED` → `SHIPPED`
 >
-> **Last updated:** 2026-04-25 (P2-12 BUILT — L1 self-escalation JSON protocol on phase-2-self-escalation; escalation_parser + engine state machine; 28 new tests; full suite 1133 passed)
+> **Last updated:** 2026-04-25 (Phase 2 complete — P2-15 release pending; Phase 2.5 + Phase 3.5 inserted from Telegram smoke audit; Phase 4 sensor/world_state IDs moved to 3.5)
 
 ---
 
@@ -95,6 +95,24 @@ Claude Code: this doc is the source of truth. Check before picking up work. Upda
 
 ---
 
+## Phase 2.5 — Grounded Responses
+
+> Live Telegram smoke 2026-04-25 exposed: slash commands fall through to LLM, BriefingAgent never invoked, LOCAL_REFLEX hallucinates briefings without real data. Phase 2.5 closes the "agent has senses" gap before Phase 3 dashboard makes the agent public.
+
+| ID | Feature | Status | Owner | Evidence | Last Touched | Blockers | Notes |
+|----|---------|--------|-------|----------|--------------|----------|-------|
+| P2.5-01 | Slash command dispatch in `telegram_handlers.py` | PLANNED | Claude | — | 2026-04-25 | — | `CommandHandler` for `/briefing`, `/status`, `/help`, `/health`, `/budget`. Unknown slash → friendly "try plain English" reply. Tests: 5+ |
+| P2.5-02 | `BriefingAgent.execute()` pulls real integrations | PLANNED | Claude | — | 2026-04-25 | depends P2.5-03 | weather_client + caldav_client + gmail (both accounts) + notion. Compose into structured context dict. Pass to LOCAL_BRAIN (Qwen3-8B, not 1.7B). Tests: weather call, cal events, email summary, notion tasks, composition |
+| P2.5-03 | `ContextBuilder` real-data path | PLANNED | Claude | — | 2026-04-25 | — | Add intent-driven branch — for `weather`/`schedule`/`email`/`finance` intents pre-fetch + inject into `AgentContext.system_context`. Local tier reads it. Tests per intent. |
+| P2.5-04 | Pre-fetch + inject pattern for local tier (no native tool-call) | PLANNED | Claude | — | 2026-04-25 | depends P2.5-03 | Qwen3 tool-call weak. Orchestrator pattern: detect tool-need by intent → fetch → format as system context → call LOCAL_BRAIN with grounded prompt. Document in `docs/code_conventions.md` (new section "Tool-use on local tier"). |
+| P2.5-05 | Redis env drift fix (P0-13 followup) | PLANNED | Claude | — | 2026-04-25 | — | `/opt/tars/deploy/node1/.env` REDIS_URL points 192.168.12.201:6379 (LAN); should be 100.94.4.103:6379 (tailscale, per P0-13). Update env, restart, verify health goes green. |
+| P2.5-06 | Persona prefix loader (pull-forward P5-02 partial) | PLANNED | Claude | — | 2026-04-25 | depends P2.5-04 | Move inline `BASE_LOCAL_SYSTEM_PROMPT` from `engine.py` into `data/persona/local.md`. `shared/persona.py::load_persona()` w/ `@lru_cache`. Phase 5 P5-02..04 then refines content, not infra. |
+| P2.5-07 | Per-session ritual: deploy-drift + Redis health gates | PLANNED | Claude | — | 2026-04-25 | — | Update `docs/CLAUDE_PHASE_HANDOUT.md` ritual: add `git -C /opt/tars rev-parse HEAD` vs origin/main check + Redis-status assertion in JSON health check. Catches today's stale-code + Redis-IP regressions. |
+| P2.5-08 | Live Telegram smoke gate | PLANNED | Tasin | — | 2026-04-25 | depends P2.5-01..04 | Manual: send `/briefing` → expect real weather + 3 cal events + email count + 3 notion tasks. Send "what's the weather" → expect grounded answer. No hallucination. |
+| P2.5-09 | Tag release `v0.2.5-grounded` | PLANNED | Tasin | — | 2026-04-25 | depends P2.5-01..08 | Phase 2 was "local-first"; 2.5 is "local-first w/ senses". |
+
+---
+
 ## Phase 3 — Sovereign Data Layer
 
 | ID | Feature | Status | Owner | Evidence | Last Touched | Blockers | Notes |
@@ -118,19 +136,37 @@ Claude Code: this doc is the source of truth. Check before picking up work. Upda
 
 ---
 
+## Phase 3.5 — Sensor Foundation
+
+> Pulled forward from Phase 4. Without `world_state` + weather/healthkit/tailscale sensors, BriefingAgent must poll integrations every call (slow + rate-limit risk). Sensors provide the substrate Phase 3 dashboard renders. Triggers + remaining sensors stay in Phase 4.
+
+| ID | Feature | Status | Owner | Evidence | Last Touched | Blockers | Notes |
+|----|---------|--------|-------|----------|--------------|----------|-------|
+| P3.5-01 | `sensors/base.py` BaseSensor abstract (was P4-01) | PLANNED | Claude | — | 2026-04-25 | — | `async collect() -> dict`, `async publish(payload)`. Publish writes to `world_state` table + Redis pub/sub `tars:world:<sensor>`. Opus 4.7 design. |
+| P3.5-02 | Postgres `world_state` table + partman monthly partitioning (was P4-09) | PLANNED | Claude | — | 2026-04-25 | depends P3.5-01 | Alembic migration. `id uuid pk`, `sensor text`, `payload jsonb`, `ts timestamptz`, index `(sensor, ts desc)`. |
+| P3.5-03 | Weather sensor (was P4-07) | PLANNED | Claude | — | 2026-04-25 | depends P3.5-01..02 | 15-min cadence. Wraps existing `weather_client.py`. Writes to world_state + publishes pub/sub. |
+| P3.5-04 | HealthKit sensor migration (was P4-06) | PLANNED | Claude | — | 2026-04-25 | depends P3.5-01..02 | Existing health_data ingest → adapt to BaseSensor pattern + world_state writes. |
+| P3.5-05 | Tailscale presence sensor (was P4-08) | PLANNED | Claude | — | 2026-04-25 | depends P3.5-01..02 | Tailscale API. 2-min cadence. Tracks which devices online. |
+| P3.5-06 | Spotify sensor (was P4-04) | PLANNED | Claude | — | 2026-04-25 | depends P3.5-01..02 | spotipy. 30s cadence. Now-playing track. Fail-soft if token missing. |
+| P3.5-07 | `BriefingAgent` + `ContextBuilder` switch to read `world_state` | PLANNED | Claude | — | 2026-04-25 | depends P3.5-03..06 | Replace direct integration polling (from P2.5-02..03) with cached world_state read. Direct-integration kept as fallback when world_state stale. ≤500ms briefing prep. |
+| P3.5-08 | Live Telegram smoke gate w/ sensor data | PLANNED | Tasin | — | 2026-04-25 | depends P3.5-07 | Send `/briefing` → real weather (last 15 min), HealthKit score, presence, Spotify now-playing if active. |
+| P3.5-09 | Tag release `v0.2.8-sensors-foundation` | PLANNED | Tasin | — | 2026-04-25 | depends P3.5-01..08 | Pre-Phase 3 dashboard prep. Sensors stream is dashboard's life-blood. |
+
+---
+
 ## Phase 4 — Autonomy Engine
 
 | ID | Feature | Status | Owner | Evidence | Last Touched | Blockers | Notes |
 |----|---------|--------|-------|----------|--------------|----------|-------|
-| P4-01 | `sensors/base.py` BaseSensor abstract | PLANNED | Claude | — | 2026-04-21 | — | publish to `tars:world:*` |
-| P4-02 | Location sensor via iOS Shortcut POST | PLANNED | Tasin+Claude | — | 2026-04-21 | depends P4-01 | /api/v1/sensors/location |
-| P4-03 | Mac activity sensor (Hammerspoon) | PLANNED | Tasin+Claude | — | 2026-04-21 | depends P4-01 | hash titles, no content |
-| P4-04 | Spotify sensor via spotipy | PLANNED | Claude | — | 2026-04-21 | depends P4-01 | 30s cadence |
-| P4-05 | Git activity sensor | PLANNED | Claude | — | 2026-04-21 | depends P4-01 | cron 5min |
-| P4-06 | HealthKit sensor migration to pipeline | PLANNED | Claude | — | 2026-04-21 | depends P4-01 | already ingested, wire to world_state |
-| P4-07 | Weather sensor migration | PLANNED | Claude | — | 2026-04-21 | depends P4-01 | 15min cadence |
-| P4-08 | Network presence (Tailscale API) | PLANNED | Claude | — | 2026-04-21 | depends P4-01 | — |
-| P4-09 | Postgres `world_state` monthly-partitioned | PLANNED | Claude | — | 2026-04-21 | — | Alembic w/ partman |
+| P4-01 | `sensors/base.py` BaseSensor abstract | MOVED | — | — | 2026-04-25 | — | **Moved to P3.5-01.** |
+| P4-02 | Location sensor via iOS Shortcut POST | PLANNED | Tasin+Claude | — | 2026-04-21 | depends P3.5-01 | /api/v1/sensors/location |
+| P4-03 | Mac activity sensor (Hammerspoon) | PLANNED | Tasin+Claude | — | 2026-04-21 | depends P3.5-01 | hash titles, no content |
+| P4-04 | Spotify sensor via spotipy | MOVED | — | — | 2026-04-25 | — | **Moved to P3.5-06.** |
+| P4-05 | Git activity sensor | PLANNED | Claude | — | 2026-04-21 | depends P3.5-01 | cron 5min |
+| P4-06 | HealthKit sensor migration to pipeline | MOVED | — | — | 2026-04-25 | — | **Moved to P3.5-04.** |
+| P4-07 | Weather sensor migration | MOVED | — | — | 2026-04-25 | — | **Moved to P3.5-03.** |
+| P4-08 | Network presence (Tailscale API) | MOVED | — | — | 2026-04-25 | — | **Moved to P3.5-05.** |
+| P4-09 | Postgres `world_state` monthly-partitioned | MOVED | — | — | 2026-04-25 | — | **Moved to P3.5-02.** |
 | P4-10 | `orchestrator/trigger_engine.py` | PLANNED | Claude | — | 2026-04-21 | depends P4-01,9 | Pub/sub subscriber + pattern matcher |
 | P4-11 | `shared/constants.py` AutonomyClass enum | PLANNED | Claude | — | 2026-04-21 | — | READ/WRITE_LOCAL/WRITE_SELF/WRITE_WORLD/WRITE_INFRA |
 | P4-12 | AgentResult.autonomy_class required field | PLANNED | Claude | — | 2026-04-21 | depends P4-11 | Test fails if missing |
