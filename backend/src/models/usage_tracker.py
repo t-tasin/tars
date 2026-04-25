@@ -27,6 +27,9 @@ _COST_PER_1M: dict[str, tuple[Decimal, Decimal]] = {
     ModelName.GEMINI_VISION: (Decimal("1.25"), Decimal("5.00")),
     ModelName.CLAUDE_CODE: (Decimal("0"), Decimal("0")),  # Max plan, no per-token cost
     ModelName.LOCAL: (Decimal("0"), Decimal("0")),
+    ModelName.LOCAL_REFLEX: (Decimal("0"), Decimal("0")),  # Self-hosted Qwen3-1.7B
+    ModelName.LOCAL_BRAIN: (Decimal("0"), Decimal("0")),  # Self-hosted Qwen3-8B
+    ModelName.LOCAL_EMBED: (Decimal("0"), Decimal("0")),  # Self-hosted Qwen3-Embed-0.6B
 }
 
 # Budget thresholds
