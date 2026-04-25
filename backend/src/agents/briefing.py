@@ -100,7 +100,7 @@ class BriefingAgent(BaseAgent):
 
         from models.local_client import LocalClient
 
-        self._local_client = LocalClient()
+        self._local_client = LocalClient(timeout_s=300.0)
 
     # ------------------------------------------------------------------
     # BaseAgent interface
@@ -424,8 +424,13 @@ class BriefingAgent(BaseAgent):
     ) -> uuid.UUID:
         """Store the briefing payload and narrative in the ``briefings`` table.
 
-        Returns the UUID of the stored briefing row.
+        Uses ON CONFLICT DO UPDATE so repeated /briefing calls on the same day
+        refresh the existing row rather than raising a unique-constraint error.
+
+        Returns the UUID of the stored (or updated) briefing row.
         """
+        from sqlalchemy.dialects.postgresql import insert as pg_insert
+
         from db.models import Briefing
         from db.session import get_db_session
 
@@ -433,14 +438,21 @@ class BriefingAgent(BaseAgent):
         briefing_id = uuid.uuid4()
 
         async with get_db_session() as session:
-            briefing = Briefing(
-                id=briefing_id,
-                briefing_type="morning",
-                briefing_date=today,
-                payload=payload,
-                narrative=narrative,
+            stmt = (
+                pg_insert(Briefing)
+                .values(
+                    id=briefing_id,
+                    briefing_type="morning",
+                    briefing_date=today,
+                    payload=payload,
+                    narrative=narrative,
+                )
+                .on_conflict_do_update(
+                    constraint="uq_briefings_date_type",
+                    set_={"payload": payload, "narrative": narrative},
+                )
             )
-            session.add(briefing)
+            await session.execute(stmt)
 
         log.info(
             "briefing_stored",
