@@ -19,13 +19,16 @@ def detector() -> SignalDetector:
 # ---------------------------------------------------------------------------
 
 
-@pytest.mark.parametrize("message", [
-    "what's the weather today",
-    "any news right now",
-    "latest stock price for AAPL",
-    "current Bitcoin value",
-    "this week in tech",
-])
+@pytest.mark.parametrize(
+    "message",
+    [
+        "what's the weather today",
+        "any news right now",
+        "latest stock price for AAPL",
+        "current Bitcoin value",
+        "this week in tech",
+    ],
+)
 def test_web_grounding_fires_on_current_info_keywords(detector, message):
     intent = Intent(agent=IntentType.GENERAL)
     signals = detector.detect(message=message, intent=intent)
@@ -60,12 +63,15 @@ def test_deep_research_does_not_fire_on_normal_complexity(detector):
 # ---------------------------------------------------------------------------
 
 
-@pytest.mark.parametrize("message", [
-    "generate an image of a sunset",
-    "create a picture of my outfit",
-    "draw me a logo",
-    "make image of cat in space",
-])
+@pytest.mark.parametrize(
+    "message",
+    [
+        "generate an image of a sunset",
+        "create a picture of my outfit",
+        "draw me a logo",
+        "make image of cat in space",
+    ],
+)
 def test_image_generation_fires_on_keywords(detector, message):
     intent = Intent(agent=IntentType.GENERAL)
     signals = detector.detect(message=message, intent=intent)
@@ -136,11 +142,14 @@ def test_long_context_does_not_fire_on_short_message(detector):
 # ---------------------------------------------------------------------------
 
 
-@pytest.mark.parametrize("message", [
-    "atlasdesk is down",
-    "production crash, please check",
-    "we have an outage on the queue worker",
-])
+@pytest.mark.parametrize(
+    "message",
+    [
+        "atlasdesk is down",
+        "production crash, please check",
+        "we have an outage on the queue worker",
+    ],
+)
 def test_critical_diagnostic_fires_on_health_intent_with_outage_keyword(detector, message):
     intent = Intent(agent=IntentType.HEALTH_MONITOR)
     signals = detector.detect(message=message, intent=intent)
@@ -158,11 +167,14 @@ def test_critical_diagnostic_does_not_fire_outside_health_intent(detector):
 # ---------------------------------------------------------------------------
 
 
-@pytest.mark.parametrize("message", [
-    "be serious for a moment",
-    "this is important, no jokes",
-    "for real, give me your honest opinion",
-])
+@pytest.mark.parametrize(
+    "message",
+    [
+        "be serious for a moment",
+        "this is important, no jokes",
+        "for real, give me your honest opinion",
+    ],
+)
 def test_serious_discussion_fires_on_explicit_override(detector, message):
     intent = Intent(agent=IntentType.GENERAL)
     signals = detector.detect(message=message, intent=intent)
@@ -174,11 +186,14 @@ def test_serious_discussion_fires_on_explicit_override(detector, message):
 # ---------------------------------------------------------------------------
 
 
-@pytest.mark.parametrize("message", [
-    "refactor the auth layer across multiple files",
-    "redesign the architecture of the orchestrator",
-    "multi-file edit to swap the queue backend",
-])
+@pytest.mark.parametrize(
+    "message",
+    [
+        "refactor the auth layer across multiple files",
+        "redesign the architecture of the orchestrator",
+        "multi-file edit to swap the queue backend",
+    ],
+)
 def test_architectural_code_fires_on_coding_intent_with_arch_keywords(detector, message):
     intent = Intent(agent=IntentType.CODING)
     signals = detector.detect(message=message, intent=intent)
