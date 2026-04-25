@@ -4,7 +4,7 @@
 >
 > **States:** `PLANNED` → `IN_PROGRESS` → `BUILT` → `TESTED` → `SHIPPED`
 >
-> **Last updated:** 2026-04-25 (Phase 2 LocalClient — `local_client.py` BUILT w/ Qwen3 reasoning_content parsing; live cross-node smoke green on all 3 tiers)
+> **Last updated:** 2026-04-25 (Phase 2 router stack — SignalDetector + SignalAwareRouter + FEATURE_NEW_ROUTER flag BUILT; 64 router unit tests green; full suite 1091 passed)
 
 ---
 
@@ -84,12 +84,12 @@ Claude Code: this doc is the source of truth. Check before picking up work. Upda
 | P2-05e | Pull Gemma 4 12B Q4_K_M GGUF (candidate) | PLANNED | Tasin | — | 2026-04-21 | — | ~7.5GB |
 | P2-06 | `backend/src/models/local_client.py` | BUILT | Claude | phase-2-local-client branch, tests test_local_client.py 11/11 | 2026-04-25 | — | httpx async, OpenAI-compat. `generate()` parses Qwen3 `reasoning_content` separately into `LocalResponse.reasoning`. `embed()` for 0.6B embed tier. Per-tier `enable_thinking` defaults (REFLEX off, BRAIN on). Live smoke from tars1 → all 3 tiers green: REFLEX 413ms, EMBED 1024-dim 68ms, BRAIN "2+2=4" 2162ms. |
 | P2-07 | Add `LOCAL_REFLEX`/`LOCAL_BRAIN`/`LOCAL_EMBED` to `ModelName` | BUILT | Claude | phase-2-local-client branch | 2026-04-25 | — | `shared/constants.py` ModelName enum extended w/ `LOCAL_REFLEX`/`LOCAL_BRAIN`/`LOCAL_EMBED`. Endpoint mapping (port + alias + kind + default-thinking) lives in `local_client._ENDPOINTS`. |
-| P2-08 | `orchestrator/signal_detector.py` | PLANNED | Claude | — | 2026-04-21 | — | `EscalationSignal` enum + detect() |
-| P2-09 | Rewrite `model_router.py` around signals | PLANNED | Claude | — | 2026-04-21 | depends P2-07..8 | Local default, escalate on signal |
-| P2-10 | Feature flag `FEATURE_NEW_ROUTER` | PLANNED | Claude | — | 2026-04-21 | depends P2-09 | Dark ship 1 week |
+| P2-08 | `orchestrator/signal_detector.py` | BUILT | Claude | phase-2-router branch, tests test_signal_detector.py 31/31 | 2026-04-25 | — | `EscalationSignal` StrEnum (11 signals per `model_tiers.md`). `SignalDetector.detect(message, intent, attachments)` → `set[EscalationSignal]`. Pure function, deterministic, regex+intent-attribute. IMAGE_GEN takes precedence over IMAGE_UNDERSTANDING when both match. |
+| P2-09 | Rewrite `model_router.py` around signals | BUILT | Claude | phase-2-router branch, tests test_signal_aware_router.py 33/33 | 2026-04-25 | — | New `SignalAwareRouter` class lives alongside legacy `ModelRouter`. Local default (REFLEX/BRAIN per intent), cloud escalation per signal w/ documented precedence. ARCH_CODE → Claude on node2 w/ coding mcp; CRITICAL_DIAGNOSTIC → Claude w/ diagnostics mcp. |
+| P2-10 | Feature flag `FEATURE_NEW_ROUTER` | BUILT | Claude | phase-2-router branch | 2026-04-25 | — | `Settings.feature_new_router: bool = False` in `config.py`. Engine `Orchestrator.__init__` reads flag, branches per-request between `ModelRouter` (legacy) and `SignalAwareRouter`. `model_routed` log gains `router=signal_aware\|legacy` + `signals=[…]` fields. Conftest pins flag False to keep legacy assertions valid. Production stays on legacy until 1-week soak — flip via `FEATURE_NEW_ROUTER=true` env. |
 | P2-11 | Fallback chain extended (local → gemini → claude) | PLANNED | Claude | — | 2026-04-21 | depends P2-09 | Engine update |
 | P2-12 | L2 self-escalation JSON protocol | PLANNED | Claude | — | 2026-04-21 | — | System prompt + engine detection |
-| P2-13 | Router unit tests (30+) | PLANNED | Claude | — | 2026-04-21 | depends P2-09 | Every signal combo |
+| P2-13 | Router unit tests (30+) | BUILT | Claude | phase-2-router branch | 2026-04-25 | — | 64 unit tests across `test_signal_detector.py` (31) + `test_signal_aware_router.py` (33). Covers every signal × intent matrix, precedence overrides, attachment dispatch, threshold edges. Full suite 1091 passed 0 failed. |
 | P2-14 | Cost/tier tracking in `model_usage` | PLANNED | Claude | — | 2026-04-21 | depends P2-06 | Update usage_tracker |
 | P2-15 | Tag release `v0.2-local-first` | PLANNED | Tasin | — | 2026-04-21 | depends P2-01..14 | — |
 
