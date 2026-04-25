@@ -1,0 +1,38 @@
+[Unit]
+Description=T.A.R.S. Worker — Node 2 muscle (consumes tars:jobs:queue)
+After=network-online.target llama-l0.service llama-l1.service
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=tasin
+Group=tasin
+WorkingDirectory=/home/tasin/tars/worker
+
+# Optional .env at /home/tasin/tars/worker/.env (dash = missing OK).
+# Use it for GEMINI_API_KEY and any other secrets — do NOT commit it.
+EnvironmentFile=-/home/tasin/tars/worker/.env
+
+# Redis lives on Node 1 (tailscale 100.94.4.103). Worker reads from there.
+Environment="REDIS_URL=redis://100.94.4.103:6379/0"
+Environment="NODE_ROLE=muscle"
+Environment="LOG_LEVEL=INFO"
+Environment="TARS_ENV=development"
+Environment="JOB_POLL_INTERVAL=0.5"
+Environment="MAX_CONCURRENT_JOBS=4"
+
+ExecStart=/home/tasin/tars/worker/.venv/bin/python -m src
+Restart=on-failure
+RestartSec=10s
+StandardOutput=journal
+StandardError=journal
+
+# Hardening — worker has no need for these.
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=full
+ProtectHome=read-only
+ReadWritePaths=/home/tasin/tars/worker /tmp
+
+[Install]
+WantedBy=multi-user.target
