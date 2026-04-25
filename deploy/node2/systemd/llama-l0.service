@@ -1,0 +1,34 @@
+[Unit]
+Description=T.A.R.S. llama-l0 (Qwen3-1.7B Q8_0 reflex tier, CPU-only)
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=tasin
+Group=tasin
+WorkingDirectory=/home/tasin
+# Hide GPU from this process — M620 (2GB) is fully claimed by llama-embed.
+# `-ngl 0` alone is insufficient: llama.cpp still tries to allocate the compute
+# buffer on CUDA0 when the binary is CUDA-enabled. Empty CUDA_VISIBLE_DEVICES
+# forces CPU-only path.
+Environment="CUDA_VISIBLE_DEVICES="
+ExecStart=/home/tasin/llama.cpp/build/bin/llama-server \
+  -m /home/tasin/models/Qwen3-1.7B-Q8_0.gguf \
+  --host 0.0.0.0 \
+  --port 8001 \
+  --ctx-size 4096 \
+  --threads 6 \
+  --n-gpu-layers 0 \
+  --no-warmup \
+  --alias qwen3-1.7b-reflex
+Restart=on-failure
+RestartSec=10s
+StandardOutput=journal
+StandardError=journal
+
+# CPU-only: M620 (2GB VRAM) reserved for llama-embed.
+# 1.7B Q8_0 ≈1.8GB model weights — runs comfortably on 16GB system RAM.
+
+[Install]
+WantedBy=multi-user.target
