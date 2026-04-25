@@ -25,6 +25,7 @@ from models.local_client import LocalClient
 from models.usage_tracker import UsageTracker
 from orchestrator.approval_manager import ApprovalManager
 from orchestrator.context_builder import ContextBuilder
+from orchestrator.escalation_parser import EscalationRequest, parse_escalation
 from orchestrator.intent_classifier import Intent, IntentClassifier
 from orchestrator.model_router import ModelRoute, ModelRouter, SignalAwareRouter
 from orchestrator.response_formatter import ResponseFormatter
@@ -38,6 +39,18 @@ _GEMINI_MODEL_IDS: dict[str, str] = {
     ModelName.GEMINI_PRO: "gemini-2.5-pro",
     ModelName.GEMINI_VISION: "gemini-2.5-flash",
 }
+
+# P2-12: L1 self-escalation system prompt. Tells L1 (LOCAL_BRAIN / Qwen3-8B)
+# to emit a JSON object when it cannot confidently answer, so the engine can
+# reroute to the requested upstream tier without burning tokens on a wrong answer.
+SELF_ESCALATION_SYSTEM_PROMPT = (
+    "You are T.A.R.S.'s local brain. Answer directly when you can. "
+    "If a question requires:\n"
+    '- current web information you don\'t have → reply ONLY: {"escalate": "web", "reason": "..."}\n'
+    '- complex multi-step reasoning you\'re unsure about → reply ONLY: {"escalate": "claude", "reason": "..."}\n'
+    '- deep research across many sources or long context → reply ONLY: {"escalate": "gemini_pro", "reason": "..."}\n'
+    "Never fabricate. Never explain the JSON. Escalate when uncertain."
+)
 
 
 class Orchestrator:
@@ -336,10 +349,19 @@ class Orchestrator:
         route: ModelRoute,
         context: AgentContext,
     ) -> AgentResult:
-        """HC-09 fallback chain for local-tier routes: local → gemini → claude → raw."""
-        # Attempt 1: local llama-server
+        """HC-09 fallback chain for local-tier routes: local → gemini → claude → raw.
+
+        P2-12: when L1 (LOCAL_BRAIN) succeeds with a self-escalation JSON
+        directive, reroute to the requested upstream tier instead of returning
+        the JSON to the user. One hop max — upstream replies are never re-parsed.
+        """
+        # Attempt 1: local llama-server (with self-escalation prompt for L1)
         local_result = await self._local_call(route, context)
         if local_result.success:
+            if route.model == ModelName.LOCAL_BRAIN:
+                escalation = parse_escalation(local_result.text)
+                if escalation is not None:
+                    return await self._self_escalate(escalation, context, route)
             return local_result
 
         # Attempt 2: Gemini Flash
@@ -385,16 +407,65 @@ class Orchestrator:
             data={"raw_message": user_message, "fallback": True},
         )
 
+    async def _self_escalate(
+        self,
+        escalation: EscalationRequest,
+        context: AgentContext,
+        original_route: ModelRoute,
+    ) -> AgentResult:
+        """P2-12: route the request to the upstream tier L1 asked for.
+
+        One-hop guarantee: the upstream reply is returned verbatim and is
+        never parsed for further escalation. If the requested tier fails,
+        fall through the cross-family cloud fallback (claude↔gemini), and
+        finally to raw-data delivery.
+        """
+        log.info(
+            "self_escalation",
+            from_model=original_route.model,
+            to_model=escalation.target_model,
+            reason=escalation.reason,
+        )
+        target_route = self._build_escalation_route(escalation.target_model)
+        result = await self._try_model(target_route, context)
+        if not result.success:
+            fallback = await self._try_fallback_model(target_route, context)
+            if fallback is not None and fallback.success:
+                result = fallback
+            else:
+                return self._raw_data_result(context.user_message, original_route.model)
+
+        result.data["self_escalated_from"] = original_route.model
+        result.data["escalation_reason"] = escalation.reason
+        return result
+
+    @staticmethod
+    def _build_escalation_route(target_model: ModelName) -> ModelRoute:
+        """Build a ModelRoute for a self-escalation target tier."""
+        if target_model == ModelName.CLAUDE_CODE:
+            return ModelRoute(
+                model=ModelName.CLAUDE_CODE,
+                node="node1",
+                mcp_profile="general",
+            )
+        return ModelRoute(model=target_model, node="node1")
+
     async def _local_call(
         self,
         route: ModelRoute,
         context: AgentContext,
     ) -> AgentResult:
-        """Call a local llama-server tier (LOCAL_REFLEX or LOCAL_BRAIN)."""
+        """Call a local llama-server tier (LOCAL_REFLEX or LOCAL_BRAIN).
+
+        P2-12: L1 (LOCAL_BRAIN) carries the self-escalation system prompt;
+        L0 (LOCAL_REFLEX) does not — reflex tier never escalates.
+        """
+        system = SELF_ESCALATION_SYSTEM_PROMPT if route.model == ModelName.LOCAL_BRAIN else None
         try:
             response = await self.local_client.generate(
                 model=route.model,
                 prompt=context.user_message,
+                system=system,
             )
             return AgentResult(
                 success=True,
