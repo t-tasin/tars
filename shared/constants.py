@@ -29,6 +29,9 @@ class ModelName(StrEnum):
     GEMINI_PRO = "gemini_pro"
     GEMINI_VISION = "gemini_vision"
     LOCAL = "local"
+    LOCAL_REFLEX = "local_reflex"  # Qwen3-1.7B on tars2:8001 (CPU)
+    LOCAL_BRAIN = "local_brain"  # Qwen3-8B on tars2:8002 (CPU)
+    LOCAL_EMBED = "local_embed"  # Qwen3-Embedding-0.6B on tars2:8003 (GPU)
 
 
 class TaskStatus(StrEnum):
