@@ -142,7 +142,7 @@ Claude Code: this doc is the source of truth. Check before picking up work. Upda
 
 | ID | Feature | Status | Owner | Evidence | Last Touched | Blockers | Notes |
 |----|---------|--------|-------|----------|--------------|----------|-------|
-| P3.5-01 | `sensors/base.py` BaseSensor abstract (was P4-01) | PLANNED | Claude | — | 2026-04-25 | — | `async collect() -> dict`, `async publish(payload)`. Publish writes to `world_state` table + Redis pub/sub `tars:world:<sensor>`. Opus 4.7 design. |
+| P3.5-01 | `sensors/base.py` BaseSensor abstract (was P4-01) | BUILT | Claude | 10 tests green | 2026-04-25 | — | `async collect() -> dict`, `async publish(payload)`, `tick()` cadence-guard. Writes to `world_state` table + Redis pub/sub `tars:world:<sensor>` + HC-08 `audit_log` row per publish. Idempotency token (uuid4) stamped on every payload for downstream dedup. Fail-soft on collect exception. |
 | P3.5-02 | Postgres `world_state` table + partman monthly partitioning (was P4-09) | PLANNED | Claude | — | 2026-04-25 | depends P3.5-01 | Alembic migration. `id uuid pk`, `sensor text`, `payload jsonb`, `ts timestamptz`, index `(sensor, ts desc)`. |
 | P3.5-03 | Weather sensor (was P4-07) | PLANNED | Claude | — | 2026-04-25 | depends P3.5-01..02 | 15-min cadence. Wraps existing `weather_client.py`. Writes to world_state + publishes pub/sub. |
 | P3.5-04 | HealthKit sensor migration (was P4-06) | PLANNED | Claude | — | 2026-04-25 | depends P3.5-01..02 | Existing health_data ingest → adapt to BaseSensor pattern + world_state writes. |

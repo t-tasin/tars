@@ -777,3 +777,23 @@ class AuditLog(Base):
     ip_address: Mapped[str | None] = mapped_column(String(45))
     source: Mapped[str | None] = mapped_column(String(20))
     created_at: Mapped[datetime] = _created_at()
+
+
+# ---------------------------------------------------------------------------
+# 22. WorldState (Phase 3.5 sensor pipeline; partman migration in P3.5-02)
+# ---------------------------------------------------------------------------
+
+
+class WorldState(Base):
+    __tablename__ = "world_state"
+    __table_args__ = (Index("idx_world_state_sensor_ts", "sensor", "ts"),)
+
+    id: Mapped[uuid.UUID] = _uuid_pk()
+    sensor: Mapped[str] = mapped_column(String(50), nullable=False)
+    payload: Mapped[dict] = mapped_column(JSONB, nullable=False, server_default=text("'{}'::jsonb"))
+    ts: Mapped[datetime] = mapped_column(
+        TIMESTAMP(timezone=True),
+        nullable=False,
+        server_default=text("now()"),
+    )
+    created_at: Mapped[datetime] = _created_at()
