@@ -11,6 +11,7 @@ import pytest
 from shared.constants import ModelName
 
 from models.usage_tracker import (
+    _COST_PER_1M,
     BUDGET_ALERT_PCT,
     CLAUDE_DAILY_LIMIT,
     CLAUDE_WEEKLY_LIMIT,
@@ -62,6 +63,21 @@ def test_estimate_cost_claude_is_zero():
 def test_estimate_cost_local_is_zero():
     cost = _estimate_cost(ModelName.LOCAL, 100, 100)
     assert cost == Decimal("0")
+
+
+def test_local_reflex_has_explicit_zero_cost_entry():
+    assert ModelName.LOCAL_REFLEX in _COST_PER_1M
+    assert _COST_PER_1M[ModelName.LOCAL_REFLEX] == (Decimal("0"), Decimal("0"))
+
+
+def test_local_brain_has_explicit_zero_cost_entry():
+    assert ModelName.LOCAL_BRAIN in _COST_PER_1M
+    assert _COST_PER_1M[ModelName.LOCAL_BRAIN] == (Decimal("0"), Decimal("0"))
+
+
+def test_local_embed_has_explicit_zero_cost_entry():
+    assert ModelName.LOCAL_EMBED in _COST_PER_1M
+    assert _COST_PER_1M[ModelName.LOCAL_EMBED] == (Decimal("0"), Decimal("0"))
 
 
 def test_estimate_cost_unknown_model():
