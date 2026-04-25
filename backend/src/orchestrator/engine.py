@@ -40,11 +40,18 @@ _GEMINI_MODEL_IDS: dict[str, str] = {
     ModelName.GEMINI_VISION: "gemini-2.5-flash",
 }
 
+BASE_LOCAL_SYSTEM_PROMPT = (
+    "You are T.A.R.S., Tasin's personal AI assistant. "
+    "Always respond in English. Never use Chinese or any other language. "
+    "Be concise, direct, and helpful. JARVIS-style personality."
+)
+
 # P2-12: L1 self-escalation system prompt. Tells L1 (LOCAL_BRAIN / Qwen3-8B)
 # to emit a JSON object when it cannot confidently answer, so the engine can
 # reroute to the requested upstream tier without burning tokens on a wrong answer.
 SELF_ESCALATION_SYSTEM_PROMPT = (
-    "You are T.A.R.S.'s local brain. Answer directly when you can. "
+    BASE_LOCAL_SYSTEM_PROMPT + "\n\n"
+    "Answer directly when you can. "
     "If a question requires:\n"
     '- current web information you don\'t have → reply ONLY: {"escalate": "web", "reason": "..."}\n'
     '- complex multi-step reasoning you\'re unsure about → reply ONLY: {"escalate": "claude", "reason": "..."}\n'
@@ -460,7 +467,11 @@ class Orchestrator:
         P2-12: L1 (LOCAL_BRAIN) carries the self-escalation system prompt;
         L0 (LOCAL_REFLEX) does not — reflex tier never escalates.
         """
-        system = SELF_ESCALATION_SYSTEM_PROMPT if route.model == ModelName.LOCAL_BRAIN else None
+        system = (
+            SELF_ESCALATION_SYSTEM_PROMPT
+            if route.model == ModelName.LOCAL_BRAIN
+            else BASE_LOCAL_SYSTEM_PROMPT
+        )
         try:
             response = await self.local_client.generate(
                 model=route.model,
