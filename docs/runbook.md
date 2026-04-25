@@ -80,3 +80,41 @@ ssh node1 'docker compose down'
 ssh node2 'docker compose down && systemctl stop llama-l1 llama-l2 llama-embed'
 ```
 Tasin only. HC-03 blocks any TARS-initiated shutdown.
+
+## Claude SSH Permission Boundary
+
+Claude operates over SSH on `tars1` / `tars2`. Permission scope is intentionally narrow.
+
+### What Claude can do without password
+- `systemctl status <unit>` — any unit (default)
+- `journalctl -u <unit>` — via `systemd-journal` group
+- `docker ps` / `docker logs` / `docker inspect` — via `docker` group
+- `sudo -n systemctl restart tars-backend` — via `/etc/sudoers.d/tars-claude` NOPASSWD
+- `sudo -n systemctl reload tars-backend` — same
+
+### What Claude cannot do
+- `sudo systemctl stop|disable tars-backend` — password required → fails fast
+- `sudo apt install|remove` — password required
+- `sudo systemctl restart` on any other unit
+- Anything destructive (rm, reboot, docker compose down, redis FLUSHALL)
+
+Claude reports the password prompt to Tasin. Tasin decides: run manually, or scope a new sudoers entry.
+
+### Sudoers content (Node 1)
+```
+tasin ALL=(root) NOPASSWD: /bin/systemctl restart tars-backend, /bin/systemctl reload tars-backend
+```
+File: `/etc/sudoers.d/tars-claude`, mode `0440`. Validate with `sudo visudo -c -f /etc/sudoers.d/tars-claude` before saving — bad sudoers = locked sudo = recovery mode.
+
+### Boundary check (run as `tasin`, not via sudo)
+```bash
+sudo -n systemctl restart tars-backend   # expect: silent success
+sudo -n systemctl stop tars-backend      # expect: "password required"
+sudo -n apt-get install -y foo           # expect: "password required"
+```
+Stop / apt blocked = boundary correct.
+
+### When to revisit
+- **Phase 4** (autonomy triggers go live) — tighten before any agent gains `WRITE_INFRA`
+- **Production** (real wiki, real Gmail tokens) — audit sudoers, consider yanking restart NOPASSWD entirely
+- **Public dashboard live** — re-audit, HC-13 territory

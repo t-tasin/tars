@@ -4,7 +4,7 @@
 >
 > **States:** `PLANNED` → `IN_PROGRESS` → `BUILT` → `TESTED` → `SHIPPED`
 >
-> **Last updated:** 2026-04-22 (Phase 1 session — queue unified)
+> **Last updated:** 2026-04-25 (Phase 0 + Phase 1 verified deployed on tars1; Node 2 cleanup; P0-18 SSH boundary policy live)
 
 ---
 
@@ -36,20 +36,21 @@ Claude Code: this doc is the source of truth. Check before picking up work. Upda
 | P0-01 | Baseline test suite green (backend 991 + worker 20) | BUILT | Claude | phase-0-green branch | 2026-04-21 | — | Gemini model asserts bumped 2.0→2.5, telegram sys.modules shims removed, test_telegram_handlers patches now match src-prefixed imports |
 | P0-02 | Create `docs/journal/` daily log convention | PLANNED | Tasin | — | 2026-04-21 | — | First entry will be 2026-04-21.md |
 | P0-03 | Coverage report baseline | BUILT | Claude | phase-0-green branch | 2026-04-21 | — | Backend 66% (9322 stmts / 3202 miss), worker 36% (601 / 386). htmlcov/ gitignored. |
-| P0-04 | Prometheus + Grafana on Node 1 | BUILT | Claude | phase-0-green branch | 2026-04-21 | — | prometheus v2.55 @9090 scrapes host.docker.internal:8000/metrics every 15s; grafana 11.3 @3000 w/ Prometheus datasource auto-provisioned. Node 1 smoke pending. |
-| P0-05 | `fastapi-instrumentator` wired | BUILT | Claude | phase-0-green branch | 2026-04-21 | — | prometheus-fastapi-instrumentator>=7.0 added to backend/pyproject.toml; /metrics exposed from src/main.py before router mount; 2 route-inspection tests (no lifespan). Full suite 993 passed. |
+| P0-04 | Prometheus + Grafana on Node 1 | SHIPPED | Claude | c833ecb on tars1, verified 2026-04-25 | 2026-04-25 | — | prometheus v2.55 @9090 + grafana 11.3 @3000 up 3+ days, both `/-/healthy` + `/api/health` 200. Live on Node 1. |
+| P0-05 | `fastapi-instrumentator` wired | SHIPPED | Claude | c833ecb on tars1, verified 2026-04-25 | 2026-04-25 | — | `curl localhost:8000/metrics` returns 200 from systemd `tars-backend.service` (uvicorn, port 8000). |
 | P0-06 | Power meter reading capture | PLANNED | Tasin | — | 2026-04-21 | — | Need Kill-A-Watt or similar |
 | P0-07 | Branch protection rules on main | PLANNED | Tasin | — | 2026-04-21 | — | Require PR + CI green + 1 review |
 | P0-08 | GitHub Projects board | PLANNED | Tasin | — | 2026-04-21 | — | Columns per phase |
 | P0-09 | Archive old CLAUDE.md, adopt new | PLANNED | Tasin | — | 2026-04-21 | — | mv CLAUDE.md.new CLAUDE.md |
-| P0-10 | Delete ChromaDB stack, worker references | BUILT | Claude | phase-0-green branch | 2026-04-21 | — | Stripped backend config + health_monitor + api/health, worker config, node2 compose, env templates. `grep -rn chroma` clean across backend/worker/deploy/env.example. |
+| P0-10 | Delete ChromaDB stack, worker references | SHIPPED | Claude | c833ecb + Node 2 container teardown 2026-04-25 | 2026-04-25 | — | Code clean (compose + backend/worker stripped). Stale `tars-chromadb` + `tars-redis` containers (created 2026-03-13) destroyed on Node 2 2026-04-25. `docker ps` empty on tars2. |
 | P0-11 | Run tars-probe on both nodes, capture baseline | BUILT | Tasin | logs collected 2026-04-21 | 2026-04-21 | — | i7-6700, 16GB DDR4-2133, Quadro M620 2GB, NVMe 256GB |
 | P0-12 | Update architecture/model_tiers/tech_stack docs to match real hardware | BUILT | Claude | this session | 2026-04-21 | depends P0-11 | 16GB not 32GB; i7-6700 not 7700T; GPU exists |
-| P0-13 | Move Redis to Node 1 in deploy/node1/docker-compose.yml | BUILT | Claude | phase-0-green branch | 2026-04-21 | Qdrant still deferred to Phase 3 | redis:7-alpine service added to node1 compose; removed from node2 compose (worker now expects external REDIS_URL). Backend default redis_url → redis://localhost:6379/0 (colocated). Both composes validate. |
-| P0-14 | Install lm-sensors on both nodes, baseline thermals | PLANNED | Tasin | — | 2026-04-21 | — | `sudo apt install lm-sensors && sudo sensors-detect --auto` |
-| P0-15 | Install CUDA toolkit on Node 2 (for Quadro M620) | TESTED | Tasin | runfile 12.2.2 + driver 535.288.01 + g++-12 host; sm_50 smoke kernel printed `gpu alive` 2026-04-22 | 2026-04-22 | — | CUDA 12.2 @ /usr/local/cuda-12.2; driver held; `CUDAHOSTCXX=/usr/bin/g++-12` in ~/.bashrc; llama.cpp/whisper.cpp builds must pass `-DCMAKE_CUDA_HOST_COMPILER=/usr/bin/g++-12 -DCMAKE_CUDA_ARCHITECTURES=50` |
-| P0-16 | Storage cleanup Node 2 (36GB used vs Node 1 17GB) | PLANNED | Tasin | — | 2026-04-21 | — | `docker system prune -af` after audit |
-| P0-17 | Wire Node 2 worker to point at Node 1 Redis (100.94.4.103:6379) | BUILT | Claude | phase-0-green branch | 2026-04-21 | — | worker/src/config.py redis_url default → redis://100.94.4.103:6379/0 (Node 1 tailscale IP). node2 compose already resolves REDIS_URL via env override. 20 worker tests pass. |
+| P0-13 | Move Redis to Node 1 in deploy/node1/docker-compose.yml | SHIPPED | Claude | c833ecb on tars1, verified 2026-04-25 | 2026-04-25 | — | `tars-redis` 7-alpine on Node 1 :6379 healthy 3d. TCP `PING`→`+PONG`. `ZCARD tars:jobs:queue`→0 (key valid). Old container destroyed on Node 2 2026-04-25. |
+| P0-14 | Install lm-sensors on both nodes, baseline thermals | SHIPPED | Tasin | verified 2026-04-25 both nodes | 2026-04-25 | — | `sensors` present on tars1 + tars2; readings: tars1 nvme 44.9°C / nouveau 52°C / GPU 873mV; tars2 nvme 41.9°C / coretemp 42°C. |
+| P0-15 | Install CUDA toolkit on Node 2 (for Quadro M620) | SHIPPED | Tasin | nvcc 12.2.140, driver 535.288.01, M620 visible; CUDAHOSTCXX persisted 2026-04-25 | 2026-04-25 | — | `/usr/local/cuda-12.2/bin/nvcc` V12.2.140; `nvidia-smi` driver 535.288.01 (1MiB/2048MiB free); PATH + LD_LIBRARY_PATH + `CUDAHOSTCXX=/usr/bin/g++-12` all in ~/.bashrc, verified via fresh `bash -ic`. |
+| P0-16 | Storage cleanup Node 2 (36GB used vs Node 1 17GB) | SHIPPED | Tasin | verified 2026-04-25 | 2026-04-25 | — | `df -h /` = 19G used / 98G (was 36G). 17GB recovered. |
+| P0-17 | Wire Node 2 worker to point at Node 1 Redis (100.94.4.103:6379) | BUILT | Claude | c833ecb config-only | 2026-04-25 | worker daemon not yet deployed on Node 2 | Code default correct. Worker daemon deployment is Phase 2. Repo cloned to `~/tars` on tars2 2026-04-25. Awaiting systemd unit + start. |
+| P0-18 | Claude SSH NOPASSWD scope + boundary check | SHIPPED | Tasin | `/etc/sudoers.d/tars-claude` on tars1, visudo OK 2026-04-25; boundary verified | 2026-04-25 | — | Sudoers Node 1: `systemctl restart/reload tars-backend` NOPASSWD. Boundary tests PASS: `sudo -n restart` succeeds; `sudo -n stop` + `sudo -n apt install` both blocked. tasin added to `docker` + `systemd-journal` groups. Doc: `docs/runbook.md §"Claude SSH Permission Boundary"`. **Revisit Phase 4 (WRITE_INFRA), pre-prod audit, public dashboard launch.** |
 
 ---
 
@@ -57,13 +58,13 @@ Claude Code: this doc is the source of truth. Check before picking up work. Upda
 
 | ID | Feature | Status | Owner | Evidence | Last Touched | Blockers | Notes |
 |----|---------|--------|-------|----------|--------------|----------|-------|
-| P1-01 | `integrations/job_queue.py` w/ JobQueue class | BUILT | Claude | bd4937d, test_job_queue.py 10/10 | 2026-04-22 | — | ZADD on tars:jobs:queue, pubsub await on tars:jobs:results, subscribe-before-enqueue |
-| P1-02 | Refactor `agents/coding.py` to use JobQueue | BUILT | Claude | bd4937d, test_coding_agent.py 8/8 | 2026-04-22 | — | `_QUEUE_KEY="tars:jobs:code"` removed; result read from message["result"] |
-| P1-03 | Refactor `agents/fashion.py` to use JobQueue | BUILT | Claude | bd4937d, test_fashion.py::TestFashionImageDispatch 2/2 | 2026-04-22 | — | LPUSH to "tars:jobs" ripped; worker gained `save_image` task_type for image persistence |
-| P1-04 | E2E test: distributed job round-trip | BUILT | Claude | bd4937d, test_queue_e2e.py 3/3 | 2026-04-22 | — | fakeredis.FakeServer shared between backend JobQueue + worker JobProcessor; covers happy path, unknown-type failure, priority ordering |
-| P1-05 | Remove ChromaDB from `backend/src` | BUILT | Claude | bd4937d (audit clean after P0-10), env.example + README cleanup | 2026-04-22 | — | No ChromaDB imports in backend/src; `CHROMA_AUTH_TOKEN` stripped from .env.example |
-| P1-06 | Remove ChromaDB from `deploy/node2/docker-compose.yml` | BUILT | Claude | bd4937d (audit clean after P0-10) | 2026-04-22 | — | deploy/ clean; Qdrant added in P3 |
-| P1-07 | Tag release `v0.1-distributed-real` | PLANNED | Tasin | — | 2026-04-22 | depends P1-01..6 PR #2 merge | Tasin cuts tag after PR #2 lands on main |
+| P1-01 | `integrations/job_queue.py` w/ JobQueue class | SHIPPED | Claude | c833ecb on tars1, verified 2026-04-25; tests bd4937d, test_job_queue.py 10/10 | 2026-04-22 | — | ZADD on tars:jobs:queue, pubsub await on tars:jobs:results, subscribe-before-enqueue |
+| P1-02 | Refactor `agents/coding.py` to use JobQueue | SHIPPED | Claude | c833ecb on tars1, verified 2026-04-25; tests bd4937d, test_coding_agent.py 8/8 | 2026-04-22 | — | `_QUEUE_KEY="tars:jobs:code"` removed; result read from message["result"] |
+| P1-03 | Refactor `agents/fashion.py` to use JobQueue | SHIPPED | Claude | c833ecb on tars1, verified 2026-04-25; tests bd4937d, test_fashion.py::TestFashionImageDispatch 2/2 | 2026-04-22 | — | LPUSH to "tars:jobs" ripped; worker gained `save_image` task_type for image persistence |
+| P1-04 | E2E test: distributed job round-trip | SHIPPED | Claude | c833ecb on tars1, verified 2026-04-25; tests bd4937d, test_queue_e2e.py 3/3 | 2026-04-22 | — | fakeredis.FakeServer shared between backend JobQueue + worker JobProcessor; covers happy path, unknown-type failure, priority ordering |
+| P1-05 | Remove ChromaDB from `backend/src` | SHIPPED | Claude | c833ecb on tars1; Node 2 container destroyed 2026-04-25 | 2026-04-25 | — | No ChromaDB imports in backend/src; `CHROMA_AUTH_TOKEN` stripped from .env.example. Stale `tars-chromadb` container destroyed on Node 2. |
+| P1-06 | Remove ChromaDB from `deploy/node2/docker-compose.yml` | SHIPPED | Claude | c833ecb on tars1; Node 2 container destroyed 2026-04-25 | 2026-04-25 | — | deploy/ clean. Live container teardown completed on Node 2. Qdrant added in P3. |
+| P1-07 | Tag release `v0.1-distributed-real` | PLANNED | Tasin | PR #2 merged `c833ecb` 2026-04-25 | 2026-04-25 | — | PR #2 merged + deployed. Tasin: `git tag v0.1-distributed-real c833ecb && git push origin v0.1-distributed-real`. |
 
 ---
 
