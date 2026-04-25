@@ -780,7 +780,7 @@ class AuditLog(Base):
 
 
 # ---------------------------------------------------------------------------
-# 22. WorldState (Phase 3.5 sensor pipeline; partman migration in P3.5-02)
+# 22. WorldState (Phase 3.5 sensor pipeline)
 # ---------------------------------------------------------------------------
 
 
@@ -788,12 +788,19 @@ class WorldState(Base):
     __tablename__ = "world_state"
     __table_args__ = (Index("idx_world_state_sensor_ts", "sensor", "ts"),)
 
-    id: Mapped[uuid.UUID] = _uuid_pk()
+    # Composite (id, ts) PK because the table is RANGE-partitioned on ts;
+    # PG requires every unique constraint to include the partition key.
+    id: Mapped[uuid.UUID] = mapped_column(
+        default=uuid.uuid4,
+        server_default=text("gen_random_uuid()"),
+        primary_key=True,
+    )
     sensor: Mapped[str] = mapped_column(String(50), nullable=False)
     payload: Mapped[dict] = mapped_column(JSONB, nullable=False, server_default=text("'{}'::jsonb"))
     ts: Mapped[datetime] = mapped_column(
         TIMESTAMP(timezone=True),
         nullable=False,
+        primary_key=True,
         server_default=text("now()"),
     )
     created_at: Mapped[datetime] = _created_at()
