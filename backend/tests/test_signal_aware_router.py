@@ -20,33 +20,39 @@ def router() -> SignalAwareRouter:
 # ---------------------------------------------------------------------------
 
 
-@pytest.mark.parametrize("agent", [
-    IntentType.GENERAL,
-    IntentType.CONFIG,
-    IntentType.SYSTEM,
-])
+@pytest.mark.parametrize(
+    "agent",
+    [
+        IntentType.GENERAL,
+        IntentType.CONFIG,
+        IntentType.SYSTEM,
+    ],
+)
 def test_routes_short_intents_to_local_reflex(router, agent):
     route = router.route(Intent(agent=agent), signals=set())
     assert route.model == ModelName.LOCAL_REFLEX
     assert route.node == "node2"
 
 
-@pytest.mark.parametrize("agent", [
-    IntentType.BRIEFING,
-    IntentType.DAILY_LIFE,
-    IntentType.COMMUNICATION,
-    IntentType.JOB_SEARCH,
-    IntentType.FASHION,
-    IntentType.PRODUCT_RESEARCH,
-    IntentType.CODING,
-    IntentType.RESEARCH,
-    IntentType.HEALTH_MONITOR,
-    IntentType.FINANCE,
-    IntentType.HEALTH_FITNESS,
-    IntentType.EMAIL_CLASSIFIER,
-    IntentType.EOD_SUMMARY,
-    IntentType.WORKOUT_TRACKER,
-])
+@pytest.mark.parametrize(
+    "agent",
+    [
+        IntentType.BRIEFING,
+        IntentType.DAILY_LIFE,
+        IntentType.COMMUNICATION,
+        IntentType.JOB_SEARCH,
+        IntentType.FASHION,
+        IntentType.PRODUCT_RESEARCH,
+        IntentType.CODING,
+        IntentType.RESEARCH,
+        IntentType.HEALTH_MONITOR,
+        IntentType.FINANCE,
+        IntentType.HEALTH_FITNESS,
+        IntentType.EMAIL_CLASSIFIER,
+        IntentType.EOD_SUMMARY,
+        IntentType.WORKOUT_TRACKER,
+    ],
+)
 def test_routes_substantive_intents_to_local_brain(router, agent):
     route = router.route(Intent(agent=agent), signals=set())
     assert route.model == ModelName.LOCAL_BRAIN
