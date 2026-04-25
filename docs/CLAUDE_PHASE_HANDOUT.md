@@ -204,13 +204,17 @@ Estimated total: **~12-15 Claude sessions** to v1.0-ship-ready, mostly Sonnet, ~
 1. **`SessionStart` loads CLAUDE.md + memory** automatically
 2. **Sanity sweep** before any work:
    ```
-   git checkout main && git pull
-   gh pr list --state open
+   git checkout main && git pull --ff-only origin main
+   gh pr list --state open          # expect 0
+   ssh tars1 "git -C /opt/tars rev-parse HEAD"   # must == origin/main HEAD
    ssh tars1 "systemctl is-active tars-backend"
    ssh tars2 "systemctl is-active llama-l0 llama-l1 llama-embed tars-worker"
+   ssh tars1 "curl -s http://localhost:8000/api/v1/health | python3 -c \"import sys,json; d=json.load(sys.stdin); assert d['tars']['infrastructure']['redis']['status']=='connected', 'redis not connected'\""
    cd backend && .venv/bin/pytest tests/ -q | tail -3
    ```
 3. **Drift caught → STOP, report, do not proceed**
+   - Deploy drift: `tars1 HEAD ≠ origin/main` → pull + restart before writing code
+   - Redis disconnected: check REDIS_URL in `/opt/tars/deploy/node1/.env` (should be tailscale IP, not LAN)
 4. Branch per phase, commit per logical chunk, **always** `ruff format` + `ruff check` before push (CI checks both — caught us once on PR #6/#7)
 5. PR with test plan + FEATURES row update + journal entry **in the same PR**
 6. **Strict TDD** for production code (RED → GREEN → REFACTOR)
