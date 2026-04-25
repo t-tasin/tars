@@ -37,6 +37,7 @@ class AgentContext:
     attachments: list[dict[str, Any]] = field(default_factory=list)
     db_context: dict[str, Any] = field(default_factory=dict)
     config: dict[str, Any] = field(default_factory=dict)
+    system_context: dict[str, Any] = field(default_factory=dict)
 
 
 class BaseAgent(ABC):

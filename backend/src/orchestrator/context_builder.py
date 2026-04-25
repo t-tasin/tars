@@ -2,7 +2,9 @@
 
 from __future__ import annotations
 
+import asyncio
 import datetime as dt
+import re
 from typing import Any
 from uuid import UUID
 
@@ -15,6 +17,17 @@ from orchestrator.intent_classifier import Intent
 from orchestrator.model_router import ModelRoute
 
 log = structlog.get_logger()
+
+# ---------------------------------------------------------------------------
+# Keyword patterns for intent-driven pre-fetch detection
+# ---------------------------------------------------------------------------
+
+_WEATHER_RE = re.compile(r"weather|forecast|temperature|rain|sunny|cold|hot|degrees", re.IGNORECASE)
+_SCHEDULE_RE = re.compile(
+    r"schedule|calendar|event|appointment|meeting|today|tomorrow|remind",
+    re.IGNORECASE,
+)
+_EMAIL_RE = re.compile(r"email|inbox|message|unread", re.IGNORECASE)
 
 
 class ContextBuilder:
@@ -119,6 +132,9 @@ class ContextBuilder:
             has_conversation=conversation_id is not None,
         )
 
+        # Pre-fetch real-time data based on intent + message keywords
+        system_context = await self._pre_fetch_for_intent(intent, user_message, session)
+
         return AgentContext(
             user_message=user_message,
             intent_type=intent.agent,
@@ -127,7 +143,130 @@ class ContextBuilder:
             attachments=attachments,
             db_context=db_context,
             config=config,
+            system_context=system_context,
         )
+
+    # ------------------------------------------------------------------
+    # Intent-driven pre-fetch (P2.5-03)
+    # ------------------------------------------------------------------
+
+    def _needs_prefetch(self, intent: Intent, user_message: str) -> set[str]:
+        """Determine which real-time data sources to pre-fetch."""
+        needs: set[str] = set()
+
+        if intent.agent == IntentType.BRIEFING:
+            return {"weather", "schedule", "email", "finance"}
+
+        if intent.agent in (IntentType.DAILY_LIFE,):
+            needs.add("schedule")
+        if intent.agent in (IntentType.COMMUNICATION,):
+            needs.add("email")
+        if intent.agent == IntentType.FINANCE:
+            needs.add("finance")
+
+        # Keyword augmentation for any intent
+        if _WEATHER_RE.search(user_message):
+            needs.add("weather")
+        if _SCHEDULE_RE.search(user_message):
+            needs.add("schedule")
+        if _EMAIL_RE.search(user_message):
+            needs.add("email")
+
+        return needs
+
+    async def _pre_fetch_for_intent(
+        self,
+        intent: Intent,
+        user_message: str,
+        session: AsyncSession | None,
+    ) -> dict[str, Any]:
+        """Fetch real-time data in parallel for the detected needs."""
+        needs = self._needs_prefetch(intent, user_message)
+        if not needs:
+            return {}
+
+        tasks: dict[str, Any] = {}
+        if "weather" in needs:
+            tasks["weather"] = self._pre_fetch_weather()
+        if "schedule" in needs:
+            tasks["schedule"] = self._pre_fetch_schedule()
+        if "email" in needs:
+            tasks["email"] = self._pre_fetch_email()
+        if "finance" in needs:
+            tasks["finance"] = self._pre_fetch_finance(session)
+
+        keys = list(tasks.keys())
+        results = await asyncio.gather(*tasks.values(), return_exceptions=False)
+        return dict(zip(keys, results))
+
+    async def _pre_fetch_weather(self) -> dict[str, Any]:
+        """Fetch current weather from WeatherClient."""
+        client = None
+        try:
+            from config import get_settings
+            from integrations.weather_client import WeatherClient
+
+            settings = get_settings()
+            client = WeatherClient(
+                api_key=settings.openweathermap_api_key,
+                default_location=settings.default_location,
+            )
+            return await client.get_current()
+        except Exception:
+            log.warning("prefetch_weather_failed", exc_info=True)
+            return {}
+        finally:
+            if client:
+                try:
+                    await client.close()
+                except Exception:
+                    pass
+
+    async def _pre_fetch_schedule(self) -> list[dict[str, Any]]:
+        """Fetch today's calendar events from CalDAVClient."""
+        client = None
+        try:
+            from config import get_settings
+            from integrations.caldav_client import CalDAVClient
+
+            settings = get_settings()
+            client = CalDAVClient(
+                username=settings.icloud_caldav_user,
+                password=settings.icloud_caldav_password,
+            )
+            events = await client.get_today_events()
+            return events[:5]
+        except Exception:
+            log.warning("prefetch_schedule_failed", exc_info=True)
+            return []
+
+    async def _pre_fetch_email(self) -> list[dict[str, Any]]:
+        """Fetch recent unread emails (personal account) from GmailClient."""
+        client = None
+        try:
+            from config import get_settings
+            from integrations.gmail_client import GmailClient
+
+            settings = get_settings()
+            client = GmailClient(
+                credentials_json_b64=settings.gmail_personal_credentials,
+                account_name="personal",
+            )
+            emails = await client.get_unread_emails(max_results=10, since_hours=24)
+            return emails[:10]
+        except Exception:
+            log.warning("prefetch_email_failed", exc_info=True)
+            return []
+        finally:
+            if client:
+                try:
+                    await client.close()
+                except Exception:
+                    pass
+
+    async def _pre_fetch_finance(self, session: AsyncSession | None) -> list[dict[str, Any]]:
+        """Fetch recent transactions via existing DB method."""
+        return await self._get_recent_transactions(days=7, session=session)
 
     # ------------------------------------------------------------------
     # DB-backed context queries
