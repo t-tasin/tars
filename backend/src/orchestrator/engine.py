@@ -21,6 +21,7 @@ from db.models import AuditLog, Conversation, Message
 from db.session import get_db_session
 from models.claude_spawner import ClaudeCodeSpawner
 from models.gemini_client import GeminiClient
+from models.local_client import LocalClient
 from models.usage_tracker import UsageTracker
 from orchestrator.approval_manager import ApprovalManager
 from orchestrator.context_builder import ContextBuilder
@@ -51,6 +52,7 @@ class Orchestrator:
         self.signal_detector = SignalDetector()
         self._feature_new_router = settings.feature_new_router
         self.gemini_client = GeminiClient(api_key=settings.gemini_api_key)
+        self.local_client = LocalClient()
         self.context_builder = ContextBuilder(gemini_client=self.gemini_client)
         self.approval_manager = ApprovalManager()
         self.response_formatter = ResponseFormatter()
@@ -299,44 +301,118 @@ class Orchestrator:
     ) -> AgentResult:
         """Direct model invocation with HC-09 fallback chain.
 
-        Order:
-            1. Try the originally routed model
-            2. If Claude unavailable → try Gemini Pro
-            3. If Gemini unavailable → try Claude
-            4. If both unavailable → return raw data
+        Local tier (LOCAL_REFLEX / LOCAL_BRAIN):
+            local → gemini_flash → claude → raw data
+
+        Cloud tier:
+            originally routed → opposite cloud model → raw data
+
+        Legacy LOCAL (HEALTH_MONITOR/CONFIG/SYSTEM via old router):
+            stub — these agents handle their own logic without LLM.
         """
+        if route.model in {ModelName.LOCAL_REFLEX, ModelName.LOCAL_BRAIN}:
+            return await self._execute_local_with_fallback(route, context)
+
         if route.model == ModelName.LOCAL:
             return AgentResult(
                 success=True,
                 text="This feature is not yet implemented.",
             )
 
-        # --- Attempt 1: originally routed model ---
+        # --- Cloud tier: Attempt 1 ---
         primary_result = await self._try_model(route, context)
         if primary_result.success:
             return primary_result
 
-        # --- Attempt 2: fallback model ---
+        # --- Cloud tier: Attempt 2 ---
         fallback_result = await self._try_fallback_model(route, context)
         if fallback_result is not None and fallback_result.success:
             return fallback_result
 
-        # --- Attempt 3: raw data delivery (HC-09 last resort) ---
+        return self._raw_data_result(context.user_message, route.model)
+
+    async def _execute_local_with_fallback(
+        self,
+        route: ModelRoute,
+        context: AgentContext,
+    ) -> AgentResult:
+        """HC-09 fallback chain for local-tier routes: local → gemini → claude → raw."""
+        # Attempt 1: local llama-server
+        local_result = await self._local_call(route, context)
+        if local_result.success:
+            return local_result
+
+        # Attempt 2: Gemini Flash
+        log.warning(
+            "model_fallback",
+            from_model=route.model,
+            to_model=ModelName.GEMINI_FLASH,
+        )
+        gemini_route = ModelRoute(model=ModelName.GEMINI_FLASH, node="node1")
+        gemini_result = await self._gemini_call(gemini_route, context)
+        if gemini_result.success:
+            gemini_result.data["fallback_from"] = route.model
+            return gemini_result
+
+        # Attempt 3: Claude Code
+        log.warning(
+            "model_fallback",
+            from_model=route.model,
+            to_model=ModelName.CLAUDE_CODE,
+        )
+        claude_route = ModelRoute(model=ModelName.CLAUDE_CODE, node="node1", mcp_profile="general")
+        claude_result = await self._claude_call(claude_route, context)
+        if claude_result.success:
+            claude_result.data["fallback_from"] = route.model
+            return claude_result
+
+        return self._raw_data_result(context.user_message, route.model)
+
+    def _raw_data_result(self, user_message: str, primary_model: str) -> AgentResult:
         log.error(
             "all_models_unavailable",
-            primary_model=route.model,
-            message_preview=context.user_message[:100],
+            primary_model=primary_model,
+            message_preview=user_message[:100],
         )
         return AgentResult(
             success=True,
             text=(
-                "I'm currently unable to compose an AI response — both Claude "
-                "and Gemini are temporarily unavailable. Here's your raw request "
-                "for reference. I'll be back to full capacity shortly."
+                "I'm currently unable to compose an AI response — all models are "
+                "temporarily unavailable. Here's your raw request for reference. "
+                "I'll be back to full capacity shortly."
             ),
             error="all_models_unavailable",
-            data={"raw_message": context.user_message, "fallback": True},
+            data={"raw_message": user_message, "fallback": True},
         )
+
+    async def _local_call(
+        self,
+        route: ModelRoute,
+        context: AgentContext,
+    ) -> AgentResult:
+        """Call a local llama-server tier (LOCAL_REFLEX or LOCAL_BRAIN)."""
+        try:
+            response = await self.local_client.generate(
+                model=route.model,
+                prompt=context.user_message,
+            )
+            return AgentResult(
+                success=True,
+                text=response.text,
+                data={
+                    "tokens_input": response.tokens_input,
+                    "tokens_output": response.tokens_output,
+                    "duration_ms": response.duration_ms,
+                    "reasoning": response.reasoning,
+                },
+            )
+        except Exception as exc:
+            log.error("local_call_failed", model=route.model, error=str(exc))
+            return AgentResult(
+                success=False,
+                text="Local model temporarily unavailable.",
+                error="local_unavailable",
+            )
 
     async def _try_model(
         self,
@@ -348,6 +424,8 @@ class Orchestrator:
             return await self._gemini_call(route, context)
         if route.model == ModelName.CLAUDE_CODE:
             return await self._claude_call(route, context)
+        if route.model in {ModelName.LOCAL_REFLEX, ModelName.LOCAL_BRAIN}:
+            return await self._local_call(route, context)
         return AgentResult(
             success=False,
             text="I'm not sure how to handle that request.",
