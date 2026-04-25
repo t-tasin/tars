@@ -63,6 +63,27 @@
 21. Public dashboard: sanitize first, emit second. Canary tests every deploy (HC-13)
 22. Voice eval gate (HC-15) blocks model swaps
 
+## Tool-use on local tier
+
+Local models (Qwen3-1.7B / Qwen3-8B) have no reliable native tool-call.
+The **pre-fetch pattern** replaces tool-calls for real-time data:
+
+1. `ContextBuilder._needs_prefetch(intent, message)` — detects which data sources
+   are needed from intent type + keyword regex.
+2. `ContextBuilder._pre_fetch_for_intent(...)` — fetches in parallel, stores
+   results in `AgentContext.system_context`.
+3. `Orchestrator._inject_system_context(context)` — serialises `system_context`
+   as `[CONTEXT]\n{json}\n[/CONTEXT]` prepended to the user prompt before
+   `_local_call`.
+
+Rules:
+- Only pre-fetch what the intent actually needs. No speculative fetches.
+- Failures must be silent (empty dict/list). Never block the response.
+- `[CONTEXT]` block always comes before the user message so the model reads
+  data first.
+- Phase 3.5 sensors will replace direct client calls here — `world_state`
+  reads will be ≤50ms vs network calls.
+
 ## Lint
 - `ruff check .`
 - `ruff format .`
