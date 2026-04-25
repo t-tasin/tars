@@ -14,6 +14,7 @@ from uuid import UUID
 
 import structlog
 from shared.constants import ModelName
+from shared.persona import load_persona
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from agents.base import AgentContext, AgentResult, BaseAgent
@@ -41,11 +42,7 @@ _GEMINI_MODEL_IDS: dict[str, str] = {
     ModelName.GEMINI_VISION: "gemini-2.5-flash",
 }
 
-BASE_LOCAL_SYSTEM_PROMPT = (
-    "You are T.A.R.S., Tasin's personal AI assistant. "
-    "Always respond in English. Never use Chinese or any other language. "
-    "Be concise, direct, and helpful. JARVIS-style personality."
-)
+BASE_LOCAL_SYSTEM_PROMPT = load_persona("local")
 
 # P2-12: L1 self-escalation system prompt. Tells L1 (LOCAL_BRAIN / Qwen3-8B)
 # to emit a JSON object when it cannot confidently answer, so the engine can
