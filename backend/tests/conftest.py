@@ -209,9 +209,7 @@ class _InMemorySession:
         unique_cols = self._unique_constraint_cols(model_cls)
         if unique_cols and all(c in values for c in unique_cols):
             for existing in self._store:
-                if type(existing) is model_cls and all(
-                    getattr(existing, c, None) == values[c] for c in unique_cols
-                ):
+                if type(existing) is model_cls and all(getattr(existing, c, None) == values[c] for c in unique_cols):
                     for k, v in values.items():
                         if hasattr(model_cls, k):
                             setattr(existing, k, v)
