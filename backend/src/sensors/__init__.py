@@ -10,5 +10,6 @@ P3.5-01 for the original design.
 """
 
 from sensors.base import BaseSensor
+from sensors.spotify import SpotifySensor
 
-__all__ = ["BaseSensor"]
+__all__ = ["BaseSensor", "SpotifySensor"]

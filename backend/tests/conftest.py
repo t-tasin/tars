@@ -56,6 +56,9 @@ _MOCK_SETTINGS.homepod_host = ""
 _MOCK_SETTINGS.usb_mic_device_index = None
 _MOCK_SETTINGS.node_role = "brain"
 _MOCK_SETTINGS.log_level = "INFO"
+_MOCK_SETTINGS.spotify_client_id = ""
+_MOCK_SETTINGS.spotify_client_secret = ""
+_MOCK_SETTINGS.spotify_refresh_token = ""
 
 # Patch config.get_settings before any production module calls it
 _settings_patcher = patch("config.get_settings", return_value=_MOCK_SETTINGS)

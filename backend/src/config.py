@@ -86,6 +86,11 @@ class Settings(BaseSettings):
     # --- Brave Search ---
     brave_api_key: str = ""
 
+    # --- Spotify ---
+    spotify_client_id: str = ""
+    spotify_client_secret: str = ""
+    spotify_refresh_token: str = ""
+
     # --- Coding Pipeline ---
     coding_max_plan_turns: int = 10
     coding_max_worker_turns: int = 15
