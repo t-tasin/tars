@@ -183,6 +183,29 @@ async def test_compose_with_local_raises_when_no_client() -> None:
         await agent._compose_with_local({})
 
 
+@pytest.mark.asyncio
+async def test_compose_with_local_disables_thinking_and_caps_tokens() -> None:
+    """Briefing must call LOCAL_BRAIN with enable_thinking=False so reasoning_content
+    does not consume the max_tokens budget and leave content empty."""
+    agent = _make_agent()
+
+    await agent._compose_with_local({"weather": {"temp_f": 72}})
+
+    kwargs = agent._local_client.generate.call_args.kwargs
+    assert kwargs.get("enable_thinking") is False
+    assert kwargs.get("max_tokens") == 700
+
+
+@pytest.mark.asyncio
+async def test_compose_with_local_raises_on_empty_content() -> None:
+    """If LOCAL_BRAIN returns empty content (e.g. all output went to reasoning_content),
+    raise so the Gemini fallback path is taken instead of returning an empty narrative."""
+    agent = _make_agent(local_client=_mock_local_client(text=""))
+
+    with pytest.raises(RuntimeError, match="empty content"):
+        await agent._compose_with_local({"weather": {"temp_f": 72}})
+
+
 # ---------------------------------------------------------------------------
 # Test: execute() uses LOCAL_BRAIN for composition
 # ---------------------------------------------------------------------------
