@@ -54,3 +54,8 @@ backend/.coverage
 backend/htmlcov/
 worker/.coverage
 worker/htmlcov/
+
+# Git worktrees
+.claude/worktrees/
+.worktrees/
+worktrees/
