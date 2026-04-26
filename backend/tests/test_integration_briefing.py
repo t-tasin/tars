@@ -53,6 +53,9 @@ def _mock_settings() -> MagicMock:
     s.gemini_api_key = "test-gemini-key"
     s.database_url = "sqlite+aiosqlite://"
     s.debug = False
+    # Test the legacy intent-based router (briefing → gemini_pro). The signal-aware
+    # router would default briefing → local_brain, which is covered elsewhere.
+    s.feature_new_router = False
     return s
 
 
@@ -75,6 +78,9 @@ def _build_briefing_agent(
     agent._gmail_personal = mock_gmail
     agent._gmail_professional = mock_gmail
     agent._weather = mock_weather
+    # Force the Gemini fallback path: tests verify the cloud-fallback contract,
+    # not the live LOCAL_BRAIN call. _compose_with_local raises when None.
+    agent._local_client = None
     return agent
 
 

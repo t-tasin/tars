@@ -173,7 +173,62 @@ class _InMemorySession:
         pass
 
     async def execute(self, stmt: Any) -> _InMemoryResult:
+        from sqlalchemy.sql.dml import Insert
+
+        if isinstance(stmt, Insert):
+            self._handle_insert(stmt)
         return _InMemoryResult(self._store, stmt)
+
+    def _handle_insert(self, stmt: Any) -> None:
+        """Materialize an Insert statement (incl. pg ON CONFLICT) into the store.
+
+        Supports the ``pg_insert(Model).values(...).on_conflict_do_update(...)``
+        pattern used by BriefingAgent so the in-memory session mirrors a real DB.
+        """
+        table = getattr(stmt, "table", None)
+        table_name = getattr(table, "name", None)
+        if not table_name:
+            return
+
+        model_cls = None
+        for mapper in Base.registry.mappers:
+            if getattr(mapper.class_, "__tablename__", None) == table_name:
+                model_cls = mapper.class_
+                break
+        if model_cls is None:
+            return
+
+        values: dict[str, Any] = {}
+        raw_values = getattr(stmt, "_values", None)
+        if raw_values:
+            for col, bindparam in raw_values.items():
+                col_name = getattr(col, "name", None) or getattr(col, "key", None) or str(col)
+                values[col_name] = getattr(bindparam, "value", bindparam)
+
+        # Upsert: if a row already exists matching the unique constraint, update it
+        unique_cols = self._unique_constraint_cols(model_cls)
+        if unique_cols and all(c in values for c in unique_cols):
+            for existing in self._store:
+                if type(existing) is model_cls and all(getattr(existing, c, None) == values[c] for c in unique_cols):
+                    for k, v in values.items():
+                        if hasattr(model_cls, k):
+                            setattr(existing, k, v)
+                    return
+
+        obj = model_cls(**{k: v for k, v in values.items() if hasattr(model_cls, k)})
+        self._pending.append(obj)
+
+    @staticmethod
+    def _unique_constraint_cols(model_cls: Any) -> list[str]:
+        from sqlalchemy import UniqueConstraint
+
+        table = getattr(model_cls, "__table__", None)
+        if table is None:
+            return []
+        for constraint in table.constraints:
+            if isinstance(constraint, UniqueConstraint):
+                return [c.name for c in constraint.columns]
+        return []
 
 
 class _InMemoryResult:
