@@ -59,6 +59,7 @@ _MOCK_SETTINGS.log_level = "INFO"
 _MOCK_SETTINGS.spotify_client_id = ""
 _MOCK_SETTINGS.spotify_client_secret = ""
 _MOCK_SETTINGS.spotify_refresh_token = ""
+_MOCK_SETTINGS.tailscale_api_key = "test-tailscale-key"
 
 # Patch config.get_settings before any production module calls it
 _settings_patcher = patch("config.get_settings", return_value=_MOCK_SETTINGS)

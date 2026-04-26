@@ -80,6 +80,9 @@ class Settings(BaseSettings):
     grafana_api_key: str = ""
     loki_url: str = ""
 
+    # --- Tailscale ---
+    tailscale_api_key: str = ""
+
     # --- SerpAPI ---
     serpapi_key: str = ""
 

@@ -11,5 +11,6 @@ P3.5-01 for the original design.
 
 from sensors.base import BaseSensor
 from sensors.spotify import SpotifySensor
+from sensors.tailscale import TailscaleSensor
 
-__all__ = ["BaseSensor", "SpotifySensor"]
+__all__ = ["BaseSensor", "SpotifySensor", "TailscaleSensor"]
