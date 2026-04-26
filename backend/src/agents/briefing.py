@@ -100,7 +100,7 @@ class BriefingAgent(BaseAgent):
 
         from models.local_client import LocalClient
 
-        self._local_client = LocalClient(timeout_s=300.0)
+        self._local_client = LocalClient(timeout_s=180.0)
 
     # ------------------------------------------------------------------
     # BaseAgent interface
@@ -331,15 +331,22 @@ class BriefingAgent(BaseAgent):
             model=ModelName.LOCAL_BRAIN,
             prompt=prompt,
             system=_BRIEFING_LOCAL_SYSTEM_PROMPT,
-            max_tokens=1024,
+            max_tokens=700,
+            enable_thinking=False,
         )
         log.info(
             "briefing_local_composed",
             tokens_input=response.tokens_input,
             tokens_output=response.tokens_output,
             duration_ms=response.duration_ms,
+            finish_reason=response.finish_reason,
         )
-        return response.text.strip()
+        text = response.text.strip()
+        if not text:
+            raise RuntimeError(
+                f"local briefing returned empty content (finish={response.finish_reason})"
+            )
+        return text
 
     # ------------------------------------------------------------------
     # Narrative composition (Gemini Pro — fallback)
@@ -395,7 +402,7 @@ class BriefingAgent(BaseAgent):
         try:
             response = await gemini.generate(
                 prompt=prompt,
-                model="gemini-2.5-pro",
+                model="gemini-2.5-flash",
                 system_instruction=_NARRATIVE_SYSTEM_PROMPT,
                 temperature=0.7,
                 max_output_tokens=2048,

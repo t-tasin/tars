@@ -659,7 +659,7 @@ class TestExecute:
 
         # Verify Gemini was called with the right model
         call_kwargs = mock_gemini.generate.call_args
-        assert call_kwargs.kwargs["model"] == "gemini-2.5-pro"
+        assert call_kwargs.kwargs["model"] == "gemini-2.5-flash"
 
     @pytest.mark.asyncio
     async def test_execute_fallback_narrative_when_gemini_unavailable(self) -> None:
