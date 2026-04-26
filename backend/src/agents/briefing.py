@@ -343,9 +343,7 @@ class BriefingAgent(BaseAgent):
         )
         text = response.text.strip()
         if not text:
-            raise RuntimeError(
-                f"local briefing returned empty content (finish={response.finish_reason})"
-            )
+            raise RuntimeError(f"local briefing returned empty content (finish={response.finish_reason})")
         return text
 
     # ------------------------------------------------------------------
