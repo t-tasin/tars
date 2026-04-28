@@ -118,9 +118,9 @@ Claude Code: this doc is the source of truth. Check before picking up work. Upda
 | ID | Feature | Status | Owner | Evidence | Last Touched | Blockers | Notes |
 |----|---------|--------|-------|----------|--------------|----------|-------|
 | P3-01 | Qdrant in docker-compose Node 2 | BUILT | Claude | `deploy/node2/docker-compose.yml` qdrant service v1.11.5 on `phase-3/p3-01-qdrant` | 2026-04-26 | depends P1-06 | v1.11.5 pinned. Tailscale-only bind 100.119.114.125:6333/6334. Bind mount `/opt/tars/qdrant_storage`. Awaits `docker compose up -d qdrant` on tars2 to ship. |
-| P3-02 | Qwen3-Embedding-0.6B llama.cpp on port 8003 | PLANNED | Tasin | — | 2026-04-21 | depends P2-01 | Embedding mode |
+| P3-02 | Qwen3-Embedding-0.6B llama.cpp on port 8003 | BUILT | Claude | Covered by P2-05b: `llama-embed.service` deployed tars2:8003 on 2026-04-25 (1024-dim Q8_0 GGUF, full GPU offload) | 2026-04-27 | — | Same llama-server unit shipped under P2-05b row. Cross-node `/v1/embeddings` returns 1024-dim vector. |
 | P3-03 | `integrations/qdrant_client.py` | PLANNED | Claude | — | 2026-04-21 | depends P3-01 | async qdrant-client |
-| P3-04 | `models/embedding_client.py` | PLANNED | Claude | — | 2026-04-21 | depends P3-02 | Local embed via httpx |
+| P3-04 | `models/embedding_client.py` | BUILT | Claude | `backend/src/models/embedding_client.py` + `backend/tests/test_embedding_client.py` (17 tests passing) | 2026-04-27 | depends P3-02 | Async httpx client; single + batched embed; 1024-dim validation; HC-09 typed `EmbeddingError`; HC-12 `UsageTracker.track(LOCAL_EMBED)`. |
 | P3-05 | `wiki/` directory scaffolded | PLANNED | Tasin | — | 2026-04-21 | — | 20 hand-seeded files |
 | P3-06 | `wiki/identity/tars_persona.md` v1 | PLANNED | Tasin | — | 2026-04-21 | depends P3-05 | Voice guide from §5 |
 | P3-07 | `sensors/wiki_watcher.py` (watchdog) | PLANNED | Claude | — | 2026-04-21 | depends P3-03..4 | Auto-re-embed on change |

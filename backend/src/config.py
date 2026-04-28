@@ -21,6 +21,11 @@ class Settings(BaseSettings):
     # --- AI Models ---
     gemini_api_key: str
 
+    # --- Local llama-server (Node 2, deployed via P2-05b) ---
+    # P3-04: Qwen3-Embedding-0.6B endpoint on tars2:8003.
+    local_embed_url: str = "http://100.119.114.125:8003"
+    local_embed_timeout_s: float = 60.0
+
     # --- Telegram ---
     telegram_bot_token: str
     telegram_chat_id: str = ""
