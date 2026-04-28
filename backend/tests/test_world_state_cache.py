@@ -44,9 +44,7 @@ def _patch_repo(monkeypatch: pytest.MonkeyPatch) -> dict[str, Any]:
                 raise state["raises"]
             return state["row"]
 
-    monkeypatch.setattr(
-        "orchestrator.world_state_cache.WorldStateRepository", _StubRepo
-    )
+    monkeypatch.setattr("orchestrator.world_state_cache.WorldStateRepository", _StubRepo)
     return state
 
 

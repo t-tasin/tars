@@ -75,9 +75,7 @@ async def test_weather_prefetch_falls_back_when_stale() -> None:
     calls, ctx = _patch_cache(None)  # treat None as stale/missing
 
     mock_client = MagicMock()
-    mock_client.get_current = AsyncMock(
-        return_value={"temp_f": 65.0, "location": "Wooster"}
-    )
+    mock_client.get_current = AsyncMock(return_value={"temp_f": 65.0, "location": "Wooster"})
     mock_client.close = AsyncMock()
 
     with (

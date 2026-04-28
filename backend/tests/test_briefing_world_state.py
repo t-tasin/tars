@@ -36,9 +36,7 @@ def _weather_mock() -> AsyncMock:
     mock = AsyncMock()
     mock.get_current = AsyncMock(return_value={"temp_f": 65, "conditions": "clear sky"})
     mock.get_forecast = AsyncMock(return_value=[{"time": "12:00", "temp_f": 70}])
-    mock.get_daily_summary = AsyncMock(
-        return_value={"summary": "Nice day", "needs_umbrella": False}
-    )
+    mock.get_daily_summary = AsyncMock(return_value={"summary": "Nice day", "needs_umbrella": False})
     return mock
 
 
