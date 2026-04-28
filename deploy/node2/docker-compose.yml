@@ -18,6 +18,38 @@ services:
     networks:
       - tars-net
 
+  qdrant:
+    image: qdrant/qdrant:v1.11.5
+    container_name: tars-qdrant
+    restart: unless-stopped
+    # Bind to Tailscale interface only (HC-13 — never expose on 0.0.0.0).
+    # 100.119.114.125 = tars2 Tailscale IP.
+    ports:
+      - "100.119.114.125:6333:6333"  # REST API
+      - "100.119.114.125:6334:6334"  # gRPC
+    volumes:
+      # Bind mount on host so backups + wipes are obvious.
+      # Host path must exist with appropriate ownership (uid 1000) before first up.
+      - /opt/tars/qdrant_storage:/qdrant/storage
+    environment:
+      QDRANT__SERVICE__HTTP_PORT: "6333"
+      QDRANT__SERVICE__GRPC_PORT: "6334"
+      QDRANT__LOG_LEVEL: INFO
+    healthcheck:
+      # qdrant image has no curl/wget — use bash /dev/tcp to probe REST port.
+      test: ["CMD-SHELL", "bash -c '</dev/tcp/localhost/6333' || exit 1"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
+    deploy:
+      resources:
+        limits:
+          memory: 2G
+          cpus: "2"
+    networks:
+      - tars-net
+
 volumes:
   worker-data:
     driver: local

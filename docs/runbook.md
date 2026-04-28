@@ -54,6 +54,35 @@ ssh node2 'journalctl -u llama-l2 -f'
 - Health: hit `/api/v1/health` — wait `status=healthy` before considering up
 - Cron catchup: scheduled jobs that missed during outage will fire at next cron slot (not backfilled)
 
+## Qdrant (Node 2 vector DB)
+
+Image `qdrant/qdrant:v1.11.5`. Bound to Tailscale only — `100.119.114.125:6333` (REST) and `:6334` (gRPC). Storage at host path `/opt/tars/qdrant_storage`.
+
+### First-time setup on tars2
+```bash
+ssh tars2 'sudo mkdir -p /opt/tars/qdrant_storage && sudo chown 1000:1000 /opt/tars/qdrant_storage'
+```
+
+### Start / stop
+```bash
+ssh tars2 'cd /opt/tars/deploy/node2 && docker compose up -d qdrant'
+ssh tars2 'cd /opt/tars/deploy/node2 && docker compose stop qdrant'
+```
+
+### Health check
+```bash
+curl -fsS http://100.119.114.125:6333/healthz   # 200 "healthz check passed"
+curl -fsS http://100.119.114.125:6333/collections | jq
+```
+
+### Wipe storage (destructive — HC-03)
+Tasin only. Confirm before running.
+```bash
+ssh tars2 'cd /opt/tars/deploy/node2 && docker compose stop qdrant'
+ssh tars2 'sudo rm -rf /opt/tars/qdrant_storage/*'
+ssh tars2 'cd /opt/tars/deploy/node2 && docker compose up -d qdrant'
+```
+
 ## Backups
 
 ### Run manually
