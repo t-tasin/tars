@@ -494,6 +494,8 @@ class TestFetchAllData:
             "github",
             "jobs",
             "system_health",
+            "tailscale_presence",
+            "spotify",
             "_unavailable_sources",
         }
         assert set(data.keys()) == expected_keys
@@ -565,7 +567,7 @@ class TestFetchAllData:
         ):
             data = await agent._fetch_all_data()
 
-        # All 9 data keys + _unavailable_sources must be present with fallback values
+        # All data keys + _unavailable_sources must be present with fallback values
         expected_keys = {
             "calendar",
             "emails",
@@ -576,6 +578,8 @@ class TestFetchAllData:
             "github",
             "jobs",
             "system_health",
+            "tailscale_presence",
+            "spotify",
             "_unavailable_sources",
         }
         assert set(data.keys()) == expected_keys
