@@ -200,7 +200,18 @@ class ContextBuilder:
         return dict(zip(keys, results))
 
     async def _pre_fetch_weather(self) -> dict[str, Any]:
-        """Fetch current weather from WeatherClient."""
+        """Fetch current weather. Prefer ``world_state``; fall back to WeatherClient.
+
+        P3.5-07: If the WeatherSensor has written a fresh row to ``world_state``
+        (within 3× its 15-min cadence) we use that instead of hitting OpenWeatherMap
+        every request. The cached payload is flat ``{temp_c, temp_f, conditions, ...}``
+        which matches the shape callers expect from ``WeatherClient.get_current``.
+        """
+        cached = await self._read_weather_world_state()
+        if cached is not None:
+            log.debug("prefetch_weather_from_cache", temp_f=cached.get("temp_f"))
+            return cached
+
         client = None
         try:
             from config import get_settings
@@ -221,6 +232,35 @@ class ContextBuilder:
                     await client.close()
                 except Exception:
                     pass
+
+    async def _read_weather_world_state(self) -> dict[str, Any] | None:
+        """Return the latest fresh weather row from ``world_state`` or ``None``.
+
+        Fail-soft per HC-09: any exception logs and returns ``None`` so the
+        caller falls back to direct integration polling.
+        """
+        try:
+            from db.session import get_db_session
+            from orchestrator.world_state_cache import read_fresh_sensor
+
+            async with get_db_session() as session:
+                payload = await read_fresh_sensor(session, "weather")
+                if payload is None:
+                    return None
+                # Pass through only the keys WeatherClient.get_current() returns
+                # so downstream callers see a consistent shape.
+                return {
+                    "temp_c": payload.get("temp_c"),
+                    "temp_f": payload.get("temp_f"),
+                    "conditions": payload.get("conditions"),
+                    "humidity": payload.get("humidity"),
+                    "wind_mph": payload.get("wind_mph"),
+                    "icon": payload.get("icon"),
+                    "location": payload.get("location"),
+                }
+        except Exception:  # noqa: BLE001 — HC-09 fail-soft
+            log.warning("prefetch_weather_world_state_failed", exc_info=True)
+            return None
 
     async def _pre_fetch_schedule(self) -> list[dict[str, Any]]:
         """Fetch today's calendar events from CalDAVClient."""

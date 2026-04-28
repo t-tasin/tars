@@ -471,7 +471,12 @@ class BriefingAgent(BaseAgent):
     # ------------------------------------------------------------------
 
     async def _fetch_all_data(self) -> dict[str, Any]:
-        """Fetch all 9 data sources in parallel. Zero AI tokens."""
+        """Fetch all data sources in parallel. Zero AI tokens.
+
+        Phase 3.5 (P3.5-07): weather/healthkit/tailscale/spotify prefer
+        ``world_state`` over direct integration polling. Each fetcher falls
+        back to the integration when the cached row is missing or stale.
+        """
         results = await asyncio.gather(
             self._fetch_calendar(),
             self._fetch_emails(),
@@ -482,6 +487,8 @@ class BriefingAgent(BaseAgent):
             self._fetch_github_notifs(),
             self._fetch_job_matches(),
             self._fetch_system_health(),
+            self._fetch_tailscale_presence(),
+            self._fetch_spotify_now_playing(),
             return_exceptions=True,
         )
 
@@ -495,6 +502,8 @@ class BriefingAgent(BaseAgent):
             "github",
             "jobs",
             "system_health",
+            "tailscale_presence",
+            "spotify",
         ]
         defaults: dict[str, Any] = {
             "calendar": {"error": "unavailable", "today": [], "tomorrow": []},
@@ -506,6 +515,8 @@ class BriefingAgent(BaseAgent):
             "github": [],
             "jobs": {"new_today": 0, "listings": []},
             "system_health": {"status": "unknown"},
+            "tailscale_presence": {},
+            "spotify": {},
         }
 
         payload: dict[str, Any] = {}
@@ -532,6 +543,26 @@ class BriefingAgent(BaseAgent):
             )
 
         return payload
+
+    # ------------------------------------------------------------------
+    # World-state cache reader (P3.5-07)
+    # ------------------------------------------------------------------
+
+    async def _read_world_state(self, sensor: str) -> dict[str, Any] | None:
+        """Return the latest fresh ``world_state`` payload for ``sensor`` or ``None``.
+
+        Fail-soft per HC-09: any exception logs and returns ``None`` so the
+        caller can fall back to direct integration polling.
+        """
+        try:
+            from db.session import get_db_session
+            from orchestrator.world_state_cache import read_fresh_sensor
+
+            async with get_db_session() as session:
+                return await read_fresh_sensor(session, sensor)
+        except Exception:  # noqa: BLE001 — HC-09
+            log.warning("briefing_world_state_read_failed", sensor=sensor, exc_info=True)
+            return None
 
     # ------------------------------------------------------------------
     # Individual fetch methods
@@ -579,14 +610,36 @@ class BriefingAgent(BaseAgent):
         }
 
     async def _fetch_weather(self) -> dict[str, Any]:
-        """Fetch current conditions, forecast, and daily summary."""
-        current, forecast, summary = await asyncio.gather(
-            self._weather.get_current(),
-            self._weather.get_forecast(hours=12),
-            self._weather.get_daily_summary(),
-        )
+        """Fetch weather. Prefer world_state cache; fall back to integration.
 
-        log.info("briefing_weather_fetched", temp_f=current.get("temp_f"))
+        World-state path (P3.5-07): the WeatherSensor publishes a flat
+        payload every 15 min. We reshape it into the
+        ``{current, forecast, summary}`` form the briefing payload expects.
+        Forecast is not cached by the sensor, so it stays empty on cache hit.
+
+        Fallback: when the cached row is missing or stale, hit
+        WeatherClient directly (the original behaviour).
+        """
+        cached = await self._read_world_state("weather")
+        if cached is not None:
+            log.info(
+                "briefing_weather_from_cache",
+                temp_f=cached.get("temp_f"),
+                location=cached.get("location"),
+            )
+            return _weather_payload_from_sensor(cached)
+
+        try:
+            current, forecast, summary = await asyncio.gather(
+                self._weather.get_current(),
+                self._weather.get_forecast(hours=12),
+                self._weather.get_daily_summary(),
+            )
+        except Exception:
+            log.warning("briefing_weather_fallback_failed", exc_info=True)
+            raise
+
+        log.info("briefing_weather_fetched", temp_f=current.get("temp_f"), source="integration")
 
         return {
             "current": current,
@@ -595,7 +648,24 @@ class BriefingAgent(BaseAgent):
         }
 
     async def _fetch_health_data(self) -> dict[str, Any]:
-        """Query yesterday's health data from the health_data table."""
+        """Fetch health data. Prefer world_state cache; fall back to ``health_data`` table.
+
+        World-state path (P3.5-07): HealthKitSensor publishes today's grouped
+        readings every 5 min. Cache hit returns those reshaped into the legacy
+        flat ``{date, <metric>: {value, unit}, ...}`` shape so downstream
+        ``_build_health_section`` keeps working.
+
+        Fallback: direct query against the ``health_data`` table for yesterday's
+        rows, the original behaviour.
+        """
+        cached = await self._read_world_state("healthkit")
+        if cached is not None:
+            log.info(
+                "briefing_health_from_cache",
+                types_present=cached.get("types_present", []),
+            )
+            return _health_payload_from_sensor(cached)
+
         from db.models import HealthData
         from db.session import get_db_session
 
@@ -849,6 +919,39 @@ class BriefingAgent(BaseAgent):
             "listings": listings,
         }
 
+    async def _fetch_tailscale_presence(self) -> dict[str, Any]:
+        """Read Tailscale device presence from the world_state cache.
+
+        No direct integration fallback — TailscaleSensor is the only consumer
+        of the API and the briefing tolerates an empty dict gracefully.
+        """
+        cached = await self._read_world_state("tailscale_presence")
+        if cached is None:
+            log.debug("briefing_tailscale_no_cache")
+            return {}
+        log.info(
+            "briefing_tailscale_from_cache",
+            online_count=cached.get("online_count"),
+            total_count=cached.get("total_count"),
+        )
+        return cached
+
+    async def _fetch_spotify_now_playing(self) -> dict[str, Any]:
+        """Read Spotify now-playing state from the world_state cache.
+
+        No direct integration fallback — SpotifySensor is the only consumer
+        of the spotipy client.
+        """
+        cached = await self._read_world_state("spotify")
+        if cached is None:
+            log.debug("briefing_spotify_no_cache")
+            return {}
+        log.info(
+            "briefing_spotify_from_cache",
+            playing=cached.get("playing"),
+        )
+        return cached
+
     async def _fetch_system_health(self) -> dict[str, Any]:
         """Query the latest system health check per target."""
         from db.models import SystemHealthLog
@@ -907,6 +1010,67 @@ class BriefingAgent(BaseAgent):
             "status": overall,
             "targets": targets,
         }
+
+
+# ---------------------------------------------------------------------------
+# Module-level helpers for sensor → briefing payload translation (P3.5-07)
+# ---------------------------------------------------------------------------
+
+
+def _weather_payload_from_sensor(cached: dict[str, Any]) -> dict[str, Any]:
+    """Reshape a flat WeatherSensor payload into ``{current, forecast, summary}``.
+
+    The sensor caches current conditions + a daily summary; it does NOT cache
+    the hourly forecast, so ``forecast`` stays empty on a cache hit. Keeps
+    backwards compatibility with ``_build_payload`` which reads
+    ``weather_raw["current"]`` and ``weather_raw["summary"]``.
+    """
+    current = {
+        "temp_c": cached.get("temp_c"),
+        "temp_f": cached.get("temp_f"),
+        "conditions": cached.get("conditions"),
+        "humidity": cached.get("humidity"),
+        "wind_mph": cached.get("wind_mph"),
+        "icon": cached.get("icon"),
+        "location": cached.get("location"),
+    }
+    summary = {
+        "summary": cached.get("daily_summary", ""),
+        "high": cached.get("high"),
+        "low": cached.get("low"),
+        "needs_umbrella": cached.get("needs_umbrella", False),
+        "suggestion": cached.get("suggestion", ""),
+    }
+    return {
+        "current": current,
+        "forecast": [],
+        "summary": summary,
+    }
+
+
+def _health_payload_from_sensor(cached: dict[str, Any]) -> dict[str, Any]:
+    """Flatten a HealthKitSensor payload to the legacy briefing shape.
+
+    Sensor shape::
+
+        {"date": "2026-04-26", "readings": {"steps": {"value": 8500.0, ...}}, ...}
+
+    Briefing shape (consumed by ``_build_health_section``)::
+
+        {"date": "2026-04-26", "steps": {"value": 8500.0, "unit": "count"}, ...}
+    """
+    readings = cached.get("readings", {}) or {}
+    out: dict[str, Any] = {}
+    if "date" in cached:
+        out["date"] = cached["date"]
+    for metric, info in readings.items():
+        if not isinstance(info, dict):
+            continue
+        out[metric] = {
+            "value": info.get("value"),
+            "unit": info.get("unit"),
+        }
+    return out
 
 
 # ---------------------------------------------------------------------------
