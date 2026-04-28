@@ -130,7 +130,7 @@ Claude Code: this doc is the source of truth. Check before picking up work. Upda
 | P3-11 | `web/` Next.js 15 scaffold | PLANNED | Claude | — | 2026-04-21 | — | App Router + Tailwind |
 | P3-12 | Vercel deploy `tars.<domain>` | PLANNED | Tasin | — | 2026-04-21 | depends P3-11 | DNS + tunnel |
 | P3-13 | `/api/v1/public/stream` SSE endpoint | BUILT | Claude | `backend/src/api/public_stream.py`, `backend/src/api/sanitizer.py`, tests (8 SSE + 22 sanitizer) | 2026-04-26 | — | Event sanitizer + auth, HC-13 |
-| P3-14 | Sanitizer fuzz tests | PLANNED | Claude | — | 2026-04-21 | depends P3-13 | 10k random events, no PII leak |
+| P3-14 | Sanitizer fuzz tests | BUILT | Claude | `backend/tests/test_api/test_sanitizer_fuzz.py` + `sanitizer.py` JWT/intl-phone/AIza hardening; 5 tests, 10k+ iters | 2026-04-28 | depends P3-13 | Fuzz revealed JWT + intl-phone + Google-API-key regex gaps; all patched in same PR. HC-13 hardened. |
 | P3-15 | Dashboard MVP: feed + today's numbers | PLANNED | Claude | — | 2026-04-21 | depends P3-11..13 | Text dashboard, 3D later |
 | P3-16 | Tag release `v0.3-sovereign-memory` | PLANNED | Tasin | — | 2026-04-21 | depends P3-01..15 | — |
 

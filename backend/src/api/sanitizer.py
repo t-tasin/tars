@@ -57,10 +57,20 @@ _FREE_TEXT_FIELDS: Final[frozenset[str]] = frozenset({"text", "label", "model", 
 _EMAIL_RE = re.compile(r"\b[\w.!#$%&'*+/=?^`{|}~-]+@[\w-]+(?:\.[\w-]+)+\b")
 # Phone numbers: US-style and international with optional separators.
 _PHONE_RE = re.compile(r"(?<!\w)(?:\+?\d{1,3}[\s.\-]?)?(?:\(\d{3}\)|\d{3})[\s.\-]?\d{3}[\s.\-]?\d{4}(?!\w)")
+# International phone numbers with 5-5 / 4-6 spaced groupings (e.g. "+44 7911 123456",
+# "+91 98765 43210"). Complements ``_PHONE_RE`` which is biased to 3-3-4 US shape.
+_PHONE_INTL_RE = re.compile(r"\+\d{1,3}[\s.\-]\d{3,5}[\s.\-]\d{4,6}\b")
 # Filesystem paths under user homes.
 _HOME_PATH_RE = re.compile(r"/(?:Users|home)/[\w.\-]+(?:/[^\s\"']*)?")
 # API keys: explicit prefixes first, then a long alphanum/underscore catchall.
-_API_KEY_PREFIX_RE = re.compile(r"\b(?:sk-|gho_|ghp_|gha_|ghu_|ghs_|AKIA)[A-Za-z0-9_\-]{16,}\b")
+# ``AIza`` is the Google Cloud / Firebase API-key prefix; threshold lowered to
+# 12 chars after the prefix so that adversarial splicing (which can split a
+# longer key in two) still trips the match on the surviving fragment.
+_API_KEY_PREFIX_RE = re.compile(r"\b(?:sk-|gho_|ghp_|gha_|ghu_|ghs_|AKIA|AIza)[A-Za-z0-9_\-]{12,}\b")
+# JWT: three base64url segments separated by dots, header+payload start with ``eyJ``.
+# Apply BEFORE the generic API-key catchall so the dotted shape isn't partially
+# eaten by the long-alphanum rule (which would leave the ``.eyJ...`` tail intact).
+_JWT_RE = re.compile(r"\beyJ[A-Za-z0-9_\-]+\.eyJ[A-Za-z0-9_\-]+\.[A-Za-z0-9_\-]+\b")
 _API_KEY_GENERIC_RE = re.compile(r"\b[A-Za-z0-9]{32,}\b")
 # Plausible IPv4 token (validated separately to avoid eating version numbers).
 _IPV4_RE = re.compile(r"\b(?:\d{1,3}\.){3}\d{1,3}\b")
@@ -110,15 +120,21 @@ def redact_text(text: str) -> str:
     """Apply every redaction pattern to ``text`` and truncate to the cap.
 
     Order matters: prefix-API-keys before generic API keys (so prefixes
-    survive their stricter rule), email before phone (so phone digits in an
-    email-looking token don't double-redact), then paths and IPs.
+    survive their stricter rule), JWT before the generic catch-all (so the
+    dotted tri-segment shape is consumed whole), email before phone (so
+    phone digits in an email-looking token don't double-redact), then
+    paths and IPs.
     """
     if not text:
         return text
     out = text
     out = _EMAIL_RE.sub(_PII_REPLACEMENT, out)
     out = _API_KEY_PREFIX_RE.sub(_PII_REPLACEMENT, out)
+    # JWT before the generic-key catchall so the dotted tri-segment shape is
+    # consumed whole rather than partially clobbered by the 32+ alphanum rule.
+    out = _JWT_RE.sub(_PII_REPLACEMENT, out)
     out = _HOME_PATH_RE.sub(_PII_REPLACEMENT, out)
+    out = _PHONE_INTL_RE.sub(_PII_REPLACEMENT, out)
     out = _PHONE_RE.sub(_PII_REPLACEMENT, out)
     out = _redact_ips(out)
     out = _API_KEY_GENERIC_RE.sub(_PII_REPLACEMENT, out)
