@@ -18,6 +18,7 @@ from shared.constants import (
 )
 from sqlalchemy import (
     Boolean,
+    CheckConstraint,
     Date,
     Enum,
     Float,
@@ -804,3 +805,78 @@ class WorldState(Base):
         server_default=text("now()"),
     )
     created_at: Mapped[datetime] = _created_at()
+
+
+# ---------------------------------------------------------------------------
+# 23. WikiProposal (Phase 3 — CuratorAgent / HC-14)
+# ---------------------------------------------------------------------------
+
+
+class WikiProposal(Base):
+    """Pending wiki edit awaiting Tasin approval.
+
+    HC-14: every wiki write must originate as a proposal. Nothing in
+    ``wiki_index`` may represent unapproved content; the schema enforces
+    this by keeping proposals in a separate table whose ``status`` lifecycle
+    is decoupled from indexing.
+    """
+
+    __tablename__ = "wiki_proposals"
+    __table_args__ = (
+        CheckConstraint(
+            "status IN ('pending','approved','rejected','expired')",
+            name="ck_wiki_proposals_status",
+        ),
+        CheckConstraint(
+            "operation IN ('create','update','delete')",
+            name="ck_wiki_proposals_operation",
+        ),
+        Index("idx_wiki_proposals_status_created", "status", text("created_at DESC")),
+        Index("idx_wiki_proposals_target_path", "target_path"),
+    )
+
+    id: Mapped[uuid.UUID] = _uuid_pk()
+    created_at: Mapped[datetime] = _created_at()
+    status: Mapped[str] = mapped_column(Text, nullable=False, server_default=text("'pending'"))
+    source_agent: Mapped[str] = mapped_column(Text, nullable=False)
+    target_path: Mapped[str] = mapped_column(Text, nullable=False)
+    operation: Mapped[str] = mapped_column(Text, nullable=False)
+    diff: Mapped[str] = mapped_column(Text, nullable=False)
+    rationale: Mapped[str | None] = mapped_column(Text)
+    reviewed_at: Mapped[datetime | None] = mapped_column(TIMESTAMP(timezone=True))
+    reviewed_by: Mapped[str | None] = mapped_column(Text)
+    review_note: Mapped[str | None] = mapped_column(Text)
+
+
+# ---------------------------------------------------------------------------
+# 24. WikiIndex (Phase 3 — Qdrant tasin_wiki mirror for re-embed)
+# ---------------------------------------------------------------------------
+
+
+class WikiIndex(Base):
+    """Postgres mirror of every chunk embedded into Qdrant ``tasin_wiki``.
+
+    The Qdrant point id lives here so we can rebuild/re-embed deterministically
+    after a vector-store wipe or model swap. ``content_hash`` enables dedup
+    and change detection between runs of the indexer.
+    """
+
+    __tablename__ = "wiki_index"
+    __table_args__ = (
+        UniqueConstraint("qdrant_point_id", name="uq_wiki_index_qdrant_point_id"),
+        UniqueConstraint("path", "chunk_index", name="uq_wiki_index_path_chunk"),
+        Index("idx_wiki_index_content_hash", "content_hash"),
+    )
+
+    id: Mapped[uuid.UUID] = _uuid_pk()
+    path: Mapped[str] = mapped_column(Text, nullable=False)
+    chunk_index: Mapped[int] = mapped_column(Integer, nullable=False)
+    qdrant_point_id: Mapped[uuid.UUID] = mapped_column(nullable=False)
+    content_hash: Mapped[str] = mapped_column(Text, nullable=False)
+    embedded_at: Mapped[datetime] = mapped_column(
+        TIMESTAMP(timezone=True),
+        nullable=False,
+        server_default=text("now()"),
+    )
+    embedding_model: Mapped[str] = mapped_column(Text, nullable=False)
+    embedding_dim: Mapped[int] = mapped_column(Integer, nullable=False)

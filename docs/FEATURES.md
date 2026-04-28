@@ -126,7 +126,7 @@ Claude Code: this doc is the source of truth. Check before picking up work. Upda
 | P3-07 | `sensors/wiki_watcher.py` (watchdog) | PLANNED | Claude | — | 2026-04-21 | depends P3-03..4 | Auto-re-embed on change |
 | P3-08 | Qdrant collection `tasin_wiki` | PLANNED | Claude | — | 2026-04-21 | depends P3-03,7 | Ingest seed files |
 | P3-09 | `context_builder.retrieve_wiki(query, k=8)` | PLANNED | Claude | — | 2026-04-21 | depends P3-08 | Every AgentContext gets chunks |
-| P3-10 | Postgres `wiki_proposals` + `wiki_index` tables | PLANNED | Claude | — | 2026-04-21 | — | Alembic migration |
+| P3-10 | Postgres `wiki_proposals` + `wiki_index` tables | BUILT | Claude | alembic 008, 17 repo tests (2 PG-gated) | 2026-04-27 | — | Alembic migration + repos |
 | P3-11 | `web/` Next.js 15 scaffold | PLANNED | Claude | — | 2026-04-21 | — | App Router + Tailwind |
 | P3-12 | Vercel deploy `tars.<domain>` | PLANNED | Tasin | — | 2026-04-21 | depends P3-11 | DNS + tunnel |
 | P3-13 | `/api/v1/public/stream` SSE endpoint | PLANNED | Claude | — | 2026-04-21 | — | Event sanitizer + auth |
