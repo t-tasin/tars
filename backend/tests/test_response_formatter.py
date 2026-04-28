@@ -5,7 +5,7 @@ from __future__ import annotations
 from uuid import UUID, uuid4
 
 import pytest
-from shared.constants import ContentType
+from shared.constants import AutonomyClass, ContentType
 
 from agents.base import AgentResult
 from orchestrator.response_formatter import ResponseFormatter
@@ -27,7 +27,11 @@ def msg_id() -> UUID:
 
 
 def _make_result(**kwargs) -> AgentResult:
-    defaults = {"success": True, "text": "Hello, Tasin."}
+    defaults = {
+        "success": True,
+        "text": "Hello, Tasin.",
+        "autonomy_class": AutonomyClass.READ,
+    }
     defaults.update(kwargs)
     return AgentResult(**defaults)
 

@@ -17,7 +17,7 @@ from datetime import UTC, datetime, timedelta
 from typing import Any
 
 import structlog
-from shared.constants import JobStatus
+from shared.constants import AutonomyClass, JobStatus
 from sqlalchemy import select
 
 from agents.base import AgentContext, AgentResult, BaseAgent
@@ -59,6 +59,7 @@ class JobSearchAgent(BaseAgent):
     """Job search with three-tier filtering: collect → flash screen → pro evaluate."""
 
     agent_type = "job_search"
+    autonomy_class = AutonomyClass.READ
 
     def __init__(self) -> None:
         from config import get_settings
@@ -113,6 +114,7 @@ class JobSearchAgent(BaseAgent):
 
         if not rows:
             return AgentResult(
+                autonomy_class=self.autonomy_class,
                 success=True,
                 text="No new job matches in the last 48 hours. The next scan runs at 2:00 AM.",
                 content_type="text",
@@ -144,6 +146,7 @@ class JobSearchAgent(BaseAgent):
         )
 
         return AgentResult(
+            autonomy_class=self.autonomy_class,
             success=True,
             text=text,
             content_type="card",
@@ -166,6 +169,7 @@ class JobSearchAgent(BaseAgent):
 
         if not raw_listings:
             return AgentResult(
+                autonomy_class=self.autonomy_class,
                 success=True,
                 text="Job scan complete — no new listings found from any source.",
                 data={"new_matches": 0},
@@ -177,6 +181,7 @@ class JobSearchAgent(BaseAgent):
 
         if not raw_listings:
             return AgentResult(
+                autonomy_class=self.autonomy_class,
                 success=True,
                 text="Job scan complete — all listings already seen.",
                 data={"new_matches": 0},
@@ -190,6 +195,7 @@ class JobSearchAgent(BaseAgent):
             # Store rejects too so we don't re-process them
             await self._store_results(raw_listings, flash_only=True)
             return AgentResult(
+                autonomy_class=self.autonomy_class,
                 success=True,
                 text="Job scan complete — no listings passed initial screening.",
                 data={"new_matches": 0, "screened_out": len(raw_listings)},
@@ -230,6 +236,7 @@ class JobSearchAgent(BaseAgent):
             text = f"Scanned {len(raw_listings)} listings — no strong matches."
 
         return AgentResult(
+            autonomy_class=self.autonomy_class,
             success=True,
             text=text,
             data={

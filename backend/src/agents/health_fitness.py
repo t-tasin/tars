@@ -14,6 +14,7 @@ from datetime import date, timedelta
 from typing import Any
 
 import structlog
+from shared.constants import AutonomyClass
 from sqlalchemy import select
 
 from agents.base import AgentContext, AgentResult, BaseAgent
@@ -51,6 +52,7 @@ class HealthFitnessAgent(BaseAgent):
     """
 
     agent_type = "health_fitness"
+    autonomy_class = AutonomyClass.WRITE_SELF
 
     async def execute(self, context: AgentContext) -> AgentResult:
         """Provide health and fitness insights from HealthKit data."""
@@ -78,6 +80,7 @@ class HealthFitnessAgent(BaseAgent):
 
         if not rows:
             return AgentResult(
+                autonomy_class=self.autonomy_class,
                 success=True,
                 text="No health data available yet. Sync your HealthKit data from the iOS app to get started.",
             )
@@ -101,6 +104,7 @@ class HealthFitnessAgent(BaseAgent):
         )
 
         return AgentResult(
+            autonomy_class=self.autonomy_class,
             success=True,
             text=insights or self._build_fallback_text(summary),
             content_type="card",

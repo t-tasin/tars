@@ -7,15 +7,21 @@ from dataclasses import dataclass, field
 from typing import Any
 from uuid import UUID
 
-from shared.constants import TIER_MAP, RiskTier
+from shared.constants import TIER_MAP, AutonomyClass, RiskTier
 
 
 @dataclass
 class AgentResult:
-    """Result returned by any agent execution."""
+    """Result returned by any agent execution.
+
+    ``autonomy_class`` is **required** (P4-12). Each agent must declare the
+    autonomy class for the action it performed; the orchestrator gates
+    execution + approval based on this value (see ``docs/autonomy_budget.md``).
+    """
 
     success: bool
     text: str
+    autonomy_class: AutonomyClass
     content_type: str = "text"
     cards: list[dict[str, Any]] = field(default_factory=list)
     has_side_effects: bool = False
@@ -44,6 +50,10 @@ class BaseAgent(ABC):
     """Abstract base class for all T.A.R.S. agents."""
 
     agent_type: str = "base"
+    #: Default autonomy class for this agent — used as the conservative
+    #: fallback when constructing :class:`AgentResult`. Subclasses must
+    #: declare their own class per ``docs/FEATURES.md`` Agents Registry.
+    autonomy_class: AutonomyClass = AutonomyClass.READ
 
     @abstractmethod
     async def execute(self, context: AgentContext) -> AgentResult:

@@ -26,6 +26,7 @@ import re
 from uuid import uuid4
 
 import structlog
+from shared.constants import AutonomyClass
 
 from agents.base import AgentContext, AgentResult, BaseAgent
 from agents.coding_pipeline import CodingPipeline
@@ -80,6 +81,7 @@ class CodingAgent(BaseAgent):
     """
 
     agent_type = "coding"
+    autonomy_class = AutonomyClass.WRITE_WORLD
 
     def __init__(self, job_queue: JobQueue | None = None) -> None:
         self._settings = get_settings()
@@ -115,6 +117,7 @@ class CodingAgent(BaseAgent):
 
         if not repo_url:
             return AgentResult(
+                autonomy_class=self.autonomy_class,
                 success=False,
                 text=(
                     "I need a GitHub repository to work on. "
@@ -126,6 +129,7 @@ class CodingAgent(BaseAgent):
 
         if not task:
             return AgentResult(
+                autonomy_class=self.autonomy_class,
                 success=False,
                 text="What would you like me to do in this repo? Please describe the task.",
                 error="no_task",
@@ -164,6 +168,7 @@ class CodingAgent(BaseAgent):
         except TimeoutError:
             log.error("coding_job_timeout", job_id=job_id, timeout=_JOB_TIMEOUT)
             return AgentResult(
+                autonomy_class=self.autonomy_class,
                 success=False,
                 text=(
                     f"The coding task timed out after {_JOB_TIMEOUT}s. "
@@ -174,6 +179,7 @@ class CodingAgent(BaseAgent):
         except Exception:
             log.exception("coding_job_failed", job_id=job_id)
             return AgentResult(
+                autonomy_class=self.autonomy_class,
                 success=False,
                 text="Something went wrong dispatching the coding task. Please try again.",
                 error="dispatch_error",
@@ -186,6 +192,7 @@ class CodingAgent(BaseAgent):
             error_msg = result.get("error", "unknown error")
             log.error("coding_job_failed", job_id=job_id, error=error_msg)
             return AgentResult(
+                autonomy_class=self.autonomy_class,
                 success=False,
                 text=f"The coding task failed: {error_msg}",
                 error="job_failed",
@@ -224,6 +231,7 @@ class CodingAgent(BaseAgent):
             )
 
             return AgentResult(
+                autonomy_class=self.autonomy_class,
                 success=True,
                 text=f"Code changes ready for review ({len(files_changed)} files changed):",
                 content_type="approval",
@@ -258,6 +266,7 @@ class CodingAgent(BaseAgent):
         )
 
         return AgentResult(
+            autonomy_class=self.autonomy_class,
             success=True,
             text=response_text,
             data={
@@ -304,6 +313,7 @@ class CodingAgent(BaseAgent):
         except Exception:
             log.exception("coding_pipeline_error")
             return AgentResult(
+                autonomy_class=self.autonomy_class,
                 success=False,
                 text="The coding pipeline encountered an unexpected error.",
                 error="pipeline_error",
@@ -312,6 +322,7 @@ class CodingAgent(BaseAgent):
         if not result.success:
             log.error("coding_pipeline_failed", error=result.error)
             return AgentResult(
+                autonomy_class=self.autonomy_class,
                 success=False,
                 text=f"The coding pipeline failed: {result.error}",
                 error="pipeline_failed",
@@ -340,6 +351,7 @@ class CodingAgent(BaseAgent):
         )
 
         return AgentResult(
+            autonomy_class=self.autonomy_class,
             success=True,
             text=(
                 f"Pipeline completed: {result.tasks_completed}/{result.tasks_total} "

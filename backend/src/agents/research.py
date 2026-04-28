@@ -16,6 +16,7 @@ import re
 from typing import Any
 
 import structlog
+from shared.constants import AutonomyClass
 from sqlalchemy import select
 
 from agents.base import AgentContext, AgentResult, BaseAgent
@@ -92,6 +93,7 @@ class ResearchAgent(BaseAgent):
     """
 
     agent_type = "research"
+    autonomy_class = AutonomyClass.READ
 
     def __init__(self) -> None:
         self._claude = ClaudeCodeSpawner()
@@ -102,6 +104,7 @@ class ResearchAgent(BaseAgent):
 
         if not user_message.strip():
             return AgentResult(
+                autonomy_class=self.autonomy_class,
                 success=False,
                 text="What would you like me to research? Please provide a topic or question.",
                 error="empty_query",
@@ -133,6 +136,7 @@ class ResearchAgent(BaseAgent):
         except ClaudeSpawnError:
             log.error("research_claude_spawn_failed", exc_info=True)
             return AgentResult(
+                autonomy_class=self.autonomy_class,
                 success=False,
                 text="I can't perform research right now — Claude is unavailable. Please try again shortly.",
                 error="claude_unavailable",
@@ -145,6 +149,7 @@ class ResearchAgent(BaseAgent):
                 duration_ms=result.duration_ms,
             )
             return AgentResult(
+                autonomy_class=self.autonomy_class,
                 success=False,
                 text="I had trouble researching that topic. Could you try rephrasing your question?",
                 error=result.error or "empty_response",
@@ -161,6 +166,7 @@ class ResearchAgent(BaseAgent):
                 duration_ms=result.duration_ms,
             )
             return AgentResult(
+                autonomy_class=self.autonomy_class,
                 success=True,
                 text=result.text.strip(),
                 content_type="text",
@@ -201,6 +207,7 @@ class ResearchAgent(BaseAgent):
         )
 
         return AgentResult(
+            autonomy_class=self.autonomy_class,
             success=True,
             text=display_text,
             content_type="card" if cards else "text",

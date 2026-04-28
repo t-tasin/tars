@@ -64,6 +64,39 @@ class RiskTier(StrEnum):
     TIER3_ESCALATION = "tier3_escalation"
 
 
+class AutonomyClass(StrEnum):
+    """Autonomy budget classes — see ``docs/autonomy_budget.md``.
+
+    Order is significant: the ``level`` property exposes a 0..4 numeric
+    rank from least- to most-privileged so callers can compare instances
+    (e.g. ``AutonomyClass.WRITE_INFRA.level > AutonomyClass.READ.level``).
+    """
+
+    READ = "read"
+    WRITE_LOCAL = "write_local"
+    WRITE_SELF = "write_self"
+    WRITE_WORLD = "write_world"
+    WRITE_INFRA = "write_infra"
+
+    @property
+    def level(self) -> int:
+        """Numeric rank from 0 (READ) to 4 (WRITE_INFRA)."""
+        return _AUTONOMY_LEVELS[self]
+
+    def requires_approval(self) -> bool:
+        """HC-01 alignment: WRITE_WORLD and WRITE_INFRA always need approval."""
+        return self in {AutonomyClass.WRITE_WORLD, AutonomyClass.WRITE_INFRA}
+
+
+_AUTONOMY_LEVELS: dict[AutonomyClass, int] = {
+    AutonomyClass.READ: 0,
+    AutonomyClass.WRITE_LOCAL: 1,
+    AutonomyClass.WRITE_SELF: 2,
+    AutonomyClass.WRITE_WORLD: 3,
+    AutonomyClass.WRITE_INFRA: 4,
+}
+
+
 class EmailTier(StrEnum):
     URGENT = "urgent"
     ACTIONABLE = "actionable"

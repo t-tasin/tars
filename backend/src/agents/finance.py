@@ -15,6 +15,7 @@ from decimal import Decimal
 from typing import Any
 
 import structlog
+from shared.constants import AutonomyClass
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -58,6 +59,7 @@ class FinanceAgent(BaseAgent):
     """
 
     agent_type = "finance"
+    autonomy_class = AutonomyClass.READ
 
     def __init__(self) -> None:
         self._claude = ClaudeCodeSpawner()
@@ -154,6 +156,7 @@ class FinanceAgent(BaseAgent):
         )
 
         return AgentResult(
+            autonomy_class=self.autonomy_class,
             success=True,
             text=text,
             content_type="card",

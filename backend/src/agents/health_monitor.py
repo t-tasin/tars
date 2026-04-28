@@ -17,7 +17,7 @@ from typing import Any
 import httpx
 import psutil
 import structlog
-from shared.constants import HealthStatus
+from shared.constants import AutonomyClass, HealthStatus
 from sqlalchemy import text
 
 from agents.base import AgentContext, AgentResult, BaseAgent
@@ -39,6 +39,7 @@ class HealthMonitorAgent(BaseAgent):
     """Check system health.  Local monitoring — zero AI tokens unless anomaly detected."""
 
     agent_type: str = "health_monitor"
+    autonomy_class = AutonomyClass.READ
 
     async def execute(self, context: AgentContext) -> AgentResult:
         """Run all health checks, log results, alert on anomalies."""
@@ -130,6 +131,7 @@ class HealthMonitorAgent(BaseAgent):
             lines.append(f"\nDiagnosis: {diagnosis}")
 
         return AgentResult(
+            autonomy_class=self.autonomy_class,
             success=True,
             text="\n".join(lines),
             data={

@@ -6,7 +6,7 @@ import fnmatch
 from typing import Any
 
 import structlog
-from shared.constants import EmailTier, ModelName
+from shared.constants import AutonomyClass, EmailTier, ModelName
 
 from agents.base import AgentContext, AgentResult, BaseAgent
 from models.gemini_client import GeminiClient
@@ -111,6 +111,7 @@ class EmailClassifierAgent(BaseAgent):
     """Classify unread emails into 4 tiers using contact rules + Gemini Flash."""
 
     agent_type: str = "email_classifier"
+    autonomy_class = AutonomyClass.WRITE_LOCAL
 
     async def execute(self, context: AgentContext) -> AgentResult:
         """Classify new emails using contact rules and Gemini Flash.
@@ -130,6 +131,7 @@ class EmailClassifierAgent(BaseAgent):
 
         if not gmail_clients:
             return AgentResult(
+                autonomy_class=self.autonomy_class,
                 success=False,
                 text="No Gmail clients configured.",
                 error="no_gmail_clients",
@@ -137,6 +139,7 @@ class EmailClassifierAgent(BaseAgent):
 
         if not gemini:
             return AgentResult(
+                autonomy_class=self.autonomy_class,
                 success=False,
                 text="Gemini client not available.",
                 error="no_gemini_client",
@@ -154,6 +157,7 @@ class EmailClassifierAgent(BaseAgent):
 
         if not all_emails:
             return AgentResult(
+                autonomy_class=self.autonomy_class,
                 success=True,
                 text="No new emails to classify.",
                 data={"total": 0, "urgent": 0, "actionable": 0, "informational": 0, "noise": 0},
@@ -236,6 +240,7 @@ class EmailClassifierAgent(BaseAgent):
         has_urgent = counts["urgent"] > 0
 
         return AgentResult(
+            autonomy_class=self.autonomy_class,
             success=True,
             text=summary,
             data={

@@ -9,6 +9,7 @@ import json
 from typing import Any
 
 import structlog
+from shared.constants import AutonomyClass
 
 from agents.base import AgentContext, AgentResult, BaseAgent
 
@@ -21,6 +22,7 @@ class WorkoutTrackerAgent(BaseAgent):
     """Manage workout splits, log sets, enforce progressive overload, track streaks."""
 
     agent_type = "workout_tracker"
+    autonomy_class = AutonomyClass.WRITE_LOCAL
 
     async def execute(self, context: AgentContext) -> AgentResult:
         """Route to the appropriate sub-action based on context."""
@@ -48,10 +50,12 @@ class WorkoutTrackerAgent(BaseAgent):
             split = await repo.get_active_split()
             if split is None:
                 return AgentResult(
+                    autonomy_class=self.autonomy_class,
                     success=True,
                     text="No workout split configured. Set one up in the app or tell me your split.",
                 )
             return AgentResult(
+                autonomy_class=self.autonomy_class,
                 success=True,
                 text="No workout scheduled for today. Rest up!",
             )
@@ -67,6 +71,7 @@ class WorkoutTrackerAgent(BaseAgent):
                     unique_exercises.add(log_entry.exercise_id)
                     exercise_list.append(f"• {log_entry.target_reps} reps × {log_entry.target_weight}lbs")
             return AgentResult(
+                autonomy_class=self.autonomy_class,
                 success=True,
                 text=f"Today is {day} day. Tap Start when you're ready.\n" + "\n".join(exercise_list),
                 content_type="card",
@@ -84,17 +89,19 @@ class WorkoutTrackerAgent(BaseAgent):
             total_sets = len(today_session.logs)
             logged_sets = sum(1 for log in today_session.logs if log.actual_reps is not None)
             return AgentResult(
+                autonomy_class=self.autonomy_class,
                 success=True,
                 text=f"{day.title()} day in progress. {logged_sets}/{total_sets} sets logged.",
             )
 
         if status == "completed":
             return AgentResult(
+                autonomy_class=self.autonomy_class,
                 success=True,
                 text=f"{day.title()} day complete! Nice work.",
             )
 
-        return AgentResult(success=True, text=f"Today's {day} day was skipped.")
+        return AgentResult(autonomy_class=self.autonomy_class, success=True, text=f"Today's {day} day was skipped.")
 
     async def _parse_voice_log(self, context: AgentContext, session: Any) -> AgentResult | None:
         """Attempt to parse a voice message as a set log using Gemini Flash."""
@@ -166,6 +173,7 @@ class WorkoutTrackerAgent(BaseAgent):
 
             if entry:
                 return AgentResult(
+                    autonomy_class=self.autonomy_class,
                     success=True,
                     text=f"Logged: Set {parsed['set_number']} — {parsed['actual_reps']} reps at {parsed['actual_weight']}lbs.",
                 )

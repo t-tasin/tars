@@ -13,6 +13,7 @@ from datetime import date, timedelta
 from typing import Any
 
 import structlog
+from shared.constants import AutonomyClass
 from sqlalchemy import select, update
 
 from agents.base import AgentContext, AgentResult, BaseAgent
@@ -55,6 +56,7 @@ class FashionAgent(BaseAgent):
     """
 
     agent_type = "fashion"
+    autonomy_class = AutonomyClass.WRITE_LOCAL
 
     def __init__(self) -> None:
         from config import get_settings
@@ -128,6 +130,7 @@ class FashionAgent(BaseAgent):
 
         if not wardrobe_items:
             return AgentResult(
+                autonomy_class=self.autonomy_class,
                 success=True,
                 text="Your wardrobe is empty. Upload some items first using the wardrobe catalog feature.",
                 data={"weather": weather, "events": events},
@@ -181,6 +184,7 @@ class FashionAgent(BaseAgent):
         except (json.JSONDecodeError, Exception) as exc:
             log.error("fashion_suggestion_failed", error=str(exc), exc_info=True)
             return AgentResult(
+                autonomy_class=self.autonomy_class,
                 success=False,
                 text="I had trouble generating an outfit suggestion. Please try again.",
                 error=str(exc),
@@ -201,6 +205,7 @@ class FashionAgent(BaseAgent):
         )
 
         return AgentResult(
+            autonomy_class=self.autonomy_class,
             success=True,
             text=suggestion.get("suggestion", "Here's your outfit for today."),
             content_type="card",
@@ -231,6 +236,7 @@ class FashionAgent(BaseAgent):
         """Catalog a new wardrobe item from a photo using Gemini Vision."""
         if not context.attachments:
             return AgentResult(
+                autonomy_class=self.autonomy_class,
                 success=False,
                 text="Please attach a photo of the clothing item to catalog.",
                 error="no_attachment",
@@ -240,6 +246,7 @@ class FashionAgent(BaseAgent):
         image_data = attachment.get("data")
         if not image_data:
             return AgentResult(
+                autonomy_class=self.autonomy_class,
                 success=False,
                 text="The attached image appears to be empty.",
                 error="empty_attachment",
@@ -252,6 +259,7 @@ class FashionAgent(BaseAgent):
             image_bytes = base64.b64decode(image_data)
         except Exception:
             return AgentResult(
+                autonomy_class=self.autonomy_class,
                 success=False,
                 text="Could not decode the image. Please try again with a JPEG or PNG.",
                 error="decode_failed",
@@ -280,6 +288,7 @@ class FashionAgent(BaseAgent):
         except json.JSONDecodeError:
             log.error("fashion_catalog_json_failed", raw=response.text[:200])
             return AgentResult(
+                autonomy_class=self.autonomy_class,
                 success=False,
                 text="I couldn't parse the image analysis. Please try again.",
                 error="json_parse_failed",
@@ -287,6 +296,7 @@ class FashionAgent(BaseAgent):
         except Exception as exc:
             log.error("fashion_catalog_failed", error=str(exc), exc_info=True)
             return AgentResult(
+                autonomy_class=self.autonomy_class,
                 success=False,
                 text="Image analysis failed. Please try again.",
                 error=str(exc),
@@ -310,6 +320,7 @@ class FashionAgent(BaseAgent):
         description = analysis.get("description", "Item cataloged.")
 
         return AgentResult(
+            autonomy_class=self.autonomy_class,
             success=True,
             text=f"Cataloged: {description}",
             content_type="card",
@@ -337,6 +348,7 @@ class FashionAgent(BaseAgent):
 
         if not wardrobe_items:
             return AgentResult(
+                autonomy_class=self.autonomy_class,
                 success=True,
                 text=(
                     "Your wardrobe is empty — start by cataloging your current clothes, "
@@ -381,6 +393,7 @@ class FashionAgent(BaseAgent):
             )
 
             return AgentResult(
+                autonomy_class=self.autonomy_class,
                 success=True,
                 text=response.text.strip(),
                 data={
@@ -393,6 +406,7 @@ class FashionAgent(BaseAgent):
         except Exception as exc:
             log.error("fashion_shopping_failed", error=str(exc), exc_info=True)
             return AgentResult(
+                autonomy_class=self.autonomy_class,
                 success=False,
                 text="I had trouble analyzing your wardrobe. Please try again.",
                 error=str(exc),
