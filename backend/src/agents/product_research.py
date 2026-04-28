@@ -15,6 +15,7 @@ import re
 from typing import Any
 
 import structlog
+from shared.constants import AutonomyClass
 
 from agents.base import AgentContext, AgentResult, BaseAgent
 from models.gemini_client import GeminiClient
@@ -73,6 +74,7 @@ class ProductResearchAgent(BaseAgent):
     """
 
     agent_type = "product_research"
+    autonomy_class = AutonomyClass.READ
 
     async def execute(self, context: AgentContext) -> AgentResult:
         """Research and compare products using Gemini Pro."""
@@ -102,6 +104,7 @@ class ProductResearchAgent(BaseAgent):
         if gemini is None:
             log.warning("product_research_no_gemini")
             return AgentResult(
+                autonomy_class=self.autonomy_class,
                 success=False,
                 text="I can't research products right now — the AI model is unavailable. Please try again shortly.",
                 error="gemini_unavailable",
@@ -119,6 +122,7 @@ class ProductResearchAgent(BaseAgent):
         except Exception:
             log.error("product_research_gemini_failed", exc_info=True)
             return AgentResult(
+                autonomy_class=self.autonomy_class,
                 success=False,
                 text="I had trouble researching that product. Could you try again?",
                 error="gemini_error",
@@ -134,6 +138,7 @@ class ProductResearchAgent(BaseAgent):
             )
             # Fall back to returning raw text
             return AgentResult(
+                autonomy_class=self.autonomy_class,
                 success=True,
                 text=response.text.strip(),
                 content_type="text",
@@ -165,6 +170,7 @@ class ProductResearchAgent(BaseAgent):
         )
 
         return AgentResult(
+            autonomy_class=self.autonomy_class,
             success=True,
             text=display_text,
             content_type="card",

@@ -13,6 +13,7 @@ import re
 from typing import Any
 
 import structlog
+from shared.constants import AutonomyClass
 from sqlalchemy import String, func, or_, select, type_coerce
 
 from agents.base import AgentContext, AgentResult, BaseAgent
@@ -54,6 +55,7 @@ class CommunicationAgent(BaseAgent):
     """
 
     agent_type = "communication"
+    autonomy_class = AutonomyClass.WRITE_WORLD
 
     def __init__(self) -> None:
         self._claude = ClaudeCodeSpawner()
@@ -70,6 +72,7 @@ class CommunicationAgent(BaseAgent):
 
         if not recipient_hint:
             return AgentResult(
+                autonomy_class=self.autonomy_class,
                 success=False,
                 text="I need to know who you'd like me to write to. Could you specify the recipient?",
                 error="no_recipient",
@@ -85,6 +88,7 @@ class CommunicationAgent(BaseAgent):
 
         if not recipient_email:
             return AgentResult(
+                autonomy_class=self.autonomy_class,
                 success=False,
                 text=(
                     f'I found a reference to "{recipient_hint}" but couldn\'t find '
@@ -123,6 +127,7 @@ class CommunicationAgent(BaseAgent):
         except ClaudeSpawnError:
             log.error("communication_claude_spawn_failed", exc_info=True)
             return AgentResult(
+                autonomy_class=self.autonomy_class,
                 success=False,
                 text="I wasn't able to draft that message right now — Claude is unavailable. Please try again shortly.",
                 error="claude_unavailable",
@@ -135,6 +140,7 @@ class CommunicationAgent(BaseAgent):
                 duration_ms=result.duration_ms,
             )
             return AgentResult(
+                autonomy_class=self.autonomy_class,
                 success=False,
                 text="I had trouble drafting that message. Could you try rephrasing your request?",
                 error=result.error or "empty_draft",
@@ -164,6 +170,7 @@ class CommunicationAgent(BaseAgent):
 
         # 8. Return as approval-required result (HC-01)
         return AgentResult(
+            autonomy_class=self.autonomy_class,
             success=True,
             text=f"I've drafted an email to {recipient_name}. Please review:",
             content_type="approval",

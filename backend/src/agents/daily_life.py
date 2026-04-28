@@ -15,6 +15,7 @@ from datetime import time as dt_time
 from typing import Any
 
 import structlog
+from shared.constants import AutonomyClass
 
 from agents.base import AgentContext, AgentResult, BaseAgent
 from models.gemini_client import GeminiClient
@@ -104,6 +105,7 @@ class DailyLifeAgent(BaseAgent):
     """
 
     agent_type = "daily_life"
+    autonomy_class = AutonomyClass.WRITE_LOCAL
 
     def __init__(self) -> None:
         from config import get_settings
@@ -147,6 +149,7 @@ class DailyLifeAgent(BaseAgent):
             return await self._handle_schedule_event(context, gemini)
 
         return AgentResult(
+            autonomy_class=self.autonomy_class,
             success=False,
             text=(
                 "I'm not sure what you'd like me to do. Try something like:\n"
@@ -172,6 +175,7 @@ class DailyLifeAgent(BaseAgent):
         except Exception:
             log.error("daily_life_calendar_fetch_failed", exc_info=True)
             return AgentResult(
+                autonomy_class=self.autonomy_class,
                 success=False,
                 text="I couldn't reach your calendar right now. Please try again shortly.",
                 error="calendar_unavailable",
@@ -179,6 +183,7 @@ class DailyLifeAgent(BaseAgent):
 
         if not events:
             return AgentResult(
+                autonomy_class=self.autonomy_class,
                 success=True,
                 text="Your calendar is clear today — no events scheduled.",
                 data={"events": []},
@@ -204,6 +209,7 @@ class DailyLifeAgent(BaseAgent):
             )
 
         return AgentResult(
+            autonomy_class=self.autonomy_class,
             success=True,
             text="\n".join(lines),
             content_type="card",
@@ -221,6 +227,7 @@ class DailyLifeAgent(BaseAgent):
 
         if not parsed:
             return AgentResult(
+                autonomy_class=self.autonomy_class,
                 success=False,
                 text='I couldn\'t understand that scheduling request. Try something like "schedule gym Thursday 6pm".',
                 error="parse_failed",
@@ -234,6 +241,7 @@ class DailyLifeAgent(BaseAgent):
 
         if not title or not start_str:
             return AgentResult(
+                autonomy_class=self.autonomy_class,
                 success=False,
                 text='I need at least an event title and time. Try: "schedule gym Thursday 6pm".',
                 error="incomplete_request",
@@ -245,6 +253,7 @@ class DailyLifeAgent(BaseAgent):
             end_dt = datetime.fromisoformat(end_str) if end_str else start_dt + timedelta(hours=1)
         except ValueError:
             return AgentResult(
+                autonomy_class=self.autonomy_class,
                 success=False,
                 text=f'I had trouble parsing the date/time "{start_str}". Could you rephrase?',
                 error="invalid_datetime",
@@ -264,6 +273,7 @@ class DailyLifeAgent(BaseAgent):
         )
 
         return AgentResult(
+            autonomy_class=self.autonomy_class,
             success=True,
             text=f"I'll create this event for you:\n  {preview_text}\n\nPlease approve to add it to your calendar.",
             content_type="approval",
@@ -291,6 +301,7 @@ class DailyLifeAgent(BaseAgent):
 
         if not parsed or not parsed.get("task"):
             return AgentResult(
+                autonomy_class=self.autonomy_class,
                 success=False,
                 text='I couldn\'t understand that reminder. Try: "remind me to call the dentist tomorrow".',
                 error="parse_failed",
@@ -312,6 +323,7 @@ class DailyLifeAgent(BaseAgent):
         )
 
         return AgentResult(
+            autonomy_class=self.autonomy_class,
             success=True,
             text=f"I'll create a reminder:\n  {preview_text}\n\nPlease approve to add it to your tasks.",
             content_type="approval",
@@ -339,6 +351,7 @@ class DailyLifeAgent(BaseAgent):
         except Exception:
             log.error("daily_life_free_time_fetch_failed", exc_info=True)
             return AgentResult(
+                autonomy_class=self.autonomy_class,
                 success=False,
                 text="I couldn't reach your calendar right now. Please try again shortly.",
                 error="calendar_unavailable",
@@ -348,6 +361,7 @@ class DailyLifeAgent(BaseAgent):
 
         if not gaps:
             return AgentResult(
+                autonomy_class=self.autonomy_class,
                 success=True,
                 text="Your week looks packed — I couldn't find any significant gaps. Consider rescheduling something if you need free time.",
                 data={"gaps": []},
@@ -358,6 +372,7 @@ class DailyLifeAgent(BaseAgent):
             lines.append(f"  {gap['day']} — {gap['start']} to {gap['end']} ({gap['duration']})")
 
         return AgentResult(
+            autonomy_class=self.autonomy_class,
             success=True,
             text="\n".join(lines),
             data={"gaps": gaps},
@@ -373,6 +388,7 @@ class DailyLifeAgent(BaseAgent):
 
         if not items:
             return AgentResult(
+                autonomy_class=self.autonomy_class,
                 success=False,
                 text='I couldn\'t identify any items to add. Try: "add milk and eggs to grocery list".',
                 error="parse_failed",
@@ -383,6 +399,7 @@ class DailyLifeAgent(BaseAgent):
         log.info("daily_life_grocery_parsed", items=items, count=len(items))
 
         return AgentResult(
+            autonomy_class=self.autonomy_class,
             success=True,
             text=f"I'll add to your grocery list:\n  {items_display}\n\nPlease approve.",
             content_type="approval",
@@ -538,6 +555,7 @@ class DailyLifeAgent(BaseAgent):
             return await self._execute_create_notion(preview)
 
         return AgentResult(
+            autonomy_class=self.autonomy_class,
             success=False,
             text=f"Unknown action type: {action_type}",
             error="unknown_action",
@@ -568,6 +586,7 @@ class DailyLifeAgent(BaseAgent):
                 start=preview["start"],
             )
             return AgentResult(
+                autonomy_class=self.autonomy_class,
                 success=True,
                 text=f'Done! "{title}" has been added to your calendar.',
                 data={"event": event},
@@ -575,6 +594,7 @@ class DailyLifeAgent(BaseAgent):
         except Exception:
             log.error("daily_life_event_create_failed", exc_info=True)
             return AgentResult(
+                autonomy_class=self.autonomy_class,
                 success=False,
                 text=f'I couldn\'t create the event "{title}". Please try again.',
                 error="event_creation_failed",
@@ -595,6 +615,7 @@ class DailyLifeAgent(BaseAgent):
             items = preview.get("items", [])
             log.info("daily_life_grocery_stub", items=items)
             return AgentResult(
+                autonomy_class=self.autonomy_class,
                 success=True,
                 text=f"Added {len(items)} item{'s' if len(items) != 1 else ''} to your grocery list.",
                 data={"items": items, "stub": True},
@@ -604,6 +625,7 @@ class DailyLifeAgent(BaseAgent):
         due_date = preview.get("due_date")
         log.info("daily_life_reminder_stub", task=task, due_date=due_date)
         return AgentResult(
+            autonomy_class=self.autonomy_class,
             success=True,
             text=f"Reminder set: {task}",
             data={"task": task, "due_date": due_date, "stub": True},

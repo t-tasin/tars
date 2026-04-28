@@ -13,7 +13,7 @@ from typing import Any
 from uuid import UUID
 
 import structlog
-from shared.constants import ModelName
+from shared.constants import AutonomyClass, ModelName
 from shared.persona import load_persona
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -300,6 +300,7 @@ class Orchestrator:
                 if not await agent.validate_context(context):
                     log.warning("agent_context_invalid", agent=intent.agent)
                     return AgentResult(
+                        autonomy_class=AutonomyClass.READ,
                         success=False,
                         text="I couldn't process that request — missing required context.",
                         error="context_validation_failed",
@@ -333,6 +334,7 @@ class Orchestrator:
 
         if route.model == ModelName.LOCAL:
             return AgentResult(
+                autonomy_class=AutonomyClass.READ,
                 success=True,
                 text="This feature is not yet implemented.",
             )
@@ -402,6 +404,7 @@ class Orchestrator:
             message_preview=user_message[:100],
         )
         return AgentResult(
+            autonomy_class=AutonomyClass.READ,
             success=True,
             text=(
                 "I'm currently unable to compose an AI response — all models are "
@@ -489,6 +492,7 @@ class Orchestrator:
                 system=system,
             )
             return AgentResult(
+                autonomy_class=AutonomyClass.READ,
                 success=True,
                 text=response.text,
                 data={
@@ -501,6 +505,7 @@ class Orchestrator:
         except Exception as exc:
             log.error("local_call_failed", model=route.model, error=str(exc))
             return AgentResult(
+                autonomy_class=AutonomyClass.READ,
                 success=False,
                 text="Local model temporarily unavailable.",
                 error="local_unavailable",
@@ -519,6 +524,7 @@ class Orchestrator:
         if route.model in {ModelName.LOCAL_REFLEX, ModelName.LOCAL_BRAIN}:
             return await self._local_call(route, context)
         return AgentResult(
+            autonomy_class=AutonomyClass.READ,
             success=False,
             text="I'm not sure how to handle that request.",
             error="unknown_route",
@@ -576,6 +582,7 @@ class Orchestrator:
                 system_instruction=("You are T.A.R.S., a personal AI assistant. Be helpful, concise, and friendly."),
             )
             return AgentResult(
+                autonomy_class=AutonomyClass.READ,
                 success=True,
                 text=response.text,
                 data={
@@ -587,6 +594,7 @@ class Orchestrator:
         except Exception as exc:
             log.error("gemini_call_failed", model=route.model, error=str(exc))
             return AgentResult(
+                autonomy_class=AutonomyClass.READ,
                 success=False,
                 text="Gemini is temporarily unavailable.",
                 error="gemini_unavailable",
@@ -604,6 +612,7 @@ class Orchestrator:
                 mcp_profile=route.mcp_profile,
             )
             return AgentResult(
+                autonomy_class=AutonomyClass.READ,
                 success=result.success,
                 text=result.text or "No response from Claude.",
                 error=result.error,
@@ -616,6 +625,7 @@ class Orchestrator:
         except Exception as exc:
             log.error("claude_call_failed", error=str(exc))
             return AgentResult(
+                autonomy_class=AutonomyClass.READ,
                 success=False,
                 text="Claude is temporarily unavailable.",
                 error="claude_unavailable",

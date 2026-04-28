@@ -14,7 +14,7 @@ from datetime import UTC, date, datetime, time, timedelta
 from typing import Any
 
 import structlog
-from shared.constants import ApprovalStatus, TaskStatus
+from shared.constants import ApprovalStatus, AutonomyClass, TaskStatus
 from sqlalchemy import func, select
 
 from agents.base import AgentContext, AgentResult, BaseAgent
@@ -37,6 +37,7 @@ class EODSummaryAgent(BaseAgent):
     """End-of-day summary agent — gathers today's activity data and composes a summary."""
 
     agent_type = "eod_summary"
+    autonomy_class = AutonomyClass.WRITE_LOCAL
 
     async def execute(self, context: AgentContext) -> AgentResult:
         """Generate end-of-day summary.
@@ -60,6 +61,7 @@ class EODSummaryAgent(BaseAgent):
         )
 
         return AgentResult(
+            autonomy_class=self.autonomy_class,
             success=True,
             text=narrative,
             content_type="briefing",

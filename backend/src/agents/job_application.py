@@ -15,7 +15,7 @@ from typing import Any
 from uuid import UUID
 
 import structlog
-from shared.constants import JobStatus
+from shared.constants import AutonomyClass, JobStatus
 
 from agents.base import AgentContext, AgentResult, BaseAgent
 
@@ -26,12 +26,15 @@ class JobApplicationAgent(BaseAgent):
     """Handles job application flow triggered by Apply button."""
 
     agent_type = "job_application"
+    autonomy_class = AutonomyClass.WRITE_WORLD
 
     async def execute(self, context: AgentContext) -> AgentResult:
         """Execute the apply flow for a specific job."""
         job_id = context.config.get("job_id")
         if not job_id:
-            return AgentResult(success=False, text="No job ID provided.", error="no_job_id")
+            return AgentResult(
+                autonomy_class=self.autonomy_class, success=False, text="No job ID provided.", error="no_job_id"
+            )
 
         from sqlalchemy import select
 
@@ -44,7 +47,9 @@ class JobApplicationAgent(BaseAgent):
             job = result.scalar_one_or_none()
 
         if job is None:
-            return AgentResult(success=False, text=f"Job {job_id} not found.", error="not_found")
+            return AgentResult(
+                autonomy_class=self.autonomy_class, success=False, text=f"Job {job_id} not found.", error="not_found"
+            )
 
         apply_method = job.apply_method or classify_apply_method(
             {
@@ -107,6 +112,7 @@ class JobApplicationAgent(BaseAgent):
 
         # No side effects → no approval needed
         return AgentResult(
+            autonomy_class=self.autonomy_class,
             success=True,
             text=text,
             data={"job_id": job["id"], "apply_method": "manual"},
@@ -142,6 +148,7 @@ class JobApplicationAgent(BaseAgent):
 
         # 4. Return approval-required result (HC-01)
         return AgentResult(
+            autonomy_class=self.autonomy_class,
             success=True,
             text=f"Ready to apply to {job['title']} at {job['company']}. Please review:",
             content_type="approval",

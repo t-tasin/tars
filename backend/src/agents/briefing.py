@@ -22,7 +22,7 @@ from datetime import UTC, date, datetime, timedelta
 from typing import Any
 
 import structlog
-from shared.constants import EmailTier, JobStatus, ModelName
+from shared.constants import AutonomyClass, EmailTier, JobStatus, ModelName
 from sqlalchemy import func, select
 
 from agents.base import AgentContext, AgentResult, BaseAgent
@@ -69,6 +69,7 @@ class BriefingAgent(BaseAgent):
     """
 
     agent_type = "briefing"
+    autonomy_class = AutonomyClass.READ
 
     def __init__(self) -> None:
         from config import get_settings
@@ -151,6 +152,7 @@ class BriefingAgent(BaseAgent):
         )
 
         return AgentResult(
+            autonomy_class=self.autonomy_class,
             success=True,
             text=narrative,
             content_type="briefing",
