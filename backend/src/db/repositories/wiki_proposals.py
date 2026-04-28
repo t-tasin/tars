@@ -109,9 +109,7 @@ class WikiProposalsRepository:
         if proposal is None:
             return None
         if proposal.status != "pending":
-            raise ValueError(
-                f"proposal {proposal_id} already in terminal state {proposal.status!r}; cannot re-review"
-            )
+            raise ValueError(f"proposal {proposal_id} already in terminal state {proposal.status!r}; cannot re-review")
 
         proposal.status = status
         proposal.reviewed_at = datetime.now(UTC)
