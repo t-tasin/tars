@@ -167,7 +167,7 @@ Claude Code: this doc is the source of truth. Check before picking up work. Upda
 | P4-07 | Weather sensor migration | MOVED | — | — | 2026-04-25 | — | **Moved to P3.5-03.** |
 | P4-08 | Network presence (Tailscale API) | MOVED | — | — | 2026-04-25 | — | **Moved to P3.5-05.** |
 | P4-09 | Postgres `world_state` monthly-partitioned | MOVED | — | — | 2026-04-25 | — | **Moved to P3.5-02.** |
-| P4-10 | `orchestrator/trigger_engine.py` | PLANNED | Claude | — | 2026-04-21 | depends P4-01,9 | Pub/sub subscriber + pattern matcher |
+| P4-10 | `orchestrator/trigger_engine.py` | BUILT | Claude | `backend/src/orchestrator/trigger_engine.py` + tests (19 tests) | 2026-04-28 | depends P4-01,9 | Pub/sub subscribes `tars:world:*`. Trigger ABC + register/unregister API. Fail-soft per-trigger isolation. Concrete triggers P4-15..24 plug in next. |
 | P4-11 | `shared/constants.py` AutonomyClass enum | BUILT | Claude | tests/test_autonomy_class.py (15 tests) | 2026-04-26 | — | READ/WRITE_LOCAL/WRITE_SELF/WRITE_WORLD/WRITE_INFRA + level + requires_approval() |
 | P4-12 | AgentResult.autonomy_class required field | BUILT | Claude | tests/test_agents_autonomy.py (17 tests, 1259 total green) | 2026-04-26 | depends P4-11 | Required field on dataclass; every agent declares; orchestrator paths default READ |
 | P4-13 | `orchestrator/autonomy_budget.py` | BUILT | Claude | `backend/src/orchestrator/autonomy_budget.py` + tests | 2026-04-28 | depends P4-11..12 | BudgetCheck dataclass, READ/WRITE_LOCAL pass-through, WRITE_SELF daily+weekly cap, defensive raise for WRITE_WORLD/INFRA. Engine integration in follow-up. |
