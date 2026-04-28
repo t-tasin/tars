@@ -117,7 +117,7 @@ Claude Code: this doc is the source of truth. Check before picking up work. Upda
 
 | ID | Feature | Status | Owner | Evidence | Last Touched | Blockers | Notes |
 |----|---------|--------|-------|----------|--------------|----------|-------|
-| P3-01 | Qdrant in docker-compose Node 2 | PLANNED | Claude | — | 2026-04-21 | depends P1-06 | v1.11+ |
+| P3-01 | Qdrant in docker-compose Node 2 | BUILT | Claude | `deploy/node2/docker-compose.yml` qdrant service v1.11.5 on `phase-3/p3-01-qdrant` | 2026-04-26 | depends P1-06 | v1.11.5 pinned. Tailscale-only bind 100.119.114.125:6333/6334. Bind mount `/opt/tars/qdrant_storage`. Awaits `docker compose up -d qdrant` on tars2 to ship. |
 | P3-02 | Qwen3-Embedding-0.6B llama.cpp on port 8003 | PLANNED | Tasin | — | 2026-04-21 | depends P2-01 | Embedding mode |
 | P3-03 | `integrations/qdrant_client.py` | PLANNED | Claude | — | 2026-04-21 | depends P3-01 | async qdrant-client |
 | P3-04 | `models/embedding_client.py` | PLANNED | Claude | — | 2026-04-21 | depends P3-02 | Local embed via httpx |
