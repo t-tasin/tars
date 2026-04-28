@@ -170,8 +170,8 @@ Claude Code: this doc is the source of truth. Check before picking up work. Upda
 | P4-10 | `orchestrator/trigger_engine.py` | PLANNED | Claude | — | 2026-04-21 | depends P4-01,9 | Pub/sub subscriber + pattern matcher |
 | P4-11 | `shared/constants.py` AutonomyClass enum | BUILT | Claude | tests/test_autonomy_class.py (15 tests) | 2026-04-26 | — | READ/WRITE_LOCAL/WRITE_SELF/WRITE_WORLD/WRITE_INFRA + level + requires_approval() |
 | P4-12 | AgentResult.autonomy_class required field | BUILT | Claude | tests/test_agents_autonomy.py (17 tests, 1259 total green) | 2026-04-26 | depends P4-11 | Required field on dataclass; every agent declares; orchestrator paths default READ |
-| P4-13 | `orchestrator/autonomy_budget.py` | PLANNED | Claude | — | 2026-04-21 | depends P4-11..12 | Daily cap tracker |
-| P4-14 | Postgres `autonomy_budget` table | PLANNED | Claude | — | 2026-04-21 | depends P4-13 | Alembic |
+| P4-13 | `orchestrator/autonomy_budget.py` | BUILT | Claude | `backend/src/orchestrator/autonomy_budget.py` + tests | 2026-04-28 | depends P4-11..12 | BudgetCheck dataclass, READ/WRITE_LOCAL pass-through, WRITE_SELF daily+weekly cap, defensive raise for WRITE_WORLD/INFRA. Engine integration in follow-up. |
+| P4-14 | Postgres `autonomy_budget` table | BUILT | Claude | alembic 009_autonomy_budget + AutonomyBudget/AutonomyLimit ORM + AutonomyBudgetRepository (17 tests) | 2026-04-28 | depends P4-13 | Composite UNIQUE (day, class, agent). Seeds WRITE_SELF=30/day,180/week. |
 | P4-15 | Trigger: evening_wind_down | PLANNED | Claude | — | 2026-04-21 | depends P4-10 | location + time + calendar |
 | P4-16 | Trigger: meeting_prep | PLANNED | Claude | — | 2026-04-21 | depends P4-10 | 30min before, if no prep doc |
 | P4-17 | Trigger: commit_streak_remind | PLANNED | Claude | — | 2026-04-21 | depends P4-10 | 24h no commits on active project |
