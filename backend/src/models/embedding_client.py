@@ -110,9 +110,7 @@ class EmbeddingClient:
                 response.raise_for_status()
             except httpx.HTTPError as exc:
                 error_type = type(exc).__name__
-                raise EmbeddingError(
-                    f"local embedding endpoint unreachable: {exc}"
-                ) from exc
+                raise EmbeddingError(f"local embedding endpoint unreachable: {exc}") from exc
 
             try:
                 data = response.json()
@@ -133,9 +131,7 @@ class EmbeddingClient:
                     raise EmbeddingError("embedding entry missing 'embedding' field")
                 if len(vec) != _EMBED_DIM:
                     error_type = "DimensionMismatch"
-                    raise EmbeddingError(
-                        f"expected {_EMBED_DIM}-dim vector, got {len(vec)}-dim"
-                    )
+                    raise EmbeddingError(f"expected {_EMBED_DIM}-dim vector, got {len(vec)}-dim")
                 vectors.append([float(x) for x in vec])
 
             usage = data.get("usage") or {}
