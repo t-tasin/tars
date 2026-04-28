@@ -9,6 +9,8 @@ Routes messages through the full pipeline:
 from __future__ import annotations
 
 import json
+from contextlib import asynccontextmanager
+from dataclasses import replace
 from typing import Any
 from uuid import UUID
 
@@ -26,6 +28,7 @@ from models.gemini_client import GeminiClient
 from models.local_client import LocalClient
 from models.usage_tracker import UsageTracker
 from orchestrator.approval_manager import ApprovalManager
+from orchestrator.autonomy_budget import AutonomyBudgetTracker, BudgetCheck
 from orchestrator.context_builder import ContextBuilder
 from orchestrator.escalation_parser import EscalationRequest, parse_escalation
 from orchestrator.intent_classifier import Intent, IntentClassifier
@@ -190,6 +193,38 @@ class Orchestrator:
                 notifier = self._get_notifications()
                 if notifier:
                     await notifier.notify_budget_alert(budget_alert)
+
+            # 6.5 Autonomy budget gate (P4-13). WRITE_SELF consults daily cap.
+            #     READ / WRITE_LOCAL: pass-through (tracker not called).
+            #     WRITE_WORLD / WRITE_INFRA: handled by approval flow below.
+            if result.autonomy_class == AutonomyClass.WRITE_SELF:
+
+                @asynccontextmanager
+                async def _session_ctx():
+                    yield session
+
+                tracker = AutonomyBudgetTracker(session_factory=_session_ctx)
+                budget_check: BudgetCheck = await tracker.check_and_increment(result.autonomy_class, intent.agent)
+                if not budget_check.allowed:
+                    result = replace(
+                        result,
+                        has_side_effects=True,
+                        action_type=result.action_type or "write_self_budget_exhausted",
+                        approval_title=result.approval_title or f"{intent.agent}: budget exhausted",
+                        preview=(result.preview or {})
+                        | {
+                            "budget_reason": budget_check.reason,
+                            "count": budget_check.count,
+                            "cap": budget_check.cap,
+                        },
+                    )
+                    log.info(
+                        "autonomy_budget_exhausted",
+                        agent=intent.agent,
+                        autonomy_class=str(result.autonomy_class),
+                        count=budget_check.count,
+                        cap=budget_check.cap,
+                    )
 
             # 7. Approval flow if side effects (HC-01)
             if result.has_side_effects and result.action_type:
