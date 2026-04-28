@@ -880,3 +880,52 @@ class WikiIndex(Base):
     )
     embedding_model: Mapped[str] = mapped_column(Text, nullable=False)
     embedding_dim: Mapped[int] = mapped_column(Integer, nullable=False)
+
+
+# ---------------------------------------------------------------------------
+# 25. AutonomyBudget (Phase 4 — P4-13/14)
+# ---------------------------------------------------------------------------
+
+
+class AutonomyBudget(Base):
+    """Per-day, per-class, per-agent counter for autonomy budgeting.
+
+    Today only ``WRITE_SELF`` ops increment this table; ``READ`` and
+    ``WRITE_LOCAL`` are pass-through and ``WRITE_WORLD`` / ``WRITE_INFRA``
+    bypass the tracker (handled by ApprovalManager). The
+    ``(day, class, agent)`` unique constraint lets the tracker UPSERT
+    cleanly via ``pg_insert.on_conflict_do_update``.
+
+    Note: ``class`` is a Python reserved word, so the attribute is
+    ``class_`` and is mapped to the column literally named ``class``.
+    """
+
+    __tablename__ = "autonomy_budget"
+    __table_args__ = (
+        UniqueConstraint("day", "class", "agent", name="uq_autonomy_budget_day_class_agent"),
+        Index("idx_autonomy_budget_day_class", "day", "class"),
+    )
+
+    id: Mapped[uuid.UUID] = _uuid_pk()
+    day: Mapped[date] = mapped_column(Date, nullable=False)
+    class_: Mapped[str] = mapped_column("class", Text, nullable=False)
+    agent: Mapped[str] = mapped_column(Text, nullable=False)
+    count: Mapped[int] = mapped_column(Integer, nullable=False, server_default=text("0"))
+
+
+# ---------------------------------------------------------------------------
+# 26. AutonomyLimit (Phase 4 — P4-13/14)
+# ---------------------------------------------------------------------------
+
+
+class AutonomyLimit(Base):
+    """Per-class autonomy cap. Missing row = uncapped (pass-through).
+
+    Seeded by migration 009 with ``write_self -> (30/day, 180/week)``.
+    """
+
+    __tablename__ = "autonomy_limits"
+
+    class_: Mapped[str] = mapped_column("class", Text, primary_key=True)
+    daily_cap: Mapped[int] = mapped_column(Integer, nullable=False)
+    weekly_cap: Mapped[int | None] = mapped_column(Integer, nullable=True)
