@@ -16,6 +16,7 @@ from src.api.health import router as health_router
 from src.api.health_data import router as health_data_router
 from src.api.jobs import router as jobs_router
 from src.api.messages import router as messages_router
+from src.api.public_stream import router as public_stream_router
 from src.api.wardrobe import router as wardrobe_router
 from src.api.websocket import router as websocket_router
 from src.api.workout import router as workout_router
@@ -37,3 +38,4 @@ router.include_router(health_data_router)
 router.include_router(contacts_router)
 router.include_router(workout_router)
 router.include_router(device_tokens_router)
+router.include_router(public_stream_router)
