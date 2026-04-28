@@ -124,7 +124,7 @@ Claude Code: this doc is the source of truth. Check before picking up work. Upda
 | P3-05 | `wiki/` directory scaffolded | PLANNED | Tasin | — | 2026-04-21 | — | 20 hand-seeded files |
 | P3-06 | `wiki/identity/tars_persona.md` v1 | PLANNED | Tasin | — | 2026-04-21 | depends P3-05 | Voice guide from §5 |
 | P3-07 | `sensors/wiki_watcher.py` (watchdog) | PLANNED | Claude | — | 2026-04-21 | depends P3-03..4 | Auto-re-embed on change |
-| P3-08 | Qdrant collection `tasin_wiki` | PLANNED | Claude | — | 2026-04-21 | depends P3-03,7 | Ingest seed files |
+| P3-08 | Qdrant collection `tasin_wiki` | BUILT | Claude | `backend/src/integrations/wiki_ingest.py` + `scripts/wiki_bootstrap.py` + tests (18 tests) | 2026-04-28 | depends P3-03,4 (P3-07 watcher will reuse ingest_file) | `chunk_markdown` + `ingest_file` + `bootstrap_collection`. Idempotent re-ingest (delete-then-upsert). HC-09 fail-soft per-file. |
 | P3-09 | `context_builder.retrieve_wiki(query, k=8)` | PLANNED | Claude | — | 2026-04-21 | depends P3-08 | Every AgentContext gets chunks |
 | P3-10 | Postgres `wiki_proposals` + `wiki_index` tables | BUILT | Claude | alembic 008, 17 repo tests (2 PG-gated) | 2026-04-27 | — | Alembic migration + repos |
 | P3-11 | `web/` Next.js 15 scaffold | PLANNED | Claude | — | 2026-04-21 | — | App Router + Tailwind |
